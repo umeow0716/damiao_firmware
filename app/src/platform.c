@@ -655,7 +655,7 @@ bool platform_recovery_transport_ready(void)
 bool platform_confirm_application_boot(void)
 {
     const BootPersistentRecord *const stored =
-        (const BootPersistentRecord *)DM4310_BOOT_RECORD_ADDRESS;
+        (const BootPersistentRecord *)APP_BOOT_RECORD_ADDRESS;
     /* select_configuration_bank_a@0x26de8 is called solely when word 1 is
      * not one.  Match that predicate rather than adding a policy check on
      * word 0; the write below still normalizes both words to (0, 1). */
@@ -665,21 +665,21 @@ bool platform_confirm_application_boot(void)
     BootPersistentRecord record;
     memcpy(&record, stored, sizeof(record));
     boot_record_confirm_application(&record);
-    return board_flash_replace_sector_prefix(DM4310_BOOT_RECORD_ADDRESS,
+    return board_flash_replace_sector_prefix(APP_BOOT_RECORD_ADDRESS,
                                               &record, sizeof(record));
 }
 
 bool platform_update_application_identity(void)
 {
     const BootPersistentRecord *const stored =
-        (const BootPersistentRecord *)DM4310_BOOT_RECORD_ADDRESS;
-    if (stored->application_identity == DM4310_APPLICATION_IDENTITY) {
+        (const BootPersistentRecord *)APP_BOOT_RECORD_ADDRESS;
+    if (stored->application_identity == APP_APPLICATION_IDENTITY) {
         return true;
     }
     BootPersistentRecord record;
     memcpy(&record, stored, sizeof(record));
     boot_record_set_application_identity(&record);
-    return board_flash_replace_sector_prefix(DM4310_BOOT_RECORD_ADDRESS,
+    return board_flash_replace_sector_prefix(APP_BOOT_RECORD_ADDRESS,
                                               &record, sizeof(record));
 }
 
@@ -690,7 +690,7 @@ bool platform_read_device_identity(uint32_t *device_id,
         return false;
     }
     const BootPersistentRecord *const record =
-        (const BootPersistentRecord *)DM4310_BOOT_RECORD_ADDRESS;
+        (const BootPersistentRecord *)APP_BOOT_RECORD_ADDRESS;
     *device_id = record->device_id;
     *application_identity = record->application_identity;
     return true;
@@ -716,9 +716,9 @@ void platform_ack_debug_uart_irq(void) { board_uart_ack_interrupt(); }
 static __attribute__((noinline)) bool platform_request_bootloader_record(void)
 {
     BootPersistentRecord record;
-    memcpy(&record, (const void *)DM4310_BOOT_RECORD_ADDRESS, sizeof(record));
+    memcpy(&record, (const void *)APP_BOOT_RECORD_ADDRESS, sizeof(record));
     boot_record_request_update(&record);
-    return board_flash_replace_sector_prefix(DM4310_BOOT_RECORD_ADDRESS,
+    return board_flash_replace_sector_prefix(APP_BOOT_RECORD_ADDRESS,
                                              &record, sizeof(record));
 }
 

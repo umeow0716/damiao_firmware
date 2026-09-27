@@ -39,28 +39,28 @@ void boot_record_confirm_application(BootPersistentRecord *record)
 void boot_record_set_application_identity(BootPersistentRecord *record)
 {
     if (record != 0) {
-        record->application_identity = DM4310_APPLICATION_IDENTITY;
+        record->application_identity = APP_APPLICATION_IDENTITY;
     }
 }
 
 bool boot_update_journal_in_progress(const BootUpdateJournal *journal)
 {
     return (journal != 0) &&
-           (journal->magic == DM4310_UPDATE_JOURNAL_MAGIC) &&
-           (journal->version == DM4310_UPDATE_JOURNAL_VERSION) &&
-           (journal->state == DM4310_UPDATE_JOURNAL_IN_PROGRESS) &&
+           (journal->magic == APP_UPDATE_JOURNAL_MAGIC) &&
+           (journal->version == APP_UPDATE_JOURNAL_VERSION) &&
+           (journal->state == APP_UPDATE_JOURNAL_IN_PROGRESS) &&
            (journal->state_inverse ==
-            (uint32_t)~(uint32_t)DM4310_UPDATE_JOURNAL_IN_PROGRESS);
+            (uint32_t)~(uint32_t)APP_UPDATE_JOURNAL_IN_PROGRESS);
 }
 
 void boot_update_journal_begin(BootUpdateJournal *journal)
 {
     if (journal != 0) {
-        journal->magic = DM4310_UPDATE_JOURNAL_MAGIC;
-        journal->version = DM4310_UPDATE_JOURNAL_VERSION;
-        journal->state = DM4310_UPDATE_JOURNAL_IN_PROGRESS;
+        journal->magic = APP_UPDATE_JOURNAL_MAGIC;
+        journal->version = APP_UPDATE_JOURNAL_VERSION;
+        journal->state = APP_UPDATE_JOURNAL_IN_PROGRESS;
         journal->state_inverse =
-            (uint32_t)~(uint32_t)DM4310_UPDATE_JOURNAL_IN_PROGRESS;
+            (uint32_t)~(uint32_t)APP_UPDATE_JOURNAL_IN_PROGRESS;
     }
 }
 
