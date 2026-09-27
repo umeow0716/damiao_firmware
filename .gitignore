@@ -64,3 +64,6 @@ analysis/logs/
 .DS_Store
 Thumbs.db
 .Trash-*/
+
+# Docs
+docs/
