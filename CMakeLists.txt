@@ -1,0 +1,296 @@
+cmake_minimum_required(VERSION 3.20)
+
+project(dm4310_firmware LANGUAGES C ASM)
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+set(DDL_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/third_party/HC32F448_DDL_Rev1.3.0")
+set(DDL_CMSIS "${DDL_ROOT}/drivers/cmsis")
+set(DDL_DEVICE "${DDL_CMSIS}/Device/HDSC/hc32f4xx")
+set(DDL_LL "${DDL_ROOT}/drivers/hc32_ll_driver")
+
+if(NOT EXISTS "${DDL_DEVICE}/Include/hc32f448.h")
+    message(FATAL_ERROR "HC32F448 DDL not found at ${DDL_ROOT}")
+endif()
+
+set(DM4310_CPU_FLAGS
+    -mcpu=cortex-m4
+    -mthumb
+    -mfpu=fpv4-sp-d16
+    -mfloat-abi=hard
+)
+
+set(DM4310_COMPILE_FLAGS
+    ${DM4310_CPU_FLAGS}
+    -ffunction-sections
+    -fdata-sections
+    -fno-common
+    -fno-strict-aliasing
+    # The official ARM/Keil image uses the legacy non-fused VMLA sequence.
+    # GCC otherwise emits VFMA and diverges after sustained control ticks.
+    -ffp-contract=off
+    -Wall
+    -Wextra
+    -Wshadow
+    -Wdouble-promotion
+    -Wformat=2
+    -Wformat-overflow=2
+    -Wformat-truncation=2
+    -Warray-bounds=2
+    -Warray-parameter=2
+    -Wstringop-overflow=4
+    -Wstringop-truncation
+    -Wnull-dereference
+    -Wconversion
+    -Wsign-conversion
+    -Wfloat-conversion
+    -Wenum-conversion
+    -Wswitch-enum
+    -Wshift-overflow=2
+    -Wshift-negative-value
+    -Wcast-align=strict
+    -Wcast-qual
+    -Wcast-function-type
+    -Wpointer-arith
+    -Wwrite-strings
+    -Wmissing-prototypes
+    -Wmissing-declarations
+    -Wstrict-prototypes
+    -Wold-style-definition
+    -Wredundant-decls
+    -Wjump-misses-init
+    -Wlogical-op
+    -Wlogical-not-parentheses
+    -Wduplicated-cond
+    -Wduplicated-branches
+    -Wundef
+    -Wvla
+    -Walloca
+    -Walloc-zero
+    -Walloc-size
+    -Wtrampolines
+    -Wstrict-overflow=2
+    -Wunsafe-loop-optimizations
+    -Wvolatile-register-var
+    -Wzero-length-bounds
+    -Wstack-usage=1024
+    -Wframe-larger-than=1024
+    # A warning in firmware code is a build failure.  This keeps the normal
+    # development artifact under the same warning policy as the static audit.
+    -Werror
+)
+
+set(DM4310_APP_PLATFORM_SOURCE
+    "${CMAKE_CURRENT_SOURCE_DIR}/app/src/platform.c"
+    CACHE FILEPATH "App board-port implementation")
+set(DM4310_BOOT_PLATFORM_SOURCE
+    "${CMAKE_CURRENT_SOURCE_DIR}/bootloader/src/platform.c"
+    CACHE FILEPATH "Bootloader board-port implementation")
+set(DM4310_LED_SOURCE
+    "${CMAKE_CURRENT_SOURCE_DIR}/board/src/board_led_hc32f448.c"
+    CACHE FILEPATH "Board status-LED implementation")
+set(DM4310_MCAN_SOURCE
+    "${CMAKE_CURRENT_SOURCE_DIR}/board/src/board_mcan_hc32f448.c"
+    CACHE FILEPATH "Board MCAN implementation")
+set(DM4310_UART_SOURCE
+    "${CMAKE_CURRENT_SOURCE_DIR}/board/src/board_uart_hc32f448.c"
+    CACHE FILEPATH "Board debug-UART implementation")
+set(DM4310_POSITION_SOURCE
+    "${CMAKE_CURRENT_SOURCE_DIR}/board/src/board_position_hc32f448.c"
+    CACHE FILEPATH "Board SPI/DMA position-sensor implementation")
+set(DM4310_ADC_SOURCE
+    "${CMAKE_CURRENT_SOURCE_DIR}/board/src/board_adc_hc32f448.c"
+    CACHE FILEPATH "Board synchronous-ADC implementation")
+set(DM4310_SAMPLING_TIMER_SOURCE
+    "${CMAKE_CURRENT_SOURCE_DIR}/board/src/board_sampling_timer_hc32f448.c"
+    CACHE FILEPATH "Board TMR4 sampling time-base implementation")
+set(DM4310_CLOCK_SOURCE
+    "${CMAKE_CURRENT_SOURCE_DIR}/board/src/board_clock_hc32f448.c"
+    CACHE FILEPATH "Board system-clock implementation")
+if(NOT EXISTS "${DM4310_APP_PLATFORM_SOURCE}")
+    message(FATAL_ERROR "DM4310_APP_PLATFORM_SOURCE does not exist")
+endif()
+if(NOT EXISTS "${DM4310_BOOT_PLATFORM_SOURCE}")
+    message(FATAL_ERROR "DM4310_BOOT_PLATFORM_SOURCE does not exist")
+endif()
+if(NOT EXISTS "${DM4310_LED_SOURCE}")
+    message(FATAL_ERROR "DM4310_LED_SOURCE does not exist")
+endif()
+if(NOT EXISTS "${DM4310_MCAN_SOURCE}")
+    message(FATAL_ERROR "DM4310_MCAN_SOURCE does not exist")
+endif()
+if(NOT EXISTS "${DM4310_UART_SOURCE}")
+    message(FATAL_ERROR "DM4310_UART_SOURCE does not exist")
+endif()
+if(NOT EXISTS "${DM4310_POSITION_SOURCE}")
+    message(FATAL_ERROR "DM4310_POSITION_SOURCE does not exist")
+endif()
+if(NOT EXISTS "${DM4310_ADC_SOURCE}")
+    message(FATAL_ERROR "DM4310_ADC_SOURCE does not exist")
+endif()
+if(NOT EXISTS "${DM4310_SAMPLING_TIMER_SOURCE}")
+    message(FATAL_ERROR "DM4310_SAMPLING_TIMER_SOURCE does not exist")
+endif()
+if(NOT EXISTS "${DM4310_CLOCK_SOURCE}")
+    message(FATAL_ERROR "DM4310_CLOCK_SOURCE does not exist")
+endif()
+
+add_library(dm4310_common STATIC
+    common/src/motor_math.c
+    common/generated/motor_sine_table.c
+    common/src/crc32.c
+    common/src/crc8_maxim.c
+    common/src/aes256_ctr.c
+    common/src/boot_record.c
+)
+target_include_directories(dm4310_common
+    PUBLIC common/include
+    PRIVATE common/generated
+)
+target_compile_options(dm4310_common PRIVATE ${DM4310_COMPILE_FLAGS})
+
+function(dm4310_firmware TARGET_NAME LINKER_SCRIPT VECTOR_OFFSET)
+    if(TARGET_NAME STREQUAL "dm4310_app")
+        set(DM4310_FIRMWARE_KIND app)
+    elseif(TARGET_NAME STREQUAL "dm4310_bootloader")
+        set(DM4310_FIRMWARE_KIND bootloader)
+    else()
+        message(FATAL_ERROR "Unknown source firmware target ${TARGET_NAME}")
+    endif()
+    set(DM4310_APP_VERIFY_ARGS)
+    if(DM4310_FIRMWARE_KIND STREQUAL "app")
+        list(APPEND DM4310_APP_VERIFY_ARGS
+            --require-commissioning-code)
+    endif()
+    target_include_directories(${TARGET_NAME} PRIVATE
+        common/include
+        app/include
+        app/generated
+        bootloader/include
+        board/include
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${DDL_CMSIS}/Include
+        ${DDL_DEVICE}/Include
+        ${DDL_LL}/inc
+    )
+    target_compile_definitions(${TARGET_NAME} PRIVATE
+        HC32F448
+        VECT_TAB_OFFSET=${VECTOR_OFFSET}
+    )
+    target_compile_options(${TARGET_NAME} PRIVATE ${DM4310_COMPILE_FLAGS})
+    target_link_options(${TARGET_NAME} PRIVATE
+        ${DM4310_CPU_FLAGS}
+        -nostartfiles
+        --specs=nano.specs
+        --specs=nosys.specs
+        -Wl,--gc-sections
+        -Wl,-z,noexecstack
+        -Wl,--no-warn-rwx-segments
+        -Wl,--cref
+        -Wl,-Map=${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.map
+        -T${LINKER_SCRIPT}
+    )
+    target_link_libraries(${TARGET_NAME} PRIVATE dm4310_common m)
+    target_sources(${TARGET_NAME} PRIVATE
+        common/src/syscalls.c
+        board/src/board_delay_hc32f448.c
+        board/src/board_clock_config.c
+        board/src/board_flash_hc32f448.c
+        ${DM4310_CLOCK_SOURCE}
+        ${DM4310_LED_SOURCE}
+    )
+    set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".elf")
+
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+        COMMAND ${CMAKE_OBJCOPY} -O binary
+            $<TARGET_FILE:${TARGET_NAME}>
+            ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.bin
+        COMMAND ${CMAKE_OBJCOPY} -O ihex
+            $<TARGET_FILE:${TARGET_NAME}>
+            ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.hex
+        COMMAND ${CMAKE_SIZE} $<TARGET_FILE:${TARGET_NAME}>
+        VERBATIM
+    )
+endfunction()
+
+add_executable(dm4310_app
+    startup/startup_hc32f448.S
+    ${DDL_DEVICE}/Source/system_hc32f448.c
+    app/src/main.c
+    app/src/app_config.c
+    app/src/calibration_store.c
+    app/src/calibration_upload.c
+    app/src/commissioning.c
+    app/src/commissioning_math.c
+    app/src/app_commands.c
+    app/src/app_state.c
+    app/src/motor_control.c
+    app/src/output_sensor.c
+    app/src/position_sensor.c
+    app/src/sensor_calibration.c
+    app/src/safety.c
+    app/src/can_protocol.c
+    app/src/parameter_protocol.c
+    app/src/debug_console.c
+    app/src/firmware_control.c
+    app/src/interrupts.c
+    bootloader/src/device_auth.c
+    ${DM4310_APP_PLATFORM_SOURCE}
+    board/src/board_mcan_config.c
+    board/src/board_uart_config.c
+    board/src/board_position_config.c
+    board/src/board_adc_config.c
+    board/src/board_sampling_timer_config.c
+    board/src/board_power_stage_config.c
+    board/src/board_power_stage_hc32f448.c
+    board/src/board_crc_hc32f448.c
+    board/src/board_identity_config.c
+    board/src/board_identity_hc32f448.c
+    ${DM4310_ADC_SOURCE}
+    ${DM4310_SAMPLING_TIMER_SOURCE}
+    ${DM4310_MCAN_SOURCE}
+    ${DM4310_POSITION_SOURCE}
+    ${DM4310_UART_SOURCE}
+    ${DDL_LL}/src/hc32_ll_mcan.c
+    app/generated/temperature_table.c
+)
+dm4310_firmware(dm4310_app
+    "${CMAKE_CURRENT_SOURCE_DIR}/linker/hc32f448_app.ld"
+    0x00000000UL)
+add_custom_target(factory_text_audit
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1
+        python3 ${CMAKE_CURRENT_SOURCE_DIR}/tools/verify_app_strings.py
+        ${CMAKE_CURRENT_BINARY_DIR}/dm4310_app.bin
+    DEPENDS dm4310_app
+    VERBATIM)
+target_compile_definitions(dm4310_app PRIVATE DM4310_SOURCE_APP=1)
+
+add_executable(dm4310_bootloader
+    startup/startup_hc32f448.S
+    ${DDL_DEVICE}/Source/system_hc32f448.c
+    ${DDL_LL}/src/hc32_ll_icg.c
+    ${DDL_LL}/src/hc32_ll_mcan.c
+    bootloader/src/main.c
+    bootloader/src/access_protocol.c
+    bootloader/src/service_protocol.c
+    bootloader/src/device_auth.c
+    bootloader/src/app_image.c
+    bootloader/src/app_image_validation.c
+    bootloader/src/update_protocol.c
+    bootloader/src/flash_writer.c
+    ${DM4310_BOOT_PLATFORM_SOURCE}
+    board/src/board_mcan_config.c
+    board/src/board_uart_config.c
+    ${DM4310_MCAN_SOURCE}
+    ${DM4310_UART_SOURCE}
+)
+dm4310_firmware(dm4310_bootloader
+    "${CMAKE_CURRENT_SOURCE_DIR}/linker/hc32f448_boot.ld"
+    0x00000000UL)
+target_compile_definitions(dm4310_bootloader PRIVATE
+    DM4310_SOURCE_BOOTLOADER=1
+    DM4310_ENFORCE_DEVICE_BINDING=1
+    USE_DDL_DRIVER
+)

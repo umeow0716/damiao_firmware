@@ -1,0 +1,40 @@
+; ****************************************************************
+; Scatter-Loading Description File
+; ****************************************************************
+LR_IROM1 0x00000000 0x00040000  {    ; load region size_region
+    ER_IROM1 0x00000000 0x0003FFFC  {  ; load address = execution address
+        *.o (RESET, +First)
+        *(InRoot$$Sections)
+        .ANY (+RO)
+        .ANY (+XO)
+    }
+
+    ER_IROM_CHECKSUM 0x0003FFFC 0x00000004 {     ; load address = execution address
+      test_impl_flash.o (.checksum, +Last)
+    }
+
+    MARCH_RAM 0x1FFF8000 0x00000100 {
+      test_impl_ram.o (.march_ram)         ; Run-time RAM test variables
+      test_impl_ram.o (.march_ram_buf)     ; Run-time RAM test buffer
+      test_impl_ram.o (.march_ram_para)    ; Run-time RAM test para
+      test_impl_ram.o (.march_ram_pointer) ; Run-time RAM test pointer
+    }
+
+    RW_IRAM1 0x1FFF8100 UNINIT 0x00000010 {      ; RW data
+      *(.bss.noinit)
+    }
+
+    RW_IRAM2 0x1FFF8110 0x000075F0 {             ; RW data
+      .ANY (+RW +ZI)
+        .ANY (RAMCODE)
+    }
+
+    STACK_NO_HEAP 0x1FFFF700 UNINIT 0x00001010 { ; Stack and magic pattern for stack overflow detection
+      test_impl_ram.o (.stack_boundary)
+      startup_hc32f448.o (STACK, +Last)
+    }
+
+    RW_IRAMB 0x200F0000 0x00001000  {  ; RW data
+        .ANY (+RW +ZI)
+    }
+}

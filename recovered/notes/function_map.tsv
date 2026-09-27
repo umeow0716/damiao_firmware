@@ -1,0 +1,61 @@
+image	address	name	confidence	evidence
+app	0x000252f4	main	high	Initialization order and infinite event loop
+app	0x00022244	debug_uart_receive_irq	high	UART flags and ESC/m/s/X/U commands
+app	0x1fff8136	adc_foc_control_irq	high	ADC result registers, Park/current loops, PWM write
+app	0x1fff8744	position_sensor_timer_irq	high	TMR4_1 status at +0x58 and SPI3 data clear
+app	0x1fff8770	position_sensor_dma_irq	high	DMA2 flags, 14-bit sample and LUT interpolation
+app	0x1fff88b8	mcan1_receive_irq	high	MCAN1 message RAM and motor command parser
+app	0x1fff8000	motor_fault_monitor	high	Debounced fault codes 8 through 13
+app	0x000256c8	power_stage_self_test_or_halt	high	MOSFET ERROR text and six-switch bitmap
+app	0x00022ca8	power_stage_switch_response_test	high	Directly sequences all six bridge switches and returns the six-bit ADC response mask
+app	0x000257c4	run_motor_parameter_identification	medium	Long energized measurement sequence
+app	0x000246f8	calibrate_position_sensor	medium	Angle scan, extrema and u/v/w/c report
+app	0x00021cc8	mcan1_configure_classic	high	MCAN1 base, PB6/PB7 mux and nominal bit timing
+app	0x00021eb0	crc_clock_enable	high	Clears active-low PWC FCG0.CRC gate bit 23
+app	0x00021c1c	aes256_ctr_xor	high	Encrypts the incrementing 16-byte counter and XORs an arbitrary-length buffer
+app	0x00021c98	aes_add_round_key	high	XORs one 16-byte AES round key into the state
+app	0x00021e88	crc32_mpeg2_table	high	MSB-first table update from initial 0xffffffff used by commissioning telemetry
+app	0x00021ed0	aes256_encrypt_with_schedule	high	Fourteen AES rounds using the expanded key
+app	0x00021f20	short_busy_wait	high	Minimal countdown delay used around MCAN configuration transitions
+app	0x00022570	aes256_expand_key	high	Expands a 32-byte key into fifteen 16-byte AES round keys
+app	0x00022f40	aes_mix_columns	high	AES column mixing using the GF(2^8) xtime helper
+app	0x000230c4	position_sensor_dma_configure	high	Configures the SPI3 receive DMA channel, event routing and IRQ
+app	0x00023170	position_sensor_spi_gpio_configure	high	Configures the SPI3 pins and peripheral mode used by the rotor encoder
+app	0x000231ec	position_sensor_spi_transfer16	high	Blocking 16-bit SPI3 command/response primitive used during setup
+app	0x00023460	aes_shift_rows	high	AES state-row permutation
+app	0x00023494	aes_sub_bytes	high	AES S-box substitution over the 16-byte state
+app	0x000234bc	system_clock_source_configure	high	Applies the selected clock source after startup register initialization
+app	0x00023574	debug_uart_gpio_configure	high	Configures PA11/PA12 pin routing before USART1 setup
+app	0x00021fc4	mcan1_configure_fd	high	MCAN1 base and FD/data bit timing
+app	0x0002359c	debug_usart1_dma_init	high	USART1 base, PA11/PA12 mux and baud calculation
+app	0x000264a4	detect_motor_direction_and_pole_pairs	medium	Rotating vector and motion-direction test
+app	0x1fff9e44	identification_filter_step	medium	RAM helper used by the energized motor-identification mechanical stage
+app	0x1fff987c	output_sensor_lookup_and_unwrap	high	Analogue output-sensor atan2 transform, 4096-entry correction lookup and continuous-angle unwrap
+app	0x1fff9a38	flash_erase_sector	high	RAM-resident EFM sector erase primitive
+app	0x1fff9acc	mcan_write_classic_tx_element	high	Writes an eight-byte classic-CAN transmit element into message RAM
+app	0x1fff9b0e	mcan_write_fd_tx_element	medium	Writes a variable-length CAN-FD element without bit-rate switching; no direct call was exported
+app	0x1fff9ba0	mcan_write_fd_brs_tx_element	high	Writes a variable-length CAN-FD element with bit-rate switching
+app	0x1fff9ea6	configure_runtime_control_parameters_variant	medium	Unreferenced relocated helper that derives current and mechanical-observer gains from bus voltage and motor parameters
+app	0x1fffa160	identification_rls2_step	high	Two-parameter recursive least-squares update used to derive phase R/L
+app	0x1fffa234	identification_flux_observer_step	medium	Coupled electrical observer used by motor identification
+app	0x1fffa30c	fast_sincos_lut	high	2048-entry interpolated sine/cosine table
+app	0x1fffa38a	clampf	high	Three-argument min/max clamp
+app	0x1fffa3aa	wrap_periodic_value	high	Wrap into caller-supplied interval
+app	0x1fffa414	limit_vector_magnitude	high	Euclidean magnitude and scale
+app	0x1fffa46a	float_to_uint_packed	high	Range to N-bit integer conversion
+app	0x1fffa492	uint_to_float_packed	high	N-bit integer to range conversion
+app	0x00026eb8	enforce_device_key_binding_or_halt	high	AES-derived UID token must match one of three OTP slots before calibration or motor setup proceeds
+bootloader	0x0000684c	main	high	Boot decision, timeout, validation and app jump
+bootloader	0x00005bec	debug_uart_error_irq	high	Address-taken USART1 error callback clears parity, framing and overrun status
+bootloader	0x00005c30	debug_uart_receive_irq	high	Address-taken USART1 receive callback assembles frames and dispatches update or debug commands
+bootloader	0x000064a8	debug_putchar	high	Address-taken formatted-output callback waits for USART1 transmit-empty and writes the byte
+bootloader	0x000067f4	jump_to_application	high	Loads MSP and reset vector from 0x20000
+bootloader	0x00006608	firmware_update_frame_handler	high	CAN update markers, length and key commands
+bootloader	0x00006ce0	authenticate_device_and_print_serial	high	AES result matched against three keys
+bootloader	0x00006bbc	aes_update_chunk_transform	medium	Maintains the AES context and transforms an update payload chunk
+bootloader	0x00006bfc	debug_error_callback	high	Prints the fixed ERROR line and clears its callback flag
+bootloader	0x00006c18	debug_status_callback	medium	Prints a fixed status string and clears its callback flag
+bootloader	0x00006c54	reverse_serial_hex_group	high	Reverses four hexadecimal byte pairs before printing a serial-number group
+bootloader	0x000071d0	aes_gf256_xtime	high	AES GF(2^8) multiply-by-x primitive
+bootloader	0x1fff8000	flash_erase_and_program	high	EFM erase/program loop from RAM
+bootloader	0x1fff809c	flash_program_and_verify	high	EFM program followed by word comparison

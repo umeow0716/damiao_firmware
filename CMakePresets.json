@@ -1,0 +1,44 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "dev",
+      "displayName": "DM4310 development (Debug)",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/dev",
+      "toolchainFile": "${sourceDir}/cmake/arm-none-eabi-toolchain.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "optimized",
+      "displayName": "DM4310 optimized source build",
+      "inherits": "dev",
+      "binaryDir": "${sourceDir}/build/optimized",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "dev",
+      "configurePreset": "dev",
+      "targets": ["dm4310_app", "dm4310_bootloader"],
+      "jobs": 0
+    },
+    {
+      "name": "optimized",
+      "configurePreset": "optimized",
+      "targets": ["dm4310_app", "dm4310_bootloader"],
+      "jobs": 0
+    }
+  ]
+}

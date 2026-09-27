@@ -1,0 +1,66 @@
+# Build outputs
+/build/
+/build-*/
+/dist/
+/tmp/
+/CMakeFiles/
+/cmake-build-*/
+/*.elf
+/*.map
+/*.hex
+/*.lst
+/*.o
+/*.obj
+/*.d
+/*.a
+/*.so
+/*.dll
+/*.exe
+
+# Generated firmware images
+*.bin
+*.enc
+*.update
+*.uf2
+*.img
+
+# Keep source/reference metadata if needed, but never commit dumped official binaries
+bins/
+reference/
+exact/
+
+# Large external tools
+/tools/arm-gnu-toolchain/
+/tools/downloads/
+/tools/ghidra/
+/tools/Ghidra/
+/ghidra/
+/Ghidra/
+ARMCompiler_*/
+arm-gnu-toolchain-*/
+ghidra_*/
+
+# Python / local env
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE/editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+analysis/logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+.Trash-*/

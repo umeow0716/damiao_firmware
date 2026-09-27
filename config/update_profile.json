@@ -1,0 +1,23 @@
+{
+  "format": "dm4310-can-update-v1",
+  "profile_name": "dm4310-source-loader-v1",
+  "provenance_bootloader_sha256": "4bee47463774574683d1b5a96ba63b1f231cedcdc422d589acb230c0835fa463",
+  "app_base": "0x00020000",
+  "app_end": "0x00030000",
+  "update_can_id": "0x7ff",
+  "status_can_id": "0x7fe",
+  "can_transport": {
+    "rate_selector": 9,
+    "nominal_bit_rate": 1000000,
+    "data_bit_rate": 5000000,
+    "can_fd": true,
+    "bit_rate_switch": true
+  },
+  "chunk_size": 8192,
+  "cipher": "AES-256-CTR",
+  "counter_increment": "128-bit big-endian",
+  "key_hex": "6211662f521873896d2a62117231774073ca73ca5979662f621176845973795e",
+  "initial_counter_hex": "00112233445566778899aabbccddeeff",
+  "crc": "CRC-8/MAXIM over ciphertext chunk",
+  "sequence_order": "descending-to-zero"
+}
