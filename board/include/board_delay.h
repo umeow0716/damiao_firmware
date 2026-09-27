@@ -1,5 +1,5 @@
-#ifndef DM4310_BOARD_DELAY_H
-#define DM4310_BOARD_DELAY_H
+#ifndef DAMIAO_BOARD_DELAY_H
+#define DAMIAO_BOARD_DELAY_H
 
 #include <stdint.h>
 

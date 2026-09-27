@@ -1,5 +1,5 @@
-#ifndef DM4310_MOTOR_MATH_H
-#define DM4310_MOTOR_MATH_H
+#ifndef DAMIAO_MOTOR_MATH_H
+#define DAMIAO_MOTOR_MATH_H
 
 #include <stdint.h>
 

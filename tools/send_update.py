@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Send a packaged DM4310 update through Linux SocketCAN.
+"""Send a packaged Damiao update through Linux SocketCAN.
 
 This sender paces individual CAN/CAN-FD frames and waits for the original
 bootloader's 0x7fe acknowledgement after each encrypted chunk.  Supplying

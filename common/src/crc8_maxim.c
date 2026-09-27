@@ -1,6 +1,6 @@
 #include "crc8_maxim.h"
 
-uint8_t dm4310_crc8_maxim(const void *data, size_t length)
+uint8_t damiao_crc8_maxim(const void *data, size_t length)
 {
     const uint8_t *bytes = (const uint8_t *)data;
     uint8_t crc = 0U;

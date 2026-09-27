@@ -1,5 +1,5 @@
-#ifndef DM4310_AES256_CTR_H
-#define DM4310_AES256_CTR_H
+#ifndef DAMIAO_AES256_CTR_H
+#define DAMIAO_AES256_CTR_H
 
 #include <stddef.h>
 #include <stdint.h>

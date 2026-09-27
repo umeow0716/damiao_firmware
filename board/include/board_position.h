@@ -1,5 +1,5 @@
-#ifndef DM4310_BOARD_POSITION_H
-#define DM4310_BOARD_POSITION_H
+#ifndef DAMIAO_BOARD_POSITION_H
+#define DAMIAO_BOARD_POSITION_H
 
 #include <stdbool.h>
 #include <stdint.h>

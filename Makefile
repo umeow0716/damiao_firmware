@@ -9,7 +9,7 @@ TOOLCHAIN := cmake/arm-none-eabi-toolchain.cmake
 CAN_IF ?= can0
 .DEFAULT_GOAL := firmwares
 
-SOURCE_APP_BIN := $(BUILD_DIR)/dm4310_app.bin
+SOURCE_APP_BIN := $(BUILD_DIR)/damiao_app.bin
 PACK_ROOT := $(BUILD_DIR)/package
 
 .PHONY: help all configure build firmwares dm4310 dm8009 verify-firmware-outputs clean send provision-calibration
@@ -41,7 +41,7 @@ configure:
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo
 
 build: configure
-	$(CMAKE) --build $(BUILD_DIR) --target dm4310_app -j
+	$(CMAKE) --build $(BUILD_DIR) --target damiao_app -j
 
 $(DIST_DEV):
 	mkdir -p $(DIST_DEV)

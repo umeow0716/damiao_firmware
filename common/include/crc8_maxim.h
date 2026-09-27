@@ -1,9 +1,9 @@
-#ifndef DM4310_CRC8_MAXIM_H
-#define DM4310_CRC8_MAXIM_H
+#ifndef DAMIAO_CRC8_MAXIM_H
+#define DAMIAO_CRC8_MAXIM_H
 
 #include <stddef.h>
 #include <stdint.h>
 
-uint8_t dm4310_crc8_maxim(const void *data, size_t length);
+uint8_t damiao_crc8_maxim(const void *data, size_t length);
 
 #endif

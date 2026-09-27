@@ -31,13 +31,13 @@
     {
       "name": "dev",
       "configurePreset": "dev",
-      "targets": ["dm4310_app"],
+      "targets": ["damiao_app"],
       "jobs": 0
     },
     {
       "name": "optimized",
       "configurePreset": "optimized",
-      "targets": ["dm4310_app"],
+      "targets": ["damiao_app"],
       "jobs": 0
     }
   ]

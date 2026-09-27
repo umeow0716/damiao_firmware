@@ -1,5 +1,5 @@
-#ifndef DM4310_BOARD_LED_H
-#define DM4310_BOARD_LED_H
+#ifndef DAMIAO_BOARD_LED_H
+#define DAMIAO_BOARD_LED_H
 
 typedef enum {
     BOARD_LED_OFF = 0,

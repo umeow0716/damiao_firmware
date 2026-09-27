@@ -1,5 +1,5 @@
-#ifndef DM4310_BOARD_UART_H
-#define DM4310_BOARD_UART_H
+#ifndef DAMIAO_BOARD_UART_H
+#define DAMIAO_BOARD_UART_H
 
 #include <stdbool.h>
 #include <stddef.h>

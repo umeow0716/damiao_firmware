@@ -1,5 +1,5 @@
-#ifndef DM4310_MOTOR_TYPES_H
-#define DM4310_MOTOR_TYPES_H
+#ifndef DAMIAO_MOTOR_TYPES_H
+#define DAMIAO_MOTOR_TYPES_H
 
 #include <stdbool.h>
 #include <stdint.h>

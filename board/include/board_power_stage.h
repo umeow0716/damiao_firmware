@@ -1,5 +1,5 @@
-#ifndef DM4310_BOARD_POWER_STAGE_H
-#define DM4310_BOARD_POWER_STAGE_H
+#ifndef DAMIAO_BOARD_POWER_STAGE_H
+#define DAMIAO_BOARD_POWER_STAGE_H
 
 #include <stdbool.h>
 #include <stddef.h>

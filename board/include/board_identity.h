@@ -1,5 +1,5 @@
-#ifndef DM4310_BOARD_IDENTITY_H
-#define DM4310_BOARD_IDENTITY_H
+#ifndef DAMIAO_BOARD_IDENTITY_H
+#define DAMIAO_BOARD_IDENTITY_H
 
 #include <stdint.h>
 

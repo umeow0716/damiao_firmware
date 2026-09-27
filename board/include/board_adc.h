@@ -1,5 +1,5 @@
-#ifndef DM4310_BOARD_ADC_H
-#define DM4310_BOARD_ADC_H
+#ifndef DAMIAO_BOARD_ADC_H
+#define DAMIAO_BOARD_ADC_H
 
 #include <stdbool.h>
 #include <stdint.h>

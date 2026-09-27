@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Capture and classify DM4310 boot/APP output over 921600-8N1 UART.
+"""Capture and classify Damiao boot/APP output over 921600-8N1 UART.
 
 Start this tool before manually resetting or power-cycling the controller.  It
 does not reset, erase, flash, or otherwise modify the device.  ``--escape-after``

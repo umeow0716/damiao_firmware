@@ -1,5 +1,5 @@
-#ifndef DM4310_CRC32_H
-#define DM4310_CRC32_H
+#ifndef DAMIAO_CRC32_H
+#define DAMIAO_CRC32_H
 
 #include <stddef.h>
 #include <stdint.h>

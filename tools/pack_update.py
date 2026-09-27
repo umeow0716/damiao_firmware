@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build DM4310 bootloader update artifacts from a plaintext app image.
+"""Build Damiao bootloader update artifacts from a plaintext app image.
 
 The original loader receives descending 8 KiB chunks.  It validates a
 CRC-8/MAXIM over each ciphertext chunk, decrypts the stream with AES-256-CTR,
@@ -167,7 +167,7 @@ def extract_bootloader_material(bootloader: bytes) -> tuple[bytes, bytes]:
 def load_update_profile(profile_path: Path) -> tuple[bytes, bytes, dict[str, object]]:
     """Load the source-owned update contract used by both build and loader."""
     profile = json.loads(profile_path.read_text(encoding="utf-8"))
-    if profile.get("format") != "dm4310-can-update-v1":
+    if profile.get("format") != "damiao-can-update-v1":
         raise ValueError("unsupported update profile format")
     if int(str(profile.get("app_base")), 0) != APP_BASE:
         raise ValueError("update profile app_base does not match the linker contract")
@@ -300,7 +300,7 @@ def write_package(app_path: Path, output_dir: Path, purpose: str = "development"
     can_output.write_text("".join(cansend_line(frame) for frame in frames),
                           encoding="utf-8")
     manifest = {
-        "format": "dm4310-can-update-v1",
+        "format": "damiao-can-update-v1",
         "artifact_purpose": purpose,
         "source": str(app_path),
         "app_base": f"0x{APP_BASE:08x}",

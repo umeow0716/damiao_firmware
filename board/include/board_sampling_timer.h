@@ -1,5 +1,5 @@
-#ifndef DM4310_BOARD_SAMPLING_TIMER_H
-#define DM4310_BOARD_SAMPLING_TIMER_H
+#ifndef DAMIAO_BOARD_SAMPLING_TIMER_H
+#define DAMIAO_BOARD_SAMPLING_TIMER_H
 
 #include <stdbool.h>
 #include <stdint.h>

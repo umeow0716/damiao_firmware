@@ -1,6 +1,6 @@
 {
-  "format": "dm4310-can-update-v1",
-  "profile_name": "dm4310-source-loader-v1",
+  "format": "damiao-can-update-v1",
+  "profile_name": "damiao-source-loader-v1",
   "provenance_bootloader_sha256": "4bee47463774574683d1b5a96ba63b1f231cedcdc422d589acb230c0835fa463",
   "app_base": "0x00020000",
   "app_end": "0x00030000",

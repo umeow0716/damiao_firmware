@@ -131,7 +131,7 @@ if(NOT EXISTS "${BOARD_CLOCK_SOURCE}")
     message(FATAL_ERROR "BOARD_CLOCK_SOURCE does not exist")
 endif()
 
-add_library(dm4310_common STATIC
+add_library(damiao_common STATIC
     common/src/motor_math.c
     common/generated/motor_sine_table.c
     common/src/crc32.c
@@ -139,15 +139,15 @@ add_library(dm4310_common STATIC
     common/src/aes256_ctr.c
     common/src/boot_record.c
 )
-target_include_directories(dm4310_common
+target_include_directories(damiao_common
     PUBLIC common/include
     PRIVATE common/generated
 )
-target_compile_options(dm4310_common PRIVATE ${FIRMWARE_COMPILE_FLAGS})
+target_compile_options(damiao_common PRIVATE ${FIRMWARE_COMPILE_FLAGS})
 
-function(dm4310_firmware TARGET_NAME LINKER_SCRIPT VECTOR_OFFSET)
-    if(NOT TARGET_NAME STREQUAL "dm4310_app")
-        message(FATAL_ERROR "Only dm4310_app is supported in this app-only workspace")
+function(damiao_firmware TARGET_NAME LINKER_SCRIPT VECTOR_OFFSET)
+    if(NOT TARGET_NAME STREQUAL "damiao_app")
+        message(FATAL_ERROR "Only damiao_app is supported in this app-only workspace")
     endif()
     target_include_directories(${TARGET_NAME} PRIVATE
         common/include
@@ -176,7 +176,7 @@ function(dm4310_firmware TARGET_NAME LINKER_SCRIPT VECTOR_OFFSET)
         -Wl,-Map=${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.map
         -T${LINKER_SCRIPT}
     )
-    target_link_libraries(${TARGET_NAME} PRIVATE dm4310_common m)
+    target_link_libraries(${TARGET_NAME} PRIVATE damiao_common m)
     target_sources(${TARGET_NAME} PRIVATE
         common/src/syscalls.c
         board/src/board_delay_hc32f448.c
@@ -199,7 +199,7 @@ function(dm4310_firmware TARGET_NAME LINKER_SCRIPT VECTOR_OFFSET)
     )
 endfunction()
 
-add_executable(dm4310_app
+add_executable(damiao_app
     startup/startup_hc32f448.S
     ${DDL_DEVICE}/Source/system_hc32f448.c
     app/src/main.c
@@ -240,7 +240,7 @@ add_executable(dm4310_app
     ${DDL_LL}/src/hc32_ll_mcan.c
     app/generated/temperature_table.c
 )
-dm4310_firmware(dm4310_app
+damiao_firmware(damiao_app
     "${CMAKE_CURRENT_SOURCE_DIR}/linker/hc32f448_app.ld"
     0x00000000UL)
 

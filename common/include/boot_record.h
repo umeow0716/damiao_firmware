@@ -1,5 +1,5 @@
-#ifndef DM4310_BOOT_RECORD_H
-#define DM4310_BOOT_RECORD_H
+#ifndef DAMIAO_BOOT_RECORD_H
+#define DAMIAO_BOOT_RECORD_H
 
 #include <stdbool.h>
 #include <stdint.h>

@@ -129,8 +129,8 @@ def main() -> None:
     args.fixture_header.parent.mkdir(parents=True, exist_ok=True)
     args.fixture_header.write_text(
         """/* Generated test fixture; do not hand-edit. */
-#ifndef DM4310_CAPTURED_CALIBRATION_H
-#define DM4310_CAPTURED_CALIBRATION_H
+#ifndef DAMIAO_CAPTURED_CALIBRATION_H
+#define DAMIAO_CAPTURED_CALIBRATION_H
 
 #include <stdint.h>
 
@@ -164,8 +164,8 @@ extern const float captured_output_sensor_calibration[4];
     args.sine_header.parent.mkdir(parents=True, exist_ok=True)
     args.sine_header.write_text(
         """/* Generated lookup table; do not hand-edit. */
-#ifndef DM4310_MOTOR_SINE_TABLE_H
-#define DM4310_MOTOR_SINE_TABLE_H
+#ifndef DAMIAO_MOTOR_SINE_TABLE_H
+#define DAMIAO_MOTOR_SINE_TABLE_H
 
 extern const float motor_sine_quarter_table[513];
 
@@ -185,8 +185,8 @@ extern const float motor_sine_quarter_table[513];
     args.temperature_header.parent.mkdir(parents=True, exist_ok=True)
     args.temperature_header.write_text(
         """/* Generated lookup table; do not hand-edit. */
-#ifndef DM4310_TEMPERATURE_TABLE_H
-#define DM4310_TEMPERATURE_TABLE_H
+#ifndef DAMIAO_TEMPERATURE_TABLE_H
+#define DAMIAO_TEMPERATURE_TABLE_H
 
 extern const float temperature_celsius_table[256];
 
