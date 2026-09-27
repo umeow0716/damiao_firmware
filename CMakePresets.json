@@ -8,7 +8,7 @@
   "configurePresets": [
     {
       "name": "dev",
-      "displayName": "DM4310 development (Debug)",
+      "displayName": "Damiao app development (Debug)",
       "generator": "Unix Makefiles",
       "binaryDir": "${sourceDir}/build/dev",
       "toolchainFile": "${sourceDir}/cmake/arm-none-eabi-toolchain.cmake",
@@ -19,7 +19,7 @@
     },
     {
       "name": "optimized",
-      "displayName": "DM4310 optimized source build",
+      "displayName": "Damiao app optimized source build",
       "inherits": "dev",
       "binaryDir": "${sourceDir}/build/optimized",
       "cacheVariables": {
@@ -31,13 +31,13 @@
     {
       "name": "dev",
       "configurePreset": "dev",
-      "targets": ["dm4310_app", "dm4310_bootloader"],
+      "targets": ["dm4310_app"],
       "jobs": 0
     },
     {
       "name": "optimized",
       "configurePreset": "optimized",
-      "targets": ["dm4310_app", "dm4310_bootloader"],
+      "targets": ["dm4310_app"],
       "jobs": 0
     }
   ]
