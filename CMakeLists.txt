@@ -84,52 +84,37 @@ set(FIRMWARE_COMPILE_FLAGS
 
 set(APP_PLATFORM_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/app/src/platform.c"
-    CACHE FILEPATH "App board-port implementation")
+    CACHE FILEPATH "Default app board-port implementation")
 set(BOARD_LED_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/board/src/board_led_hc32f448.c"
-    CACHE FILEPATH "Board status-LED implementation")
+    CACHE FILEPATH "Default board status-LED implementation")
 set(BOARD_MCAN_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/board/src/board_mcan_hc32f448.c"
-    CACHE FILEPATH "Board MCAN implementation")
+    CACHE FILEPATH "Default board MCAN implementation")
 set(BOARD_UART_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/board/src/board_uart_hc32f448.c"
-    CACHE FILEPATH "Board debug-UART implementation")
+    CACHE FILEPATH "Default board debug-UART implementation")
 set(BOARD_POSITION_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/board/src/board_position_hc32f448.c"
-    CACHE FILEPATH "Board SPI/DMA position-sensor implementation")
+    CACHE FILEPATH "Default board SPI/DMA position-sensor implementation")
 set(BOARD_ADC_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/board/src/board_adc_hc32f448.c"
-    CACHE FILEPATH "Board synchronous-ADC implementation")
+    CACHE FILEPATH "Default board synchronous-ADC implementation")
 set(BOARD_SAMPLING_TIMER_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/board/src/board_sampling_timer_hc32f448.c"
-    CACHE FILEPATH "Board TMR4 sampling time-base implementation")
+    CACHE FILEPATH "Default board TMR4 sampling time-base implementation")
 set(BOARD_CLOCK_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/board/src/board_clock_hc32f448.c"
-    CACHE FILEPATH "Board system-clock implementation")
-if(NOT EXISTS "${APP_PLATFORM_SOURCE}")
-    message(FATAL_ERROR "APP_PLATFORM_SOURCE does not exist")
-endif()
-if(NOT EXISTS "${BOARD_LED_SOURCE}")
-    message(FATAL_ERROR "BOARD_LED_SOURCE does not exist")
-endif()
-if(NOT EXISTS "${BOARD_MCAN_SOURCE}")
-    message(FATAL_ERROR "BOARD_MCAN_SOURCE does not exist")
-endif()
-if(NOT EXISTS "${BOARD_UART_SOURCE}")
-    message(FATAL_ERROR "BOARD_UART_SOURCE does not exist")
-endif()
-if(NOT EXISTS "${BOARD_POSITION_SOURCE}")
-    message(FATAL_ERROR "BOARD_POSITION_SOURCE does not exist")
-endif()
-if(NOT EXISTS "${BOARD_ADC_SOURCE}")
-    message(FATAL_ERROR "BOARD_ADC_SOURCE does not exist")
-endif()
-if(NOT EXISTS "${BOARD_SAMPLING_TIMER_SOURCE}")
-    message(FATAL_ERROR "BOARD_SAMPLING_TIMER_SOURCE does not exist")
-endif()
-if(NOT EXISTS "${BOARD_CLOCK_SOURCE}")
-    message(FATAL_ERROR "BOARD_CLOCK_SOURCE does not exist")
-endif()
+    CACHE FILEPATH "Default board system-clock implementation")
+
+function(damiao_require_existing_file VARIABLE_NAME)
+    if(NOT DEFINED ${VARIABLE_NAME})
+        message(FATAL_ERROR "${VARIABLE_NAME} is not defined")
+    endif()
+    if(NOT EXISTS "${${VARIABLE_NAME}}")
+        message(FATAL_ERROR "${VARIABLE_NAME} does not exist: ${${VARIABLE_NAME}}")
+    endif()
+endfunction()
 
 add_library(damiao_common STATIC
     common/src/motor_math.c
@@ -145,10 +130,61 @@ target_include_directories(damiao_common
 )
 target_compile_options(damiao_common PRIVATE ${FIRMWARE_COMPILE_FLAGS})
 
+set(DAMIAO_APP_SOURCES
+    startup/startup_hc32f448.S
+    ${DDL_DEVICE}/Source/system_hc32f448.c
+    app/src/main.c
+    app/src/app_config.c
+    app/src/calibration_store.c
+    app/src/calibration_upload.c
+    app/src/commissioning.c
+    app/src/commissioning_math.c
+    app/src/app_commands.c
+    app/src/app_state.c
+    app/src/motor_control.c
+    app/src/output_sensor.c
+    app/src/position_sensor.c
+    app/src/sensor_calibration.c
+    app/src/safety.c
+    app/src/can_protocol.c
+    app/src/parameter_protocol.c
+    app/src/debug_console.c
+    app/src/firmware_control.c
+    app/src/interrupts.c
+    app/src/device_auth.c
+    board/src/board_mcan_config.c
+    board/src/board_uart_config.c
+    board/src/board_position_config.c
+    board/src/board_adc_config.c
+    board/src/board_sampling_timer_config.c
+    board/src/board_power_stage_config.c
+    board/src/board_power_stage_hc32f448.c
+    board/src/board_crc_hc32f448.c
+    board/src/board_identity_config.c
+    board/src/board_identity_hc32f448.c
+    ${DDL_LL}/src/hc32_ll_mcan.c
+    app/generated/temperature_table.c
+)
+
 function(damiao_firmware TARGET_NAME LINKER_SCRIPT VECTOR_OFFSET)
-    if(NOT TARGET_NAME STREQUAL "damiao_app")
-        message(FATAL_ERROR "Only damiao_app is supported in this app-only workspace")
-    endif()
+    damiao_require_existing_file(APP_PLATFORM_SOURCE)
+    damiao_require_existing_file(BOARD_LED_SOURCE)
+    damiao_require_existing_file(BOARD_MCAN_SOURCE)
+    damiao_require_existing_file(BOARD_UART_SOURCE)
+    damiao_require_existing_file(BOARD_POSITION_SOURCE)
+    damiao_require_existing_file(BOARD_ADC_SOURCE)
+    damiao_require_existing_file(BOARD_SAMPLING_TIMER_SOURCE)
+    damiao_require_existing_file(BOARD_CLOCK_SOURCE)
+
+    add_executable(${TARGET_NAME}
+        ${DAMIAO_APP_SOURCES}
+        ${APP_PLATFORM_SOURCE}
+        ${BOARD_ADC_SOURCE}
+        ${BOARD_SAMPLING_TIMER_SOURCE}
+        ${BOARD_MCAN_SOURCE}
+        ${BOARD_POSITION_SOURCE}
+        ${BOARD_UART_SOURCE}
+    )
     target_include_directories(${TARGET_NAME} PRIVATE
         common/include
         app/include
@@ -163,6 +199,9 @@ function(damiao_firmware TARGET_NAME LINKER_SCRIPT VECTOR_OFFSET)
         HC32F448
         VECT_TAB_OFFSET=${VECTOR_OFFSET}
     )
+    foreach(definition IN LISTS DAMIAO_TARGET_COMPILE_DEFINITIONS)
+        target_compile_definitions(${TARGET_NAME} PRIVATE ${definition})
+    endforeach()
     target_compile_options(${TARGET_NAME} PRIVATE ${FIRMWARE_COMPILE_FLAGS})
     target_link_options(${TARGET_NAME} PRIVATE
         ${HC32F448_CPU_FLAGS}
@@ -190,7 +229,7 @@ function(damiao_firmware TARGET_NAME LINKER_SCRIPT VECTOR_OFFSET)
     add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
         COMMAND ${CMAKE_OBJCOPY} -O binary
             $<TARGET_FILE:${TARGET_NAME}>
-            ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.bin
+            ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.app.bin
         COMMAND ${CMAKE_OBJCOPY} -O ihex
             $<TARGET_FILE:${TARGET_NAME}>
             ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.hex
@@ -199,48 +238,17 @@ function(damiao_firmware TARGET_NAME LINKER_SCRIPT VECTOR_OFFSET)
     )
 endfunction()
 
-add_executable(damiao_app
-    startup/startup_hc32f448.S
-    ${DDL_DEVICE}/Source/system_hc32f448.c
-    app/src/main.c
-    app/src/app_config.c
-    app/src/calibration_store.c
-    app/src/calibration_upload.c
-    app/src/commissioning.c
-    app/src/commissioning_math.c
-    app/src/app_commands.c
-    app/src/app_state.c
-    app/src/motor_control.c
-    app/src/output_sensor.c
-    app/src/position_sensor.c
-    app/src/sensor_calibration.c
-    app/src/safety.c
-    app/src/can_protocol.c
-    app/src/parameter_protocol.c
-    app/src/debug_console.c
-    app/src/firmware_control.c
-    app/src/interrupts.c
-    app/src/device_auth.c
-    ${APP_PLATFORM_SOURCE}
-    board/src/board_mcan_config.c
-    board/src/board_uart_config.c
-    board/src/board_position_config.c
-    board/src/board_adc_config.c
-    board/src/board_sampling_timer_config.c
-    board/src/board_power_stage_config.c
-    board/src/board_power_stage_hc32f448.c
-    board/src/board_crc_hc32f448.c
-    board/src/board_identity_config.c
-    board/src/board_identity_hc32f448.c
-    ${BOARD_ADC_SOURCE}
-    ${BOARD_SAMPLING_TIMER_SOURCE}
-    ${BOARD_MCAN_SOURCE}
-    ${BOARD_POSITION_SOURCE}
-    ${BOARD_UART_SOURCE}
-    ${DDL_LL}/src/hc32_ll_mcan.c
-    app/generated/temperature_table.c
-)
-damiao_firmware(damiao_app
-    "${CMAKE_CURRENT_SOURCE_DIR}/linker/hc32f448_app.ld"
-    0x00000000UL)
+function(damiao_add_profiled_firmware TARGET_NAME PROFILE_PATH)
+    unset(DAMIAO_TARGET_COMPILE_DEFINITIONS)
+    set(DAMIAO_TARGET_LINKER_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/linker/hc32f448_app.ld")
+    set(DAMIAO_TARGET_VECTOR_OFFSET 0x00000000UL)
+    include("${PROFILE_PATH}")
+    damiao_firmware(${TARGET_NAME}
+        "${DAMIAO_TARGET_LINKER_SCRIPT}"
+        ${DAMIAO_TARGET_VECTOR_OFFSET})
+endfunction()
 
+damiao_add_profiled_firmware(dm4310_v4_7318
+    "${CMAKE_CURRENT_SOURCE_DIR}/config/targets/dm4310_v4_7318.cmake")
+damiao_add_profiled_firmware(dm8009_v4_7318
+    "${CMAKE_CURRENT_SOURCE_DIR}/config/targets/dm8009_v4_7318.cmake")
