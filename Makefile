@@ -12,7 +12,7 @@ CAN_IF ?= can0
 SOURCE_APP_BIN := $(BUILD_DIR)/dm4310_app.bin
 PACK_ROOT := $(BUILD_DIR)/package
 
-.PHONY: help all configure build bootloader-build firmwares dm4310 dm8009 clean send provision-calibration
+.PHONY: help all configure build bootloader-build firmwares dm4310 dm8009 verify-firmware-outputs clean send provision-calibration
 
 help:
 	@echo "DM firmware source-build targets:"
@@ -22,6 +22,7 @@ help:
 	@echo "  make dm8009           Emit only dist/development/dm8009_plain.bin + dm8009_enc.bin"
 	@echo "  make build            Build the source APP only"
 	@echo "  make bootloader-build Build the source bootloader only"
+	@echo "  make verify-firmware-outputs  Check generated files without cross-model equality"
 	@echo "  make clean            Remove build and dist outputs"
 	@echo "  make send CAN_IF=can0 Send dist/development/dm4310_enc.bin through the loader"
 	@echo ""
@@ -29,7 +30,8 @@ help:
 	@echo "Default toolchain root: tools/arm-gnu-toolchain"
 	@echo "Override only when needed: DM_ARM_TOOLCHAIN_ROOT=/path/to/arm-gnu-toolchain make"
 	@echo ""
-	@echo "Current DM8009 behavior: built from the same source APP as DM4310, so outputs are byte-identical until a separate DM8009 source target is restored."
+	@echo "Current DM8009 behavior: built from the same source APP target until a separate DM8009 source target is restored."
+	@echo "No DM4310-vs-DM8009 byte-equality check is enforced; the two models may diverge during development."
 
 all: firmwares
 
@@ -72,10 +74,11 @@ dm8009: build $(DIST_DEV) $(PACK_ROOT)/dm8009
 	@echo "wrote $(DIST_DEV)/dm8009_plain.bin"
 	@echo "wrote $(DIST_DEV)/dm8009_enc.bin"
 
-firmwares: dm4310 dm8009
-	cmp -s $(DIST_DEV)/dm4310_plain.bin $(DIST_DEV)/dm8009_plain.bin
-	cmp -s $(DIST_DEV)/dm4310_enc.bin $(DIST_DEV)/dm8009_enc.bin
-	@echo "verified: DM4310 and DM8009 generated outputs are byte-identical"
+firmwares: dm4310 dm8009 verify-firmware-outputs
+	@echo "wrote DM4310 + DM8009 firmware images to $(DIST_DEV)"
+
+verify-firmware-outputs:
+	$(PYTHON) tools/verify_firmware_outputs.py --dist $(DIST_DEV)
 
 send: dm4310
 	$(PYTHON) tools/send_update.py --interface $(CAN_IF) \
