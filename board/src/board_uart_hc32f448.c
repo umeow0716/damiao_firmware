@@ -6,7 +6,6 @@
 #define UART_DMA_CLEAR_ALL        (0x000F000FUL)
 
 static bool uart_initialized;
-#if defined(DM4310_SOURCE_APP)
 static bool uart_dma_receive;
 static volatile uint8_t uart_rx_dma_buffer[BOARD_UART_RX_DMA_CAPACITY]
     __attribute__((aligned(4)));
@@ -80,18 +79,15 @@ static void snapshot_receive_dma(void)
     uart_rx_cursor = 0U;
     uart_rx_length = (uint16_t)(BOARD_UART_RX_DMA_CAPACITY - remaining);
 }
-#endif
 
 static bool init_uart(bool receive_interrupts)
 {
     BoardUartRegisterImage config;
     board_uart_build_config(&config);
     uart_initialized = false;
-#if defined(DM4310_SOURCE_APP)
     uart_dma_receive = false;
     uart_rx_length = 0U;
     uart_rx_cursor = 0U;
-#endif
 
     /* Recovered PCB routing: PA11=USART1_TX (function 0x20),
      * PA12=USART1_RX (function 0x21). */
@@ -110,7 +106,6 @@ static bool init_uart(bool receive_interrupts)
     CM_USART1->PR = 0U;
     CM_USART1->BRR = config.usart_brr;
 
-#if defined(DM4310_SOURCE_APP)
     if (receive_interrupts) {
         /* The application receives a variable-length burst through DMA1 and
          * handles it at the recovered USART receiver-timeout boundary. */
@@ -124,21 +119,15 @@ static bool init_uart(bool receive_interrupts)
         NVIC_SetPriority(INT004_IRQn, 4U);
         uart_dma_receive = true;
     } else {
-#else
-    (void)receive_interrupts;
-    {
-#endif
         NVIC_DisableIRQ(INT004_IRQn);
         NVIC_ClearPendingIRQ(INT004_IRQn);
         CM_USART1->CR1 = config.usart_cr1_polled;
     }
     uart_initialized = true;
-#if defined(DM4310_SOURCE_APP)
     if (receive_interrupts) {
         NVIC_EnableIRQ(INT004_IRQn);
         CM_USART1->CR1 |= USART_CR1_RE | USART_CR1_TE;
     }
-#endif
     return true;
 }
 
@@ -158,7 +147,6 @@ bool board_uart_receive(uint8_t *byte)
         return false;
     }
 
-#if defined(DM4310_SOURCE_APP)
     if (uart_dma_receive) {
         snapshot_receive_dma();
         if (uart_rx_cursor >= uart_rx_length) {
@@ -168,7 +156,6 @@ bool board_uart_receive(uint8_t *byte)
         ++uart_rx_cursor;
         return true;
     }
-#endif
 
     if ((CM_USART1->SR & USART_SR_RXNE) == 0U) {
         return false;
@@ -212,7 +199,6 @@ void board_uart_ack_interrupt(void)
         return;
     }
 
-#if defined(DM4310_SOURCE_APP)
     /* IRQ004 is sourced only by receiver timeout.  The original epilogue
      * stops TMR0 and clears PE/FE/ORE/RTOF together with 0x001b0000. */
     CM_TMR0_1->BCONR &= ~TMR0_BCONR_CSTA;
@@ -223,18 +209,6 @@ void board_uart_ack_interrupt(void)
         board_uart_build_config(&config);
         rearm_receive_dma(&config);
     }
-#else
-    const uint32_t status = CM_USART1->SR;
-    if ((status & USART_SR_PE) != 0U) {
-        CM_USART1->CR1 |= USART_CR1_CPE;
-    }
-    if ((status & USART_SR_FE) != 0U) {
-        CM_USART1->CR1 |= USART_CR1_CFE;
-    }
-    if ((status & USART_SR_ORE) != 0U) {
-        CM_USART1->CR1 |= USART_CR1_CORE;
-    }
-#endif
     NVIC_ClearPendingIRQ(INT004_IRQn);
     __DSB();
 }

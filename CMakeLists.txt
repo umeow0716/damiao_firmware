@@ -243,5 +243,4 @@ add_executable(dm4310_app
 dm4310_firmware(dm4310_app
     "${CMAKE_CURRENT_SOURCE_DIR}/linker/hc32f448_app.ld"
     0x00000000UL)
-target_compile_definitions(dm4310_app PRIVATE DM4310_SOURCE_APP=1)
 

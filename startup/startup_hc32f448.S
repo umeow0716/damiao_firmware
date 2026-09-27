@@ -36,13 +36,8 @@ __Vectors:
     .long Default_Handler             /* DebugMon */
     .long 0
     .long Default_Handler             /* PendSV */
-#ifdef DM4310_SOURCE_BOOTLOADER
-    .long SysTick_Handler             /* 1 ms loader time base */
-#else
     .long Default_Handler             /* SysTick */
-#endif
 
-#ifdef DM4310_SOURCE_APP
     .long IRQ000_Handler              /* TMR4 position trigger */
     .long IRQ001_Handler              /* DMA2 position sample */
     .long IRQ002_Handler              /* synchronous ADC / FOC */
@@ -58,11 +53,6 @@ __Vectors:
     .rept 3                           /* IRQ125..IRQ127 */
     .long Default_Handler
     .endr
-#else
-    .rept 128
-    .long Default_Handler
-    .endr
-#endif
 
 __Vectors_End:
     .equ __Vectors_Size, __Vectors_End - __Vectors
