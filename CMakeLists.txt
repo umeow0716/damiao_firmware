@@ -15,15 +15,15 @@ if(NOT EXISTS "${DDL_DEVICE}/Include/hc32f448.h")
     message(FATAL_ERROR "HC32F448 DDL not found at ${DDL_ROOT}")
 endif()
 
-set(DM4310_CPU_FLAGS
+set(HC32F448_CPU_FLAGS
     -mcpu=cortex-m4
     -mthumb
     -mfpu=fpv4-sp-d16
     -mfloat-abi=hard
 )
 
-set(DM4310_COMPILE_FLAGS
-    ${DM4310_CPU_FLAGS}
+set(FIRMWARE_COMPILE_FLAGS
+    ${HC32F448_CPU_FLAGS}
     -ffunction-sections
     -fdata-sections
     -fno-common
@@ -82,53 +82,53 @@ set(DM4310_COMPILE_FLAGS
     -Werror
 )
 
-set(DM4310_APP_PLATFORM_SOURCE
+set(APP_PLATFORM_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/app/src/platform.c"
     CACHE FILEPATH "App board-port implementation")
-set(DM4310_LED_SOURCE
+set(BOARD_LED_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/board/src/board_led_hc32f448.c"
     CACHE FILEPATH "Board status-LED implementation")
-set(DM4310_MCAN_SOURCE
+set(BOARD_MCAN_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/board/src/board_mcan_hc32f448.c"
     CACHE FILEPATH "Board MCAN implementation")
-set(DM4310_UART_SOURCE
+set(BOARD_UART_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/board/src/board_uart_hc32f448.c"
     CACHE FILEPATH "Board debug-UART implementation")
-set(DM4310_POSITION_SOURCE
+set(BOARD_POSITION_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/board/src/board_position_hc32f448.c"
     CACHE FILEPATH "Board SPI/DMA position-sensor implementation")
-set(DM4310_ADC_SOURCE
+set(BOARD_ADC_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/board/src/board_adc_hc32f448.c"
     CACHE FILEPATH "Board synchronous-ADC implementation")
-set(DM4310_SAMPLING_TIMER_SOURCE
+set(BOARD_SAMPLING_TIMER_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/board/src/board_sampling_timer_hc32f448.c"
     CACHE FILEPATH "Board TMR4 sampling time-base implementation")
-set(DM4310_CLOCK_SOURCE
+set(BOARD_CLOCK_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/board/src/board_clock_hc32f448.c"
     CACHE FILEPATH "Board system-clock implementation")
-if(NOT EXISTS "${DM4310_APP_PLATFORM_SOURCE}")
-    message(FATAL_ERROR "DM4310_APP_PLATFORM_SOURCE does not exist")
+if(NOT EXISTS "${APP_PLATFORM_SOURCE}")
+    message(FATAL_ERROR "APP_PLATFORM_SOURCE does not exist")
 endif()
-if(NOT EXISTS "${DM4310_LED_SOURCE}")
-    message(FATAL_ERROR "DM4310_LED_SOURCE does not exist")
+if(NOT EXISTS "${BOARD_LED_SOURCE}")
+    message(FATAL_ERROR "BOARD_LED_SOURCE does not exist")
 endif()
-if(NOT EXISTS "${DM4310_MCAN_SOURCE}")
-    message(FATAL_ERROR "DM4310_MCAN_SOURCE does not exist")
+if(NOT EXISTS "${BOARD_MCAN_SOURCE}")
+    message(FATAL_ERROR "BOARD_MCAN_SOURCE does not exist")
 endif()
-if(NOT EXISTS "${DM4310_UART_SOURCE}")
-    message(FATAL_ERROR "DM4310_UART_SOURCE does not exist")
+if(NOT EXISTS "${BOARD_UART_SOURCE}")
+    message(FATAL_ERROR "BOARD_UART_SOURCE does not exist")
 endif()
-if(NOT EXISTS "${DM4310_POSITION_SOURCE}")
-    message(FATAL_ERROR "DM4310_POSITION_SOURCE does not exist")
+if(NOT EXISTS "${BOARD_POSITION_SOURCE}")
+    message(FATAL_ERROR "BOARD_POSITION_SOURCE does not exist")
 endif()
-if(NOT EXISTS "${DM4310_ADC_SOURCE}")
-    message(FATAL_ERROR "DM4310_ADC_SOURCE does not exist")
+if(NOT EXISTS "${BOARD_ADC_SOURCE}")
+    message(FATAL_ERROR "BOARD_ADC_SOURCE does not exist")
 endif()
-if(NOT EXISTS "${DM4310_SAMPLING_TIMER_SOURCE}")
-    message(FATAL_ERROR "DM4310_SAMPLING_TIMER_SOURCE does not exist")
+if(NOT EXISTS "${BOARD_SAMPLING_TIMER_SOURCE}")
+    message(FATAL_ERROR "BOARD_SAMPLING_TIMER_SOURCE does not exist")
 endif()
-if(NOT EXISTS "${DM4310_CLOCK_SOURCE}")
-    message(FATAL_ERROR "DM4310_CLOCK_SOURCE does not exist")
+if(NOT EXISTS "${BOARD_CLOCK_SOURCE}")
+    message(FATAL_ERROR "BOARD_CLOCK_SOURCE does not exist")
 endif()
 
 add_library(dm4310_common STATIC
@@ -143,7 +143,7 @@ target_include_directories(dm4310_common
     PUBLIC common/include
     PRIVATE common/generated
 )
-target_compile_options(dm4310_common PRIVATE ${DM4310_COMPILE_FLAGS})
+target_compile_options(dm4310_common PRIVATE ${FIRMWARE_COMPILE_FLAGS})
 
 function(dm4310_firmware TARGET_NAME LINKER_SCRIPT VECTOR_OFFSET)
     if(NOT TARGET_NAME STREQUAL "dm4310_app")
@@ -163,9 +163,9 @@ function(dm4310_firmware TARGET_NAME LINKER_SCRIPT VECTOR_OFFSET)
         HC32F448
         VECT_TAB_OFFSET=${VECTOR_OFFSET}
     )
-    target_compile_options(${TARGET_NAME} PRIVATE ${DM4310_COMPILE_FLAGS})
+    target_compile_options(${TARGET_NAME} PRIVATE ${FIRMWARE_COMPILE_FLAGS})
     target_link_options(${TARGET_NAME} PRIVATE
-        ${DM4310_CPU_FLAGS}
+        ${HC32F448_CPU_FLAGS}
         -nostartfiles
         --specs=nano.specs
         --specs=nosys.specs
@@ -182,8 +182,8 @@ function(dm4310_firmware TARGET_NAME LINKER_SCRIPT VECTOR_OFFSET)
         board/src/board_delay_hc32f448.c
         board/src/board_clock_config.c
         board/src/board_flash_hc32f448.c
-        ${DM4310_CLOCK_SOURCE}
-        ${DM4310_LED_SOURCE}
+        ${BOARD_CLOCK_SOURCE}
+        ${BOARD_LED_SOURCE}
     )
     set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".elf")
 
@@ -221,7 +221,7 @@ add_executable(dm4310_app
     app/src/firmware_control.c
     app/src/interrupts.c
     app/src/device_auth.c
-    ${DM4310_APP_PLATFORM_SOURCE}
+    ${APP_PLATFORM_SOURCE}
     board/src/board_mcan_config.c
     board/src/board_uart_config.c
     board/src/board_position_config.c
@@ -232,11 +232,11 @@ add_executable(dm4310_app
     board/src/board_crc_hc32f448.c
     board/src/board_identity_config.c
     board/src/board_identity_hc32f448.c
-    ${DM4310_ADC_SOURCE}
-    ${DM4310_SAMPLING_TIMER_SOURCE}
-    ${DM4310_MCAN_SOURCE}
-    ${DM4310_POSITION_SOURCE}
-    ${DM4310_UART_SOURCE}
+    ${BOARD_ADC_SOURCE}
+    ${BOARD_SAMPLING_TIMER_SOURCE}
+    ${BOARD_MCAN_SOURCE}
+    ${BOARD_POSITION_SOURCE}
+    ${BOARD_UART_SOURCE}
     ${DDL_LL}/src/hc32_ll_mcan.c
     app/generated/temperature_table.c
 )
