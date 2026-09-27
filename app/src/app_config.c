@@ -2,8 +2,8 @@
 
 #include <string.h>
 
-#define OFFICIAL_SOFTWARE_VERSION_WORD   0x37313035UL
-#define OFFICIAL_FIRMWARE_SUBVERSION     0x00000034UL
+#include "app_profile.h"
+
 #define FACTORY_STORED_SOFTWARE_VERSION  0x00000000UL
 #define FACTORY_STORED_SUBVERSION_WORD   0x30303031UL
 
@@ -65,9 +65,9 @@ void app_config_load_defaults(MotorConfig *config)
         .position_sensor_scale = 0.1f,
         .communication_timeout = 0U,
         .hardware_version = 0x56303033UL,
-        .software_version = OFFICIAL_SOFTWARE_VERSION_WORD,
+        .software_version = APP_PROFILE_SOFTWARE_VERSION,
         .serial_number = 0x54303035UL,
-        .firmware_subversion = OFFICIAL_FIRMWARE_SUBVERSION,
+        .firmware_subversion = APP_PROFILE_FIRMWARE_SUBVERSION,
         .bootloader_version = 0U,
         .can_id = 1U,
         .master_id = 0U,
@@ -225,12 +225,12 @@ bool app_config_decode_persistent(MotorConfig *config,
     config->control_mode = (words[0x0A] >= MOTOR_MODE_MIT &&
                             words[0x0A] <= MOTOR_MODE_HYBRID) ?
                            (MotorControlMode)words[0x0A] : MOTOR_MODE_MIT;
-    config->software_version = OFFICIAL_SOFTWARE_VERSION_WORD;
+    config->software_version = APP_PROFILE_SOFTWARE_VERSION;
     config->velocity_filter_bandwidth = velocity_bw;
     config->current_loop_enhancement = current_enhancement;
     config->velocity_loop_enhancement = velocity_enhancement;
     config->can_data_rate_selector = words[0x23] <= 11U ?
                                      (uint8_t)words[0x23] : 4U;
-    config->firmware_subversion = OFFICIAL_FIRMWARE_SUBVERSION;
+    config->firmware_subversion = APP_PROFILE_FIRMWARE_SUBVERSION;
     return true;
 }

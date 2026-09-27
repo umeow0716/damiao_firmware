@@ -249,6 +249,6 @@ function(damiao_add_profiled_firmware TARGET_NAME PROFILE_PATH)
 endfunction()
 
 damiao_add_profiled_firmware(dm4310_v4_7318
-    "${CMAKE_CURRENT_SOURCE_DIR}/config/targets/dm4310_v4_7318.cmake")
+    "${CMAKE_CURRENT_SOURCE_DIR}/config/targets/dm4310.cmake")
 damiao_add_profiled_firmware(dm8009_v4_7318
-    "${CMAKE_CURRENT_SOURCE_DIR}/config/targets/dm8009_v4_7318.cmake")
+    "${CMAKE_CURRENT_SOURCE_DIR}/config/targets/dm8009.cmake")

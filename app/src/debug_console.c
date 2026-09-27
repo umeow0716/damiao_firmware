@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "app_state.h"
+#include "app_profile.h"
 #include "calibration_upload.h"
 #include "platform.h"
 
@@ -404,8 +405,10 @@ void debug_console_print_status(void)
     default: break;
     }
     write_text("\n\r Debug Info:\n\r");
-    debug_console_printf("Firmware Version: %d\r\n", 5017);
-    debug_console_printf("Sub Version: %03d\r\n", 4);
+    debug_console_printf("Firmware Version: %d\r\n",
+                         APP_PROFILE_FIRMWARE_VERSION_LITERAL);
+    debug_console_printf("Sub Version: %03d\r\n",
+                         APP_PROFILE_FIRMWARE_SUBVERSION_LITERAL);
     debug_console_printf("Imax: %f\r\n",
                          (double)g_app.config.maximum_phase_current);
     debug_console_printf(" I_U Offset:     %.4f\r\n",
