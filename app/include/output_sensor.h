@@ -1,5 +1,5 @@
-#ifndef DM4310_OUTPUT_SENSOR_H
-#define DM4310_OUTPUT_SENSOR_H
+#ifndef DAMIAO_OUTPUT_SENSOR_H
+#define DAMIAO_OUTPUT_SENSOR_H
 
 #include <stdbool.h>
 #include <stdint.h>

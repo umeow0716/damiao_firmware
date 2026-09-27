@@ -1,5 +1,5 @@
-#ifndef DM4310_APP_COMMANDS_H
-#define DM4310_APP_COMMANDS_H
+#ifndef DAMIAO_APP_COMMANDS_H
+#define DAMIAO_APP_COMMANDS_H
 
 #include "can_protocol.h"
 

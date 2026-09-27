@@ -1,5 +1,5 @@
-#ifndef DM4310_DEBUG_CONSOLE_H
-#define DM4310_DEBUG_CONSOLE_H
+#ifndef DAMIAO_DEBUG_CONSOLE_H
+#define DAMIAO_DEBUG_CONSOLE_H
 
 #include <stddef.h>
 #include <stdint.h>

@@ -1,5 +1,5 @@
-#ifndef DM4310_POSITION_SENSOR_H
-#define DM4310_POSITION_SENSOR_H
+#ifndef DAMIAO_POSITION_SENSOR_H
+#define DAMIAO_POSITION_SENSOR_H
 
 #include <stdbool.h>
 #include <stdint.h>

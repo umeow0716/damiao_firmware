@@ -1,5 +1,5 @@
-#ifndef DM4310_FIRMWARE_CONTROL_H
-#define DM4310_FIRMWARE_CONTROL_H
+#ifndef DAMIAO_FIRMWARE_CONTROL_H
+#define DAMIAO_FIRMWARE_CONTROL_H
 
 #include <stdbool.h>
 #include <stdint.h>

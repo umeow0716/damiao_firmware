@@ -1,5 +1,5 @@
-#ifndef DM4310_APP_CONFIG_H
-#define DM4310_APP_CONFIG_H
+#ifndef DAMIAO_APP_CONFIG_H
+#define DAMIAO_APP_CONFIG_H
 
 #include "motor_control.h"
 

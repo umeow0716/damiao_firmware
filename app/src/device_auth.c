@@ -21,8 +21,8 @@ void boot_device_derive_token(
 
     aes256_ctr_init(
         &cipher,
-        dm4310_update_key,
-        dm4310_update_initial_counter);
+        app_update_key,
+        app_update_initial_counter);
 
     aes256_ctr_transform(
         &cipher,

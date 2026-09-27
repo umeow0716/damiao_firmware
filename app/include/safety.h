@@ -1,5 +1,5 @@
-#ifndef DM4310_SAFETY_H
-#define DM4310_SAFETY_H
+#ifndef DAMIAO_SAFETY_H
+#define DAMIAO_SAFETY_H
 
 #include <stdint.h>
 

@@ -1,5 +1,5 @@
-#ifndef DM4310_INTERRUPTS_H
-#define DM4310_INTERRUPTS_H
+#ifndef DAMIAO_INTERRUPTS_H
+#define DAMIAO_INTERRUPTS_H
 
 /* Semantic interrupt entry points used by host tests and the vector wrappers. */
 void position_sensor_timer_irq(void);

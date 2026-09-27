@@ -1,5 +1,5 @@
-#ifndef DM4310_APP_PLATFORM_H
-#define DM4310_APP_PLATFORM_H
+#ifndef DAMIAO_APP_PLATFORM_H
+#define DAMIAO_APP_PLATFORM_H
 
 #include <stdbool.h>
 #include <stddef.h>

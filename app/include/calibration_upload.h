@@ -1,5 +1,5 @@
-#ifndef DM4310_CALIBRATION_UPLOAD_H
-#define DM4310_CALIBRATION_UPLOAD_H
+#ifndef DAMIAO_CALIBRATION_UPLOAD_H
+#define DAMIAO_CALIBRATION_UPLOAD_H
 
 #include <stdbool.h>
 #include <stddef.h>

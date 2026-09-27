@@ -1,5 +1,5 @@
-#ifndef DM4310_MOTOR_CONTROL_H
-#define DM4310_MOTOR_CONTROL_H
+#ifndef DAMIAO_MOTOR_CONTROL_H
+#define DAMIAO_MOTOR_CONTROL_H
 
 #include <stdbool.h>
 

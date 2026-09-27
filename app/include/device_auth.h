@@ -1,5 +1,5 @@
-#ifndef DM4310_DEVICE_AUTH_H
-#define DM4310_DEVICE_AUTH_H
+#ifndef DAMIAO_DEVICE_AUTH_H
+#define DAMIAO_DEVICE_AUTH_H
 
 #include <stdbool.h>
 #include <stdint.h>

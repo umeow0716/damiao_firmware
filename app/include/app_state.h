@@ -1,5 +1,5 @@
-#ifndef DM4310_APP_STATE_H
-#define DM4310_APP_STATE_H
+#ifndef DAMIAO_APP_STATE_H
+#define DAMIAO_APP_STATE_H
 
 #include <stdbool.h>
 #include <stdint.h>

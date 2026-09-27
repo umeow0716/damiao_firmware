@@ -1,5 +1,5 @@
-#ifndef DM4310_SENSOR_CALIBRATION_H
-#define DM4310_SENSOR_CALIBRATION_H
+#ifndef DAMIAO_SENSOR_CALIBRATION_H
+#define DAMIAO_SENSOR_CALIBRATION_H
 
 #include <stdbool.h>
 #include <stddef.h>

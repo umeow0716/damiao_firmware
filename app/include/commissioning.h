@@ -1,5 +1,5 @@
-#ifndef DM4310_COMMISSIONING_H
-#define DM4310_COMMISSIONING_H
+#ifndef DAMIAO_COMMISSIONING_H
+#define DAMIAO_COMMISSIONING_H
 
 #include <stdbool.h>
 #include <stdint.h>
