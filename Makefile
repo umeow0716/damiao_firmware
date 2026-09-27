@@ -12,7 +12,7 @@ CAN_IF ?= can0
 SOURCE_APP_BIN := $(BUILD_DIR)/dm4310_app.bin
 PACK_ROOT := $(BUILD_DIR)/package
 
-.PHONY: help all configure build bootloader-build firmwares dm4310 dm8009 verify-firmware-outputs clean send provision-calibration
+.PHONY: help all configure build firmwares dm4310 dm8009 verify-firmware-outputs clean send provision-calibration
 
 help:
 	@echo "DM firmware source-build targets:"
@@ -21,7 +21,6 @@ help:
 	@echo "  make dm4310           Emit only dist/development/dm4310_plain.bin + dm4310_enc.bin"
 	@echo "  make dm8009           Emit only dist/development/dm8009_plain.bin + dm8009_enc.bin"
 	@echo "  make build            Build the source APP only"
-	@echo "  make bootloader-build Build the source bootloader only"
 	@echo "  make verify-firmware-outputs  Check generated files without cross-model equality"
 	@echo "  make clean            Remove build and dist outputs"
 	@echo "  make send CAN_IF=can0 Send dist/development/dm4310_enc.bin through the loader"
@@ -31,6 +30,7 @@ help:
 	@echo "Override only when needed: DM_ARM_TOOLCHAIN_ROOT=/path/to/arm-gnu-toolchain make"
 	@echo ""
 	@echo "Current DM8009 behavior: built from the same source APP target until a separate DM8009 source target is restored."
+	@echo "Bootloader source is intentionally not built or tracked in this app-only workspace."
 	@echo "No DM4310-vs-DM8009 byte-equality check is enforced; the two models may diverge during development."
 
 all: firmwares
@@ -42,9 +42,6 @@ configure:
 
 build: configure
 	$(CMAKE) --build $(BUILD_DIR) --target dm4310_app -j
-
-bootloader-build: configure
-	$(CMAKE) --build $(BUILD_DIR) --target dm4310_bootloader -j
 
 $(DIST_DEV):
 	mkdir -p $(DIST_DEV)

@@ -85,9 +85,6 @@ set(DM4310_COMPILE_FLAGS
 set(DM4310_APP_PLATFORM_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/app/src/platform.c"
     CACHE FILEPATH "App board-port implementation")
-set(DM4310_BOOT_PLATFORM_SOURCE
-    "${CMAKE_CURRENT_SOURCE_DIR}/bootloader/src/platform.c"
-    CACHE FILEPATH "Bootloader board-port implementation")
 set(DM4310_LED_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/board/src/board_led_hc32f448.c"
     CACHE FILEPATH "Board status-LED implementation")
@@ -111,9 +108,6 @@ set(DM4310_CLOCK_SOURCE
     CACHE FILEPATH "Board system-clock implementation")
 if(NOT EXISTS "${DM4310_APP_PLATFORM_SOURCE}")
     message(FATAL_ERROR "DM4310_APP_PLATFORM_SOURCE does not exist")
-endif()
-if(NOT EXISTS "${DM4310_BOOT_PLATFORM_SOURCE}")
-    message(FATAL_ERROR "DM4310_BOOT_PLATFORM_SOURCE does not exist")
 endif()
 if(NOT EXISTS "${DM4310_LED_SOURCE}")
     message(FATAL_ERROR "DM4310_LED_SOURCE does not exist")
@@ -152,23 +146,13 @@ target_include_directories(dm4310_common
 target_compile_options(dm4310_common PRIVATE ${DM4310_COMPILE_FLAGS})
 
 function(dm4310_firmware TARGET_NAME LINKER_SCRIPT VECTOR_OFFSET)
-    if(TARGET_NAME STREQUAL "dm4310_app")
-        set(DM4310_FIRMWARE_KIND app)
-    elseif(TARGET_NAME STREQUAL "dm4310_bootloader")
-        set(DM4310_FIRMWARE_KIND bootloader)
-    else()
-        message(FATAL_ERROR "Unknown source firmware target ${TARGET_NAME}")
-    endif()
-    set(DM4310_APP_VERIFY_ARGS)
-    if(DM4310_FIRMWARE_KIND STREQUAL "app")
-        list(APPEND DM4310_APP_VERIFY_ARGS
-            --require-commissioning-code)
+    if(NOT TARGET_NAME STREQUAL "dm4310_app")
+        message(FATAL_ERROR "Only dm4310_app is supported in this app-only workspace")
     endif()
     target_include_directories(${TARGET_NAME} PRIVATE
         common/include
         app/include
         app/generated
-        bootloader/include
         board/include
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${DDL_CMSIS}/Include
@@ -236,7 +220,7 @@ add_executable(dm4310_app
     app/src/debug_console.c
     app/src/firmware_control.c
     app/src/interrupts.c
-    bootloader/src/device_auth.c
+    app/src/device_auth.c
     ${DM4310_APP_PLATFORM_SOURCE}
     board/src/board_mcan_config.c
     board/src/board_uart_config.c
@@ -259,38 +243,5 @@ add_executable(dm4310_app
 dm4310_firmware(dm4310_app
     "${CMAKE_CURRENT_SOURCE_DIR}/linker/hc32f448_app.ld"
     0x00000000UL)
-add_custom_target(factory_text_audit
-    COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1
-        python3 ${CMAKE_CURRENT_SOURCE_DIR}/tools/verify_app_strings.py
-        ${CMAKE_CURRENT_BINARY_DIR}/dm4310_app.bin
-    DEPENDS dm4310_app
-    VERBATIM)
 target_compile_definitions(dm4310_app PRIVATE DM4310_SOURCE_APP=1)
 
-add_executable(dm4310_bootloader
-    startup/startup_hc32f448.S
-    ${DDL_DEVICE}/Source/system_hc32f448.c
-    ${DDL_LL}/src/hc32_ll_icg.c
-    ${DDL_LL}/src/hc32_ll_mcan.c
-    bootloader/src/main.c
-    bootloader/src/access_protocol.c
-    bootloader/src/service_protocol.c
-    bootloader/src/device_auth.c
-    bootloader/src/app_image.c
-    bootloader/src/app_image_validation.c
-    bootloader/src/update_protocol.c
-    bootloader/src/flash_writer.c
-    ${DM4310_BOOT_PLATFORM_SOURCE}
-    board/src/board_mcan_config.c
-    board/src/board_uart_config.c
-    ${DM4310_MCAN_SOURCE}
-    ${DM4310_UART_SOURCE}
-)
-dm4310_firmware(dm4310_bootloader
-    "${CMAKE_CURRENT_SOURCE_DIR}/linker/hc32f448_boot.ld"
-    0x00000000UL)
-target_compile_definitions(dm4310_bootloader PRIVATE
-    DM4310_SOURCE_BOOTLOADER=1
-    DM4310_ENFORCE_DEVICE_BINDING=1
-    USE_DDL_DRIVER
-)
