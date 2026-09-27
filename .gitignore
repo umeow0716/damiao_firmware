@@ -67,3 +67,13 @@ Thumbs.db
 
 # Docs
 docs/
+/analysis/
+/recovered/
+/tools/*audit*.py
+/tools/verify_ghidra_snapshot.py
+/tools/verify_source_layout.py
+/tools/verify_semantic_coverage.py
+/tools/verify_full_app_audit.py
+/tools/verify_control_feedback_trace.py
+/tools/verify_status_indicator_trace.py
+/tools/verify_app_strings.py
