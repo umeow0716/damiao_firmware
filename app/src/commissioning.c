@@ -19,14 +19,26 @@
 #define ALIGNMENT_LOCK_STEPS     20000U
 #define ALIGNMENT_INNER_STEPS    40U
 #define ALIGNMENT_POINTS_PER_PAIR 256U
+#if defined(DAMIAO_DM4310)
 #define OUTPUT_CALIBRATION_VOLTAGE_Q 0.2f
+#elif defined(DAMIAO_DM8009)
+#define OUTPUT_CALIBRATION_VOLTAGE_Q 0.8f
+#else
+#error "Define DAMIAO_DM4310 or DAMIAO_DM8009"
+#endif
 #define OUTPUT_CALIBRATION_REPORT_DIVIDER 20U
 #define OUTPUT_TABLE_POINTS 256U
 #define OUTPUT_TABLE_POINTS_PER_MOTOR_TURN 4096U
 #define INV_SQRT3_F             0.5773502588272095f
 #define CURRENT_FULL_SCALE_A    APP_PROFILE_CURRENT_FULL_SCALE_A
 #define IDENTIFICATION_LOCK_STEPS 6284U
+#if defined(DAMIAO_DM4310)
 #define IDENTIFICATION_ELECTRICAL_STEPS 60000U
+#elif defined(DAMIAO_DM8009)
+#define IDENTIFICATION_ELECTRICAL_STEPS 40000U
+#else
+#error "Define DAMIAO_DM4310 or DAMIAO_DM8009"
+#endif
 #define IDENTIFICATION_RLS_START_STEP 20000U
 #define IDENTIFICATION_TARGET_RAMP_STEPS 10000U
 #define IDENTIFICATION_TARGET_RAMP_DIVIDER 100U
@@ -790,8 +802,19 @@ CommissioningStatus commissioning_run_motor_identification(MotorConfig *config)
     float damping;
     if (!identify_mechanical_parameters(
             &identified, flux_linkage, &sample, &inertia, &damping)) {
+#if defined(DAMIAO_DM4310)
         platform_commissioning_end();
         return COMMISSIONING_INVALID_MEASUREMENT;
+#elif defined(DAMIAO_DM8009)
+        /* Factory DM8009 still returns the identification result frame after
+         * the electrical fit.  If the mechanical fit cannot refresh, keep the
+         * existing stored mechanical parameters instead of leaving the GUI
+         * waiting for a response forever. */
+        inertia = identified.rotor_inertia;
+        damping = identified.viscous_damping;
+#else
+#error "Define DAMIAO_DM4310 or DAMIAO_DM8009"
+#endif
     }
 
     identified.rotor_inertia = inertia;
