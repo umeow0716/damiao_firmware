@@ -97,7 +97,7 @@ MotorFault sensor_calibration_validate_current_record(
     }
     for (size_t index = 0U; index < sample_count; ++index) {
         float value = correction[index];
-        (void)official_nan_to_zero(&value);
+        official_nan_to_zero(&value);
         if (value > largest) {
             largest = value;
         }
