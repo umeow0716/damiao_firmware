@@ -467,6 +467,17 @@ bool platform_commissioning_read_sample(PlatformCommissioningSample *sample)
     sample->current_w = (g_app.motor.current_offset_w - (float)raw.phase_w) *
                         g_app.motor.current_scale;
     sample->bus_voltage = (float)raw.bus_voltage * BUS_VOLTS_PER_COUNT;
+    float rotor_position;
+    float rotor_angle;
+    float motor_output_position;
+    uint16_t raw_position;
+    if (platform_read_position(&rotor_position, &rotor_angle,
+                               &motor_output_position, &raw_position)) {
+        g_app.rotor_position = rotor_position;
+        g_app.rotor_angle = rotor_angle;
+        g_app.motor_output_position = motor_output_position;
+        g_app.raw_position = raw_position;
+    }
     output_sensor_update(&output_sensor, raw.phase_voltage_u,
                          raw.phase_voltage_v);
     /* The factory commissioning frames and extrema use the filtered ADC

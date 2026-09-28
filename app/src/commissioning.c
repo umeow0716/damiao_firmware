@@ -23,11 +23,7 @@
 #define OUTPUT_CALIBRATION_REPORT_DIVIDER 20U
 #define OUTPUT_TABLE_POINTS_PER_MOTOR_TURN 4096U
 #define INV_SQRT3_F             0.5773502588272095f
-#if defined(DAMIAO_DM4310)
-#define CURRENT_FULL_SCALE_A    10.261194229125977f
-#elif defined(DAMIAO_DM8009)
-#define CURRENT_FULL_SCALE_A    10.0f
-#endif
+#define CURRENT_FULL_SCALE_A    APP_PROFILE_CURRENT_FULL_SCALE_A
 #define IDENTIFICATION_LOCK_STEPS 6284U
 #define IDENTIFICATION_ELECTRICAL_STEPS 60000U
 #define IDENTIFICATION_RLS_START_STEP 20000U
@@ -129,6 +125,21 @@ static void send_sensor_sample(uint8_t marker, float first, float second,
     const uint32_t crc = crc32_mpeg2(frame, 17U);
     memcpy(&frame[17], &crc, sizeof(crc));
     platform_debug_write(frame, sizeof(frame));
+}
+
+static void refresh_commissioning_position(void)
+{
+    float rotor_position;
+    float rotor_angle;
+    float motor_output_position;
+    uint16_t raw_position;
+    if (platform_read_position(&rotor_position, &rotor_angle,
+                               &motor_output_position, &raw_position)) {
+        g_app.rotor_position = rotor_position;
+        g_app.rotor_angle = rotor_angle;
+        g_app.motor_output_position = motor_output_position;
+        g_app.raw_position = raw_position;
+    }
 }
 
 static DirectQuadrature commissioning_current_dq(
@@ -581,8 +592,7 @@ CommissioningStatus commissioning_run_output_sensor_calibration(void)
         .minimum_v = 4096U,
         .maximum_v = 0U,
     };
-    const float target_position =
-        g_app.motor_output_position + TWO_PI_F;
+    const float start_position = g_app.motor_output_position;
     uint32_t report_count = 0U;
 
     for (;;) {
@@ -606,9 +616,13 @@ CommissioningStatus commissioning_run_output_sensor_calibration(void)
             extrema.minimum_v = sample.output_raw_v;
             extrema.angle_at_minimum_v = g_app.motor_output_position;
         }
+        refresh_commissioning_position();
         if (++report_count == OUTPUT_CALIBRATION_REPORT_DIVIDER) {
             report_count = 0U;
-            send_sensor_sample('h', 0.0f, 0.0f, 0.0f,
+            send_sensor_sample('h', g_app.motor_output_position,
+                               sample.output_position,
+                               wrap_signed(g_app.motor_output_position -
+                                           start_position),
                                sample.output_raw_u,
                                sample.output_raw_v);
         }
@@ -620,8 +634,8 @@ CommissioningStatus commissioning_run_output_sensor_calibration(void)
                                      OUTPUT_CALIBRATION_VOLTAGE_Q,
                                      electrical_angle);
         platform_commissioning_finish_sample();
-        if (fabsf(g_app.motor_output_position - target_position) <=
-            0.0010000000474974513f) {
+        if (fabsf(g_app.motor_output_position - start_position) >=
+            (TWO_PI_F - 0.0010000000474974513f)) {
             break;
         }
     }
@@ -659,6 +673,7 @@ CommissioningStatus commissioning_run_output_sensor_calibration(void)
             platform_commissioning_end();
             return COMMISSIONING_INVALID_MEASUREMENT;
         }
+        refresh_commissioning_position();
         electrical_angle += electrical_step;
         platform_commissioning_drive(ALIGNMENT_VOLTAGE_D, 0.0f,
                                      (float)electrical_angle);
@@ -694,6 +709,7 @@ CommissioningStatus commissioning_run_motor_identification(MotorConfig *config)
         return COMMISSIONING_POWER_DISABLED;
     }
 
+    refresh_commissioning_position();
     const float locked_electrical_angle =
         g_app.rotor_angle * (float)config->pole_pairs +
         g_app.motor.electrical_offset;
@@ -710,11 +726,11 @@ CommissioningStatus commissioning_run_motor_identification(MotorConfig *config)
     if (!identify_electrical_parameters(locked_electrical_angle,
                                         &resistance, &inductance, &sample) ||
         (resistance < 0.0f)) {
-        /* run_motor_parameter_identification@0x257c4 prints error and
-         * returns here without restoring INT002. */
+        platform_commissioning_end();
         return COMMISSIONING_INVALID_MEASUREMENT;
     }
     if (inductance < 0.0f) {
+        platform_commissioning_end();
         return COMMISSIONING_INVALID_MEASUREMENT;
     }
     platform_commissioning_delay_us(5000U);

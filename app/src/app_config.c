@@ -61,7 +61,7 @@ void app_config_load_defaults(MotorConfig *config)
         .velocity_loop_enhancement = 100.0f,
         /* The recovered calibration record uses 1=inverted, 2=normal. */
         .direction = 2.0f,
-        .maximum_phase_current = 2.0f,
+        .maximum_phase_current = APP_PROFILE_MAXIMUM_PHASE_CURRENT,
         .position_sensor_scale = 0.1f,
         .communication_timeout = 0U,
         .hardware_version = 0x56303033UL,
