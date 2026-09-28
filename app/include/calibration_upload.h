@@ -8,7 +8,13 @@
 #include "motor_encoder_calibration.h"
 
 #define MOTOR_ENCODER_CALIBRATION_WORD_COUNT MOTOR_ENCODER_RECORD_WORD_COUNT
+#if defined(DAMIAO_DM8009)
+typedef float OutputSensorCalibrationUploadEntry;
+#define OUTPUT_SENSOR_CORRECTION_COUNT 256U
+#else
+typedef uint16_t OutputSensorCalibrationUploadEntry;
 #define OUTPUT_SENSOR_CORRECTION_COUNT 4096U
+#endif
 
 typedef enum {
     CALIBRATION_UPLOAD_NONE = 0,
@@ -27,6 +33,6 @@ bool calibration_upload_receive_frame(
 void calibration_upload_set_motor_direction(float direction);
 
 const uint32_t *calibration_upload_motor_record(void);
-const uint16_t *calibration_upload_output_table(void);
+const OutputSensorCalibrationUploadEntry *calibration_upload_output_table(void);
 
 #endif

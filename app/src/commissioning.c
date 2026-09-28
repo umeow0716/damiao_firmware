@@ -21,6 +21,7 @@
 #define ALIGNMENT_POINTS_PER_PAIR 256U
 #define OUTPUT_CALIBRATION_VOLTAGE_Q 0.2f
 #define OUTPUT_CALIBRATION_REPORT_DIVIDER 20U
+#define OUTPUT_TABLE_POINTS 256U
 #define OUTPUT_TABLE_POINTS_PER_MOTOR_TURN 4096U
 #define INV_SQRT3_F             0.5773502588272095f
 #define CURRENT_FULL_SCALE_A    APP_PROFILE_CURRENT_FULL_SCALE_A
@@ -125,6 +126,31 @@ static void send_sensor_sample(uint8_t marker, float first, float second,
     const uint32_t crc = crc32_mpeg2(frame, 17U);
     memcpy(&frame[17], &crc, sizeof(crc));
     platform_debug_write(frame, sizeof(frame));
+}
+
+
+static void send_output_sensor_raw_sample(uint16_t raw_u, uint16_t raw_v)
+{
+    /* Factory DM8009 output calibration sends marker 'h' as a 13-byte raw
+     * sensor snapshot: 'h', two zero float slots, then raw U/raw V.  It does
+     * not use the generic 21-byte float sample frame here. */
+    uint8_t frame[13] = {'h'};
+    frame[9] = (uint8_t)raw_u;
+    frame[10] = (uint8_t)(raw_u >> 8U);
+    frame[11] = (uint8_t)raw_v;
+    frame[12] = (uint8_t)(raw_v >> 8U);
+    platform_debug_write(frame, sizeof(frame));
+}
+
+static void send_output_sensor_result_table(const float table[OUTPUT_TABLE_POINTS])
+{
+    const uint8_t marker = 'H';
+    platform_debug_write(&marker, 1U);
+    platform_debug_write((const uint8_t *)table,
+                         OUTPUT_TABLE_POINTS * sizeof(float));
+    const uint32_t crc = crc32_mpeg2((const uint8_t *)table,
+                                     OUTPUT_TABLE_POINTS * sizeof(float));
+    platform_debug_write((const uint8_t *)&crc, sizeof(crc));
 }
 
 static void refresh_commissioning_position(void)
@@ -619,12 +645,8 @@ CommissioningStatus commissioning_run_output_sensor_calibration(void)
         refresh_commissioning_position();
         if (++report_count == OUTPUT_CALIBRATION_REPORT_DIVIDER) {
             report_count = 0U;
-            send_sensor_sample('h', g_app.motor_output_position,
-                               sample.output_position,
-                               wrap_signed(g_app.motor_output_position -
-                                           start_position),
-                               sample.output_raw_u,
-                               sample.output_raw_v);
+            send_output_sensor_raw_sample(sample.output_raw_u,
+                                          sample.output_raw_v);
         }
 
         const float electrical_angle =
@@ -656,6 +678,9 @@ CommissioningStatus commissioning_run_output_sensor_calibration(void)
     const float measurement_points = g_app.config.gear_ratio *
         (float)OUTPUT_TABLE_POINTS_PER_MOTOR_TURN;
     const uint32_t measurement_count = (uint32_t)measurement_points;
+    float output_table[OUTPUT_TABLE_POINTS] = {0.0f};
+    uint16_t output_table_counts[OUTPUT_TABLE_POINTS] = {0U};
+    report_count = 0U;
     /* measure_position_sensor_offset@0x24448 locks the d-axis at phase zero
      * and advances its double-precision phase accumulator from zero.  It
      * does not seed this pass from the live encoder angle. */
@@ -683,15 +708,27 @@ CommissioningStatus commissioning_run_output_sensor_calibration(void)
             ((double)g_app.config.pole_pairs *
              (double)g_app.config.gear_ratio));
         const float measured = sample.output_uncorrected_angle;
-        send_sensor_sample('H', commanded_output, measured,
-                           wrap_signed(commanded_output - measured),
-                           sample.output_raw_u, sample.output_raw_v);
+        const uint32_t table_index =
+            (count * OUTPUT_TABLE_POINTS) / measurement_count;
+        if (table_index < OUTPUT_TABLE_POINTS) {
+            output_table[table_index] += wrap_signed(commanded_output - measured);
+            ++output_table_counts[table_index];
+        }
+        if (++report_count == OUTPUT_CALIBRATION_REPORT_DIVIDER) {
+            report_count = 0U;
+            send_output_sensor_raw_sample(sample.output_raw_u,
+                                          sample.output_raw_v);
+        }
     }
 
-    platform_commissioning_drive(0.0f, 0.0f, 0.0f);
-    send_sensor_sample('Z', 0.0f, 0.0f, 0.0f,
-                       UINT16_MAX, UINT16_MAX);
+    for (uint32_t index = 0U; index < OUTPUT_TABLE_POINTS; ++index) {
+        if (output_table_counts[index] != 0U) {
+            output_table[index] /= (float)output_table_counts[index];
+        }
+    }
+    send_output_sensor_result_table(output_table);
     platform_commissioning_delay_us(1000U);
+    platform_commissioning_drive(0.0f, 0.0f, 0.0f);
     platform_commissioning_end();
     debug_console_printf(
         "u=%.4f v=%.4f  w=%.4f c=%.4f\r\n",

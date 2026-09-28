@@ -672,21 +672,25 @@ bool platform_load_motor_calibration(MotorController *controller)
     return true;
 }
 
+#if defined(DAMIAO_DM8009)
+bool platform_store_output_sensor_calibration(
+    const float correction_table[256], const float calibration[4])
+#else
 bool platform_store_output_sensor_calibration(
     const uint16_t correction_table[4096], const float calibration[4])
+#endif
 {
     if ((correction_table == NULL) || (calibration == NULL)) {
         return false;
     }
 #if defined(DAMIAO_DM8009)
     /* DM8009 stores [4 float params][256 float corrections] at 0x3a000
-     * in one 1040-byte block.  The uint16[4096] upload buffer is first
-     * converted to a float table, then packed with the parameters. */
+     * in one 1040-byte block.  The upload payload is already the factory
+     * 256-float 'H' table, so do not reinterpret it as uint16 counts. */
     static float packed_8009[4 + 256];
     memcpy(packed_8009, calibration, 4U * sizeof(float));
-    for (size_t index = 0U; index < CORRECTION_TABLE_COUNT; ++index) {
-        packed_8009[4U + index] = (float)correction_table[index];
-    }
+    memcpy(packed_8009 + 4U, correction_table,
+           CORRECTION_TABLE_COUNT * sizeof(float));
     if (!board_flash_replace_sector_prefix(
             OUTPUT_SENSOR_TABLE_FLASH_ADDRESS, packed_8009,
             sizeof(packed_8009))) {

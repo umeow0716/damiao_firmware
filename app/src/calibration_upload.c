@@ -11,7 +11,7 @@ enum {
 };
 
 static uint32_t motor_record[MOTOR_ENCODER_CALIBRATION_WORD_COUNT];
-static uint16_t output_table[OUTPUT_SENSOR_CORRECTION_COUNT];
+static OutputSensorCalibrationUploadEntry output_table[OUTPUT_SENSOR_CORRECTION_COUNT];
 static uint16_t next_motor_chunk;
 static uint16_t next_output_chunk;
 
@@ -86,10 +86,23 @@ static bool receive_output_chunk(const uint8_t *frame, uint8_t count,
                                  uint8_t index,
                                  CalibrationUploadKind *completed)
 {
+#if defined(DAMIAO_DM8009)
+    /* Factory DM8009 GUI uploads the 256-float O-sensor table emitted by the
+     * 'H' result stream.  Full packets carry 15 floats = 60 bytes; the final
+     * packet carries one float. */
+    const size_t byte_count = (size_t)count * sizeof(float);
+    if (count > 15U) {
+        return false;
+    }
+#else
     const size_t byte_count = (size_t)count * sizeof(uint16_t);
+    if (count > 30U) {
+        return false;
+    }
+#endif
     const size_t offset = (size_t)index * CHUNK_BYTES;
     const size_t total = sizeof(output_table);
-    if ((count > 30U) || (index != next_output_chunk) ||
+    if ((index != next_output_chunk) ||
         (offset + byte_count > total) ||
         ((offset + byte_count < total) && (byte_count != CHUNK_BYTES))) {
         return false;
@@ -150,7 +163,7 @@ const uint32_t *calibration_upload_motor_record(void)
     return motor_record;
 }
 
-const uint16_t *calibration_upload_output_table(void)
+const OutputSensorCalibrationUploadEntry *calibration_upload_output_table(void)
 {
     return output_table;
 }

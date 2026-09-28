@@ -54,8 +54,13 @@ void platform_commissioning_reset_motor_encoder(void);
 bool platform_commissioning_apply_output_calibration(
     const float calibration[4], uint16_t initial_u, uint16_t initial_v);
 void platform_commissioning_end(void);
+#if defined(DAMIAO_DM8009)
+bool platform_store_output_sensor_calibration(
+    const float correction_table[256], const float calibration[4]);
+#else
 bool platform_store_output_sensor_calibration(
     const uint16_t correction_table[4096], const float calibration[4]);
+#endif
 bool platform_store_motor_encoder_calibration(
     const uint32_t record[259]);
 bool platform_mcan_receive(CanFrame *frame);
