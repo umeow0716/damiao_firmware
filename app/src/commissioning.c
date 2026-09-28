@@ -52,6 +52,9 @@
 #define IDENTIFICATION_LPF_OLD 0.7991513609886169f
 #define IDENTIFICATION_LPF_NEW 0.20084863901138306f
 
+static float g_output_sensor_result_table[OUTPUT_TABLE_POINTS];
+static uint16_t g_output_sensor_result_counts[OUTPUT_TABLE_POINTS];
+
 static float wrap_signed(float angle)
 {
     while (angle > 0x1.921fb6p+1f) {
@@ -678,8 +681,8 @@ CommissioningStatus commissioning_run_output_sensor_calibration(void)
     const float measurement_points = g_app.config.gear_ratio *
         (float)OUTPUT_TABLE_POINTS_PER_MOTOR_TURN;
     const uint32_t measurement_count = (uint32_t)measurement_points;
-    float output_table[OUTPUT_TABLE_POINTS] = {0.0f};
-    uint16_t output_table_counts[OUTPUT_TABLE_POINTS] = {0U};
+    memset(g_output_sensor_result_table, 0, sizeof(g_output_sensor_result_table));
+    memset(g_output_sensor_result_counts, 0, sizeof(g_output_sensor_result_counts));
     report_count = 0U;
     /* measure_position_sensor_offset@0x24448 locks the d-axis at phase zero
      * and advances its double-precision phase accumulator from zero.  It
@@ -711,8 +714,9 @@ CommissioningStatus commissioning_run_output_sensor_calibration(void)
         const uint32_t table_index =
             (count * OUTPUT_TABLE_POINTS) / measurement_count;
         if (table_index < OUTPUT_TABLE_POINTS) {
-            output_table[table_index] += wrap_signed(commanded_output - measured);
-            ++output_table_counts[table_index];
+            g_output_sensor_result_table[table_index] +=
+                wrap_signed(commanded_output - measured);
+            ++g_output_sensor_result_counts[table_index];
         }
         if (++report_count == OUTPUT_CALIBRATION_REPORT_DIVIDER) {
             report_count = 0U;
@@ -722,11 +726,12 @@ CommissioningStatus commissioning_run_output_sensor_calibration(void)
     }
 
     for (uint32_t index = 0U; index < OUTPUT_TABLE_POINTS; ++index) {
-        if (output_table_counts[index] != 0U) {
-            output_table[index] /= (float)output_table_counts[index];
+        if (g_output_sensor_result_counts[index] != 0U) {
+            g_output_sensor_result_table[index] /=
+                (float)g_output_sensor_result_counts[index];
         }
     }
-    send_output_sensor_result_table(output_table);
+    send_output_sensor_result_table(g_output_sensor_result_table);
     platform_commissioning_delay_us(1000U);
     platform_commissioning_drive(0.0f, 0.0f, 0.0f);
     platform_commissioning_end();
