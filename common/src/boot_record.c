@@ -36,10 +36,11 @@ void boot_record_confirm_application(BootPersistentRecord *record)
     }
 }
 
-void boot_record_set_application_identity(BootPersistentRecord *record)
+void boot_record_set_application_identity(BootPersistentRecord *record,
+                                          uint32_t application_identity)
 {
     if (record != 0) {
-        record->application_identity = APP_APPLICATION_IDENTITY;
+        record->application_identity = application_identity;
     }
 }
 

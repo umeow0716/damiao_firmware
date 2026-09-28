@@ -119,8 +119,8 @@ int main(void)
      * loader clears the record to (0, 0), and only this write changes it to
      * the normal (0, 1) state. */
     platform_confirm_application_boot();
-    /* store_application_identity@0x26e90 follows boot confirmation and
-     * normalizes boot-record word 3 to 0x07010005. */
+    /* store_application_identity follows boot confirmation and normalizes
+     * boot-record word 3 to the target-specific APP identity. */
     platform_update_application_identity();
     __enable_irq();
     app_state_init();

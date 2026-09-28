@@ -396,7 +396,7 @@ void debug_console_print_banner(void)
 
 void debug_console_print_status(void)
 {
-    write_text("DMBOT Motor Driver - umeow custom");
+    write_text("DMBOT Motor Driver");
     switch (platform_read_hardware_variant()) {
     case 0U: write_text("--V2.0"); break;
     case 1U: write_text("--V3.0"); break;

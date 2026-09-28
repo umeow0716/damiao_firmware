@@ -748,12 +748,13 @@ bool platform_update_application_identity(void)
 {
     const BootPersistentRecord *const stored =
         (const BootPersistentRecord *)APP_BOOT_RECORD_ADDRESS;
-    if (stored->application_identity == APP_APPLICATION_IDENTITY) {
+    if (stored->application_identity == APP_PROFILE_APPLICATION_IDENTITY) {
         return true;
     }
     BootPersistentRecord record;
     memcpy(&record, stored, sizeof(record));
-    boot_record_set_application_identity(&record);
+    boot_record_set_application_identity(
+        &record, APP_PROFILE_APPLICATION_IDENTITY);
     return board_flash_replace_sector_prefix(APP_BOOT_RECORD_ADDRESS,
                                               &record, sizeof(record));
 }
