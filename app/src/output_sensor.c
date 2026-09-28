@@ -58,31 +58,12 @@ static void decode_filtered_angle(OutputSensorState *state)
         ((float)state->correction_table[index] - TABLE_INDEX_CENTER) *
             TABLE_COUNT_TO_RAD : 0.0f;
 #elif defined(DAMIAO_DM8009)
-    float scaled = TABLE_INDEX_CENTER +
-                   uncorrected * ANGLE_TO_TABLE_INDEX;
-    while (scaled < 0.0f) {
-        scaled += (float)CORRECTION_TABLE_COUNT;
-    }
-    while (scaled >= (float)CORRECTION_TABLE_COUNT) {
-        scaled -= (float)CORRECTION_TABLE_COUNT;
-    }
-    const uint32_t index_u = (uint32_t)scaled;
-    const uint32_t index_next = (index_u + 1U) & 0xFFU;
-    const float fraction = scaled - (float)index_u;
-    const float table_base = state->correction_table != NULL ?
-        state->correction_table[index_u] : 0.0f;
-    const float table_next = state->correction_table != NULL ?
-        state->correction_table[index_next] : 0.0f;
-    const float correction = table_base +
-        fraction * (table_next - table_base);
-    /* The DM8009 0x3a000 table stores the residual error of the raw
-     * analogue output angle.  Factory V7318 subtracts that residual from
-     * atan2(), rather than treating the entry as an absolute position or
-     * adding it.  Adding it shifts the boot banner by roughly twice the
-     * local correction, which is the observed -1.3978/-1.1833 drift away
-     * from the factory -1.2582 position. */
-    const float wrapped = state->correction_table != NULL ?
-        uncorrected - correction : uncorrected;
+    /* V7318 validates and preserves the 256-float O-sensor table, but the
+     * boot/runtime output angle consumed by the status banner is the raw
+     * calibrated atan2() result.  Applying the table as either +correction or
+     * -correction moves the observed DM8009 boot position away from the
+     * factory value (-1.3978/-1.3342 instead of -1.2582). */
+    const float wrapped = uncorrected;
 #endif
 
     const float delta = wrapped - state->previous_angle;

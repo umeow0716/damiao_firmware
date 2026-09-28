@@ -40,13 +40,11 @@ void board_led_set(BoardLedColor color)
 #if defined(DAMIAO_DM8009)
 void board_led_set_factory_ready_state(void)
 {
-    /* APP_DM8009_V4_V7318_04 load_calibration success path writes both
-     * GPIO set registers directly: PC13 POSRC |= 0x2000 and PH2 POSRH |= 4.
-     * Keep the side effect separate from board_led_set(), which intentionally
-     * selects one status colour by clearing the opposite channel first. */
-    CM_GPIO->POSRC = RED_LED_MASK;
-    CM_GPIO->POSRH = GREEN_LED_MASK;
-    __DSB();
+    /* PC13 and PH2 drive opposite sides of the two-colour LED.  Driving both
+     * pins to the same level leaves no voltage across the LED, which is the
+     * observed post-boot dark state.  Keep the DM8009 idle/menu indication on
+     * the normal red status path after calibration succeeds. */
+    board_led_set(BOARD_LED_RED);
 }
 #endif
 
