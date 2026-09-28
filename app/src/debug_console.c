@@ -423,7 +423,7 @@ void debug_console_print_status(void)
     debug_console_printf(" Mechanical Offset:   %.4f\n\r",
                          (double)g_app.motor.motor_output_position_offset);
     debug_console_printf(" Output Position:  %.4f\n\r",
-                         (double)g_app.motor.feedback.position);
+                         (double)g_app.position);
     debug_console_printf(" CAN ID:     0x%03x\n\r",
                          (unsigned int)g_app.config.can_id);
     debug_console_printf(" MASTER ID:  0x%03x\n\r",

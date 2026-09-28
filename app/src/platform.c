@@ -246,22 +246,16 @@ bool platform_initialize_runtime(void)
                        startup.output_sensor_calibration.mean_u,
                        startup.output_sensor_calibration.mean_v);
     output_sensor_normalize_startup(&output_sensor);
-#if defined(DAMIAO_DM8009)
-    uint16_t startup_position_word;
-    if (board_position_sample_now(&startup_position_word)) {
-        position_sensor_update(&position_sensor, startup_position_word);
-    }
-#endif
     position_sensor_align_to_output(&position_sensor,
                                     output_sensor.continuous_angle);
 #if defined(DAMIAO_DM8009)
-    /* g_app.position remains the analogue output encoder path used by setup
-     * and zeroing.  The factory V7318 boot banner prints the motor-control
-     * feedback position, so publish the freshly sampled SPI encoder into that
-     * path before the banner is emitted. */
+    /* The V7318 boot status line reports the corrected analogue output
+     * encoder angle.  The motor-side SPI encoder is still aligned here for
+     * the control loop, but it is not the source of the banner's
+     * "Output Position" value. */
     g_app.position = output_sensor.continuous_angle;
     g_app.motor_output_position = position_sensor.output_position;
-    g_app.motor.feedback.position = position_sensor.output_position;
+    g_app.motor.feedback.position = output_sensor.continuous_angle;
     g_app.rotor_position = position_sensor.continuous_angle;
     g_app.rotor_angle = position_sensor.wrapped_angle;
     g_app.raw_position = position_sensor.raw_position;

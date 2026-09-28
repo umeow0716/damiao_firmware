@@ -32,9 +32,6 @@ typedef struct {
 void board_position_build_config(BoardPositionRegisterImage *config);
 bool board_position_init(void);
 bool board_position_take_sample(uint16_t *dma_word);
-#if defined(DAMIAO_DM8009)
-bool board_position_sample_now(uint16_t *spi_word);
-#endif
 void board_position_handle_timer_interrupt(void);
 void board_position_ack_dma_interrupt(void);
 

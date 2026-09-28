@@ -75,8 +75,14 @@ static void decode_filtered_angle(OutputSensorState *state)
         state->correction_table[index_next] : 0.0f;
     const float correction = table_base +
         fraction * (table_next - table_base);
+    /* The DM8009 0x3a000 table stores the residual error of the raw
+     * analogue output angle.  Factory V7318 subtracts that residual from
+     * atan2(), rather than treating the entry as an absolute position or
+     * adding it.  Adding it shifts the boot banner by roughly twice the
+     * local correction, which is the observed -1.3978/-1.1833 drift away
+     * from the factory -1.2582 position. */
     const float wrapped = state->correction_table != NULL ?
-        uncorrected + correction : uncorrected;
+        uncorrected - correction : uncorrected;
 #endif
 
     const float delta = wrapped - state->previous_angle;
