@@ -130,6 +130,20 @@ bool board_position_take_sample(uint16_t *dma_word)
     return true;
 }
 
+#if defined(DAMIAO_DM8009)
+bool board_position_sample_now(uint16_t *spi_word)
+{
+    if (!position_initialized || (spi_word == NULL)) {
+        return false;
+    }
+
+    const uint16_t word = spi_transfer(0U);
+    position_dma_word = word;
+    *spi_word = word;
+    return true;
+}
+#endif
+
 void board_position_handle_timer_interrupt(void)
 {
     if (!position_initialized) {

@@ -42,7 +42,11 @@
 #define MOTOR_ENCODER_CALIBRATION_FLASH_ADDRESS (0x0003C000UL)
 #define POSITION_VELOCITY_SAMPLE_FREQUENCY (1000.0f)
 #define POSITION_VELOCITY_DECIMATION (20U)
+#if defined(DAMIAO_DM4310)
 #define BUS_VOLTS_PER_COUNT (0x1.226666p-7f)
+#elif defined(DAMIAO_DM8009)
+#define BUS_VOLTS_PER_COUNT (0x1.993334p-6f)
+#endif
 #define STARTUP_MAX_BUS_VOLTAGE (32.0f)
 #define OTP_KEY_SLOT_BASE       (0x03000C00UL)
 #define OTP_KEY_SLOT_STRIDE     (0x40UL)
@@ -242,8 +246,26 @@ bool platform_initialize_runtime(void)
                        startup.output_sensor_calibration.mean_u,
                        startup.output_sensor_calibration.mean_v);
     output_sensor_normalize_startup(&output_sensor);
+#if defined(DAMIAO_DM8009)
+    uint16_t startup_position_word;
+    if (board_position_sample_now(&startup_position_word)) {
+        position_sensor_update(&position_sensor, startup_position_word);
+    }
+#endif
     position_sensor_align_to_output(&position_sensor,
                                     output_sensor.continuous_angle);
+#if defined(DAMIAO_DM8009)
+    /* g_app.position remains the analogue output encoder path used by setup
+     * and zeroing.  The factory V7318 boot banner prints the motor-control
+     * feedback position, so publish the freshly sampled SPI encoder into that
+     * path before the banner is emitted. */
+    g_app.position = output_sensor.continuous_angle;
+    g_app.motor_output_position = position_sensor.output_position;
+    g_app.motor.feedback.position = position_sensor.output_position;
+    g_app.rotor_position = position_sensor.continuous_angle;
+    g_app.rotor_angle = position_sensor.wrapped_angle;
+    g_app.raw_position = position_sensor.raw_position;
+#endif
     const bool current_sensor_ok =
         startup.output_sensor_calibration_ready &&
         sensor_calibration_current_means_valid(
