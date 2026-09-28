@@ -30,7 +30,7 @@ help:
 	@echo "Default toolchain root: tools/arm-gnu-toolchain"
 	@echo "Override only when needed: DM_ARM_TOOLCHAIN_ROOT=/path/to/arm-gnu-toolchain make"
 	@echo ""
-	@echo "Current DM8009 behavior: source APP target is separate, model constants still need recovered DM8009 defaults."
+	@echo "Current DM8009 behavior: source APP target tracks the recovered V7318 DM8009 profile separately from DM4310."
 	@echo "Bootloader source is intentionally not built or tracked in this app-only workspace."
 	@echo "No DM4310-vs-DM8009 byte-equality check is enforced; the two models may diverge during development."
 

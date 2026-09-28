@@ -3,6 +3,7 @@
 #include "app_profile.h"
 
 #include <math.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "motor_encoder_calibration.h"
@@ -25,6 +26,19 @@
 #define DM8009_I_SENSOR_LIMIT          300.0f
 #define DM8009_O_SENSOR_LIMIT          0x1.657186p-3f
 #define DM8009_O_SENSOR_SUM_LIMIT      0x1.657186p-4f
+
+#if defined(DAMIAO_DM8009)
+static bool official_nan_to_zero(float *value)
+{
+    uint32_t bits;
+    memcpy(&bits, value, sizeof(bits));
+    if ((bits & 0x7FFFFFFFUL) > 0x7F800000UL) {
+        *value = 0.0f;
+        return true;
+    }
+    return false;
+}
+#endif
 
 MotorFault sensor_calibration_validate_position(
     const uint16_t *samples, size_t sample_count, float *maximum_step)
@@ -82,7 +96,8 @@ MotorFault sensor_calibration_validate_current_record(
         return MOTOR_FAULT_OUTPUT_CALIBRATION_MISSING;
     }
     for (size_t index = 0U; index < sample_count; ++index) {
-        const float value = correction[index];
+        float value = correction[index];
+        (void)official_nan_to_zero(&value);
         if (value > largest) {
             largest = value;
         }
@@ -118,8 +133,10 @@ MotorFault sensor_calibration_validate_output_record(
         }
         return MOTOR_FAULT_OUTPUT_CALIBRATION_MISSING;
     }
+    bool missing_entry = false;
     for (size_t index = 0U; index < sample_count; ++index) {
-        const float value = correction[index];
+        float value = correction[index];
+        missing_entry = official_nan_to_zero(&value) || missing_entry;
         if (value > largest) {
             largest = value;
         }
@@ -137,6 +154,9 @@ MotorFault sensor_calibration_validate_output_record(
         smallest <= -DM8009_O_SENSOR_LIMIT ||
         fabsf(largest + smallest) >= DM8009_O_SENSOR_SUM_LIMIT) {
         return MOTOR_FAULT_OUTPUT_CALIBRATION;
+    }
+    if (missing_entry) {
+        return MOTOR_FAULT_OUTPUT_CALIBRATION_MISSING;
     }
     return MOTOR_FAULT_NONE;
 }

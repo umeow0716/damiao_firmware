@@ -58,18 +58,25 @@ static void decode_filtered_angle(OutputSensorState *state)
         ((float)state->correction_table[index] - TABLE_INDEX_CENTER) *
             TABLE_COUNT_TO_RAD : 0.0f;
 #elif defined(DAMIAO_DM8009)
-    const float scaled = TABLE_INDEX_CENTER +
-                         uncorrected * ANGLE_TO_TABLE_INDEX;
-    const uint32_t index_u = (uint32_t)scaled & 0xFFU;
+    float scaled = TABLE_INDEX_CENTER +
+                   uncorrected * ANGLE_TO_TABLE_INDEX;
+    while (scaled < 0.0f) {
+        scaled += (float)CORRECTION_TABLE_COUNT;
+    }
+    while (scaled >= (float)CORRECTION_TABLE_COUNT) {
+        scaled -= (float)CORRECTION_TABLE_COUNT;
+    }
+    const uint32_t index_u = (uint32_t)scaled;
     const uint32_t index_next = (index_u + 1U) & 0xFFU;
     const float fraction = scaled - (float)index_u;
     const float table_base = state->correction_table != NULL ?
         state->correction_table[index_u] : 0.0f;
     const float table_next = state->correction_table != NULL ?
         state->correction_table[index_next] : 0.0f;
+    const float correction = table_base +
+        fraction * (table_next - table_base);
     const float wrapped = state->correction_table != NULL ?
-        (table_base - TABLE_INDEX_CENTER) * TABLE_COUNT_TO_RAD +
-        fraction * (table_next - table_base) : 0.0f;
+        uncorrected + correction : uncorrected;
 #endif
 
     const float delta = wrapped - state->previous_angle;

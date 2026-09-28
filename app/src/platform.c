@@ -610,6 +610,9 @@ bool platform_load_motor_calibration(MotorController *controller)
         (const float *)output_sensor_correction,
         CORRECTION_TABLE_COUNT, &o_sensor_max, &o_sensor_min);
     output_sensor_table_valid = output_sensor_table_fault == MOTOR_FAULT_NONE;
+    if (output_sensor_table_valid) {
+        board_led_set_factory_ready_state();
+    }
     if (output_sensor_table_fault == MOTOR_FAULT_OUTPUT_CALIBRATION) {
         debug_console_printf("O-sensor fail!Max=%.4f Min=%.4f\r\n",
                              (double)o_sensor_max, (double)o_sensor_min);
@@ -669,6 +672,7 @@ bool platform_store_output_sensor_calibration(
     output_sensor.correction_table = output_sensor_correction;
     output_sensor_table_valid = true;
     output_sensor_table_fault = MOTOR_FAULT_NONE;
+    board_led_set_factory_ready_state();
     return true;
 #else
     if (!board_flash_replace_sector_prefix(
