@@ -1,5 +1,6 @@
 #include "app_state.h"
 #include "app_commands.h"
+#include "app_profile.h"
 #include <string.h>
 
 #include "commissioning.h"
@@ -53,6 +54,10 @@ static void service_deferred_events(void)
     if (g_app.events.commission_direction) {
         commissioning_run_direction_and_alignment(&g_app.config);
         g_app.events.commission_direction = false;
+#if defined(DAMIAO_DM8009)
+        debug_console_printf("E_OFF = %f\r\n",
+                             (double)g_app.motor.electrical_offset);
+#endif
         debug_console_return_to_menu();
     }
     if (g_app.events.commission_position_sensor) {

@@ -4,8 +4,18 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "app_profile.h"
+
+#if defined(DAMIAO_DM4310)
+typedef uint16_t CorrectionTableEntry;
+#define CORRECTION_TABLE_COUNT 4096U
+#elif defined(DAMIAO_DM8009)
+typedef float CorrectionTableEntry;
+#define CORRECTION_TABLE_COUNT 256U
+#endif
+
 typedef struct {
-    const uint16_t *correction_table;
+    const CorrectionTableEntry *correction_table;
     float filtered_u;
     float filtered_v;
     float filter_previous_weight;
@@ -24,7 +34,7 @@ typedef struct {
 
 void output_sensor_init(OutputSensorState *state,
                         const float calibration[4],
-                        const uint16_t correction_table[4096],
+                        const CorrectionTableEntry correction_table[CORRECTION_TABLE_COUNT],
                         float zero_offset,
                         float initial_u, float initial_v);
 void output_sensor_update(OutputSensorState *state,

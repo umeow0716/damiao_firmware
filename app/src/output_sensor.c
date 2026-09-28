@@ -4,13 +4,20 @@
 #include <string.h>
 
 #include "motor_math.h"
+#include "app_profile.h"
 /* Exact transforms used by output_sensor_lookup_and_unwrap@0x1fff987c.
  * This is the output-side analogue sin/cos encoder, distinct from the
  * SPI/DMA motor encoder. */
 #define TWO_PI_F             0x1.921fb6p+2f
+#if defined(DAMIAO_DM4310)
 #define TABLE_INDEX_CENTER   2048.0f
 #define ANGLE_TO_TABLE_INDEX 0x1.45f306p+9f
 #define TABLE_COUNT_TO_RAD   0x1.921fb6p-10f
+#elif defined(DAMIAO_DM8009)
+#define TABLE_INDEX_CENTER   128.0f
+#define ANGLE_TO_TABLE_INDEX 40.743663788f
+#define TABLE_COUNT_TO_RAD   0x1.921fb6p-10f
+#endif
 #define WRAP_THRESHOLD       5.5f
 #define FILTER_SAMPLE_RATE   20000.0f
 
@@ -35,6 +42,7 @@ static void decode_filtered_angle(OutputSensorState *state)
 {
     const float uncorrected = output_sensor_uncorrected_angle(state);
 
+#if defined(DAMIAO_DM4310)
     int32_t index = (int32_t)(TABLE_INDEX_CENTER +
                               uncorrected * ANGLE_TO_TABLE_INDEX);
     if (index < 0) {
@@ -49,6 +57,20 @@ static void decode_filtered_angle(OutputSensorState *state)
     const float wrapped = state->correction_table != NULL ?
         ((float)state->correction_table[index] - TABLE_INDEX_CENTER) *
             TABLE_COUNT_TO_RAD : 0.0f;
+#elif defined(DAMIAO_DM8009)
+    const float scaled = TABLE_INDEX_CENTER +
+                         uncorrected * ANGLE_TO_TABLE_INDEX;
+    const uint32_t index_u = (uint32_t)scaled & 0xFFU;
+    const uint32_t index_next = (index_u + 1U) & 0xFFU;
+    const float fraction = scaled - (float)index_u;
+    const float table_base = state->correction_table != NULL ?
+        state->correction_table[index_u] : 0.0f;
+    const float table_next = state->correction_table != NULL ?
+        state->correction_table[index_next] : 0.0f;
+    const float wrapped = state->correction_table != NULL ?
+        (table_base - TABLE_INDEX_CENTER) * TABLE_COUNT_TO_RAD +
+        fraction * (table_next - table_base) : 0.0f;
+#endif
 
     const float delta = wrapped - state->previous_angle;
     if (delta > WRAP_THRESHOLD) {
@@ -65,7 +87,7 @@ static void decode_filtered_angle(OutputSensorState *state)
 
 void output_sensor_init(OutputSensorState *state,
                         const float calibration[4],
-                        const uint16_t correction_table[4096],
+                        const CorrectionTableEntry correction_table[CORRECTION_TABLE_COUNT],
                         float zero_offset,
                         float initial_u, float initial_v)
 {

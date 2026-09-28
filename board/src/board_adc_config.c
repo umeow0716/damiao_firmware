@@ -2,13 +2,21 @@
 
 #include <string.h>
 
+#include "app_profile.h"
+
 void board_adc_build_config(BoardAdcRegisterImage *config)
 {
     memset(config, 0, sizeof(*config));
     config->channel_select = 0x00000007UL;
+#if defined(DAMIAO_DM4310)
     config->adc1_channel_mux = 0x3210U;
     config->adc2_channel_mux = 0x3510U;
     config->adc3_channel_mux = 0x3B76U;
+#elif defined(DAMIAO_DM8009)
+    config->adc1_channel_mux = 0x0213U;
+    config->adc2_channel_mux = 0x3015U;
+    config->adc3_channel_mux = 0x3B76U;
+#endif
     config->trigger_select = 0x0081U;
     /* validate_current_sensors writes SYNCMD=3, then sets SYNCEN.  SYNCDLY
      * bit 8 reads back as one on the captured target, but is not part of the

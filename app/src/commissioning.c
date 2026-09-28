@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "app_profile.h"
 #include "app_state.h"
 #include "debug_console.h"
 #include "motor_math.h"
@@ -22,7 +23,11 @@
 #define OUTPUT_CALIBRATION_REPORT_DIVIDER 20U
 #define OUTPUT_TABLE_POINTS_PER_MOTOR_TURN 4096U
 #define INV_SQRT3_F             0.5773502588272095f
+#if defined(DAMIAO_DM4310)
 #define CURRENT_FULL_SCALE_A    10.261194229125977f
+#elif defined(DAMIAO_DM8009)
+#define CURRENT_FULL_SCALE_A    10.0f
+#endif
 #define IDENTIFICATION_LOCK_STEPS 6284U
 #define IDENTIFICATION_ELECTRICAL_STEPS 60000U
 #define IDENTIFICATION_RLS_START_STEP 20000U

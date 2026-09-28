@@ -1,5 +1,7 @@
 #include "sensor_calibration.h"
 
+#include "app_profile.h"
+
 #include <math.h>
 #include <string.h>
 
@@ -17,6 +19,12 @@
  * clearer and produces the same decision for finite positive ADC means. */
 #define CURRENT_SENSOR_MINIMUM 186.18182373046875f
 #define CURRENT_SENSOR_MAXIMUM 3909.818359375f
+
+/* DM8009 calibration validation limits, recovered from 0x229b0/0x229b8
+ * and 0x22a24/0x22a28/0x22a2c in APP_DM8009_V4_V7318_04. */
+#define DM8009_I_SENSOR_LIMIT          300.0f
+#define DM8009_O_SENSOR_LIMIT          0x1.657186p-3f
+#define DM8009_O_SENSOR_SUM_LIMIT      0x1.657186p-4f
 
 MotorFault sensor_calibration_validate_position(
     const uint16_t *samples, size_t sample_count, float *maximum_step)
@@ -56,6 +64,83 @@ MotorFault sensor_calibration_validate_position(
     return (largest <= MAX_POSITION_STEP) ? MOTOR_FAULT_NONE :
                                             MOTOR_FAULT_OUTPUT_CALIBRATION;
 }
+
+#if defined(DAMIAO_DM8009)
+MotorFault sensor_calibration_validate_current_record(
+    const float *correction, size_t sample_count, float *maximum_value,
+    float *minimum_value)
+{
+    float largest = -65536.0f;
+    float smallest = 65536.0f;
+    if ((correction == NULL) || (sample_count != 256U)) {
+        if (maximum_value != NULL) {
+            *maximum_value = INFINITY;
+        }
+        if (minimum_value != NULL) {
+            *minimum_value = -INFINITY;
+        }
+        return MOTOR_FAULT_OUTPUT_CALIBRATION_MISSING;
+    }
+    for (size_t index = 0U; index < sample_count; ++index) {
+        const float value = correction[index];
+        if (value > largest) {
+            largest = value;
+        }
+        if (value < smallest) {
+            smallest = value;
+        }
+    }
+    if (maximum_value != NULL) {
+        *maximum_value = largest;
+    }
+    if (minimum_value != NULL) {
+        *minimum_value = smallest;
+    }
+    if (largest >= DM8009_I_SENSOR_LIMIT ||
+        smallest <= -DM8009_I_SENSOR_LIMIT) {
+        return MOTOR_FAULT_OUTPUT_SENSOR;
+    }
+    return MOTOR_FAULT_NONE;
+}
+
+MotorFault sensor_calibration_validate_output_record(
+    const float *correction, size_t sample_count, float *maximum_value,
+    float *minimum_value)
+{
+    float largest = -100.0f;
+    float smallest = 100.0f;
+    if ((correction == NULL) || (sample_count != 256U)) {
+        if (maximum_value != NULL) {
+            *maximum_value = INFINITY;
+        }
+        if (minimum_value != NULL) {
+            *minimum_value = -INFINITY;
+        }
+        return MOTOR_FAULT_OUTPUT_CALIBRATION_MISSING;
+    }
+    for (size_t index = 0U; index < sample_count; ++index) {
+        const float value = correction[index];
+        if (value > largest) {
+            largest = value;
+        }
+        if (value < smallest) {
+            smallest = value;
+        }
+    }
+    if (maximum_value != NULL) {
+        *maximum_value = largest;
+    }
+    if (minimum_value != NULL) {
+        *minimum_value = smallest;
+    }
+    if (largest >= DM8009_O_SENSOR_LIMIT ||
+        smallest <= -DM8009_O_SENSOR_LIMIT ||
+        fabsf(largest + smallest) >= DM8009_O_SENSOR_SUM_LIMIT) {
+        return MOTOR_FAULT_OUTPUT_CALIBRATION;
+    }
+    return MOTOR_FAULT_NONE;
+}
+#endif
 
 bool sensor_calibration_decode_motor_record(
     const uint32_t record[MOTOR_ENCODER_RECORD_WORD_COUNT],

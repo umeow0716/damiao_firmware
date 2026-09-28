@@ -22,6 +22,14 @@ typedef struct {
 
 MotorFault sensor_calibration_validate_position(
     const uint16_t *samples, size_t sample_count, float *maximum_step);
+#if defined(DAMIAO_DM8009)
+MotorFault sensor_calibration_validate_current_record(
+    const float *correction, size_t sample_count, float *maximum_value,
+    float *minimum_value);
+MotorFault sensor_calibration_validate_output_record(
+    const float *correction, size_t sample_count, float *maximum_value,
+    float *minimum_value);
+#endif
 bool sensor_calibration_validate_output_parameters(
     const float calibration[4]);
 bool sensor_calibration_analyze_output_extrema(

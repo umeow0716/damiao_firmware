@@ -2,11 +2,17 @@
 
 #include <string.h>
 
+#include "app_profile.h"
+
 #define CURRENT_ADC_SCALE               (0x1p-11f)
 #define CONTROL_SAMPLE_PERIOD           (0.00005f)
 #define OUTER_SAMPLE_PERIOD             (0.001f)
 #define OUTER_SAMPLE_FREQUENCY          (1000.0f)
+#if defined(DAMIAO_DM4310)
 #define VOLTAGE_NORMALIZATION (10.261194229125977f)
+#elif defined(DAMIAO_DM8009)
+#define VOLTAGE_NORMALIZATION (10.0f)
+#endif
 #define INV_SQRT3_F                     (0.5773502588272095f)
 #define INV_TWO_PI_F                    (0.15915493667125702f)
 #define TWO_PI_F                        (6.2831854820251465f)

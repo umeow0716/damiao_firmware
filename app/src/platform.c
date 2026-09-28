@@ -20,6 +20,7 @@
 #include "device_auth.h"
 #include "debug_console.h"
 #include "app_config.h"
+#include "app_profile.h"
 #include "app_state.h"
 #include "motor_encoder_calibration.h"
 #include "output_sensor.h"
@@ -30,8 +31,13 @@
 #include "system_hc32f448.h"
 
 #define APP_CONFIG_FLASH_ADDRESS (0x0003E000UL)
+#if defined(DAMIAO_DM4310)
 #define ZERO_POSITION_FLASH_ADDRESS (0x00036000UL)
 #define OUTPUT_SENSOR_PARAMETERS_FLASH_ADDRESS (0x00038000UL)
+#elif defined(DAMIAO_DM8009)
+#define ZERO_POSITION_FLASH_ADDRESS (0x00038000UL)
+#define OUTPUT_SENSOR_PARAMETERS_FLASH_ADDRESS (0x0003A000UL)
+#endif
 #define OUTPUT_SENSOR_TABLE_FLASH_ADDRESS (0x0003A000UL)
 #define MOTOR_ENCODER_CALIBRATION_FLASH_ADDRESS (0x0003C000UL)
 #define POSITION_VELOCITY_SAMPLE_FREQUENCY (1000.0f)
@@ -46,7 +52,7 @@ static OutputSensorState output_sensor;
 static bool recovery_transport_ready;
 static uint8_t cached_hardware_variant;
 static float motor_encoder_correction[256];
-static uint16_t output_sensor_correction[4096];
+static CorrectionTableEntry output_sensor_correction[CORRECTION_TABLE_COUNT];
 static float output_sensor_calibration[4];
 static bool output_sensor_table_valid;
 static MotorFault output_sensor_table_fault;
@@ -246,14 +252,22 @@ bool platform_initialize_runtime(void)
     if (startup.output_sensor_calibration_ready &&
         !sensor_calibration_current_mean_valid(
             startup.output_sensor_calibration.mean_u)) {
+#if defined(DAMIAO_DM4310)
         debug_console_printf("Sensor U broken!U=%.4f\r\n",
                              (double)startup.output_sensor_calibration.mean_u);
+#elif defined(DAMIAO_DM8009)
+        debug_console_printf("Sensor U broken!\r\n");
+#endif
     }
     if (startup.output_sensor_calibration_ready &&
         !sensor_calibration_current_mean_valid(
             startup.output_sensor_calibration.mean_v)) {
+#if defined(DAMIAO_DM4310)
         debug_console_printf("Sensor V broken!V=%.4f\r\n",
                              (double)startup.output_sensor_calibration.mean_v);
+#elif defined(DAMIAO_DM8009)
+        debug_console_printf("Sensor V broken!\r\n");
+#endif
     }
     if (!current_sensor_ok) {
         startup_fault = MOTOR_FAULT_OUTPUT_SENSOR;
@@ -567,10 +581,46 @@ bool platform_load_motor_calibration(MotorController *controller)
     g_app.config.direction = stored_direction;
     g_app.config.sensor_inverted = stored_direction == 1.0f;
 
+#if defined(DAMIAO_DM8009)
+    float i_sensor_max;
+    float i_sensor_min;
+    const MotorFault i_sensor_fault =
+        sensor_calibration_validate_current_record(
+            motor_encoder_correction,
+            MOTOR_ENCODER_CORRECTION_COUNT,
+            &i_sensor_max, &i_sensor_min);
+    if (i_sensor_fault == MOTOR_FAULT_OUTPUT_SENSOR) {
+        debug_console_printf(
+            "I-sensor fail!Max=%.4f Min=%.4f\r\n",
+            (double)i_sensor_max, (double)i_sensor_min);
+    } else if (i_sensor_fault == MOTOR_FAULT_OUTPUT_CALIBRATION_MISSING) {
+        debug_console_printf("Error,O-sensor need calibration!\r\n");
+    }
+
+    /* DM8009 0x3a000 layout: [4 float params][256 float corrections],
+     * 1040 bytes total.  O-sensor validation and lookup both skip the
+     * leading four parameters and operate on the table at byte 16. */
+    const float *const stored_8009_table =
+        (const float *)OUTPUT_SENSOR_TABLE_FLASH_ADDRESS;
+    memcpy(output_sensor_correction, stored_8009_table + 4U,
+           CORRECTION_TABLE_COUNT * sizeof(CorrectionTableEntry));
+    float o_sensor_max;
+    float o_sensor_min;
+    output_sensor_table_fault = sensor_calibration_validate_output_record(
+        (const float *)output_sensor_correction,
+        CORRECTION_TABLE_COUNT, &o_sensor_max, &o_sensor_min);
+    output_sensor_table_valid = output_sensor_table_fault == MOTOR_FAULT_NONE;
+    if (output_sensor_table_fault == MOTOR_FAULT_OUTPUT_CALIBRATION) {
+        debug_console_printf("O-sensor fail!Max=%.4f Min=%.4f\r\n",
+                             (double)o_sensor_max, (double)o_sensor_min);
+    } else if (!output_sensor_table_valid) {
+        debug_console_printf("Error,O-sensor need calibration!\r\n");
+    }
+#elif defined(DAMIAO_DM4310)
     const uint16_t *const stored_output_table =
         (const uint16_t *)OUTPUT_SENSOR_TABLE_FLASH_ADDRESS;
     memcpy(output_sensor_correction, stored_output_table,
-           sizeof(output_sensor_correction));
+           CORRECTION_TABLE_COUNT * sizeof(CorrectionTableEntry));
     float maximum_step;
     output_sensor_table_fault = sensor_calibration_validate_position(
         stored_output_table, POSITION_CALIBRATION_SAMPLE_COUNT,
@@ -582,6 +632,7 @@ bool platform_load_motor_calibration(MotorController *controller)
     } else if (!output_sensor_table_valid) {
         debug_console_printf("Error,O-sensor need calibration!\r\n");
     }
+#endif
     const float *const stored_output_parameters =
         (const float *)OUTPUT_SENSOR_PARAMETERS_FLASH_ADDRESS;
     memcpy(output_sensor_calibration, stored_output_parameters,
@@ -597,6 +648,29 @@ bool platform_store_output_sensor_calibration(
     if ((correction_table == NULL) || (calibration == NULL)) {
         return false;
     }
+#if defined(DAMIAO_DM8009)
+    /* DM8009 stores [4 float params][256 float corrections] at 0x3a000
+     * in one 1040-byte block.  The uint16[4096] upload buffer is first
+     * converted to a float table, then packed with the parameters. */
+    static float packed_8009[4 + 256];
+    memcpy(packed_8009, calibration, 4U * sizeof(float));
+    for (size_t index = 0U; index < CORRECTION_TABLE_COUNT; ++index) {
+        packed_8009[4U + index] = (float)correction_table[index];
+    }
+    if (!board_flash_replace_sector_prefix(
+            OUTPUT_SENSOR_TABLE_FLASH_ADDRESS, packed_8009,
+            sizeof(packed_8009))) {
+        return false;
+    }
+    memcpy(output_sensor_correction, packed_8009 + 4,
+           CORRECTION_TABLE_COUNT * sizeof(CorrectionTableEntry));
+    memcpy(output_sensor_calibration, calibration,
+           sizeof(output_sensor_calibration));
+    output_sensor.correction_table = output_sensor_correction;
+    output_sensor_table_valid = true;
+    output_sensor_table_fault = MOTOR_FAULT_NONE;
+    return true;
+#else
     if (!board_flash_replace_sector_prefix(
             OUTPUT_SENSOR_TABLE_FLASH_ADDRESS, correction_table,
             4096U * sizeof(uint16_t))) {
@@ -608,13 +682,14 @@ bool platform_store_output_sensor_calibration(
         return false;
     }
     memcpy(output_sensor_correction, correction_table,
-           sizeof(output_sensor_correction));
+           CORRECTION_TABLE_COUNT * sizeof(CorrectionTableEntry));
     memcpy(output_sensor_calibration, calibration,
            sizeof(output_sensor_calibration));
     output_sensor.correction_table = output_sensor_correction;
     output_sensor_table_valid = true;
     output_sensor_table_fault = MOTOR_FAULT_NONE;
     return true;
+#endif
 }
 
 bool platform_store_motor_encoder_calibration(
