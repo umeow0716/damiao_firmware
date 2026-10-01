@@ -11,5 +11,6 @@ void board_led_init(void);
 void board_led_set(BoardLedColor color);
 void board_led_set_factory_ready_state(void);
 void board_led_toggle_fault_indicator(void);
+void board_led_toggle_power_stage_fault_indicator(void);
 
 #endif

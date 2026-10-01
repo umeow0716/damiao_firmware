@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Validate generated firmware artifacts without enforcing model equivalence.
 
-This is intentionally a lightweight build-artifact sanity check:
-- each expected output exists and is non-empty
-- plain images look like HC32/Cortex-M app images at offset 0
-- encrypted images are length-preserving and differ from their plain input
+For every model this proves that:
+- the distributed plaintext is byte-identical to the source-built APP image
+- the APP image fits the 64 KiB application partition and has valid vectors
+- AES-256-CTR decryption reproduces the plaintext byte-for-byte
+- the package manifest hashes and sizes describe the emitted artifacts
 
 It does not compare DM4310 and DM8009 against each other.  During development the
 models may legitimately diverge.
@@ -14,11 +15,15 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import struct
 import sys
 from pathlib import Path
 
-MODELS = ("dm4310", "dm8009")
+from pack_update import (APP_BASE, APP_END, aes256_ctr_transform,
+                         load_update_profile, validate_plain_app)
+
+MODELS = ("dm4310", "dm4340", "dm8009")
 
 
 def sha256_short(data: bytes) -> str:
@@ -58,13 +63,53 @@ def check_plain_image(model: str, path: Path, data: bytes) -> None:
     )
 
 
-def check_model(dist: Path, model: str) -> None:
+def check_manifest(package_root: Path, model: str, plain: bytes,
+                   encrypted: bytes) -> None:
+    path = package_root / model / "manifest.json"
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        raise SystemExit(f"missing package manifest: {path}")
+    except json.JSONDecodeError as error:
+        raise SystemExit(f"invalid package manifest {path}: {error}") from error
+
+    expected = {
+        "format": "damiao-can-update-v1",
+        "plaintext_size": len(plain),
+        "plaintext_sha256": hashlib.sha256(plain).hexdigest(),
+        "ciphertext_sha256": hashlib.sha256(encrypted).hexdigest(),
+    }
+    for field, expected_value in expected.items():
+        if manifest.get(field) != expected_value:
+            raise SystemExit(
+                f"{path}: {field} mismatch: "
+                f"{manifest.get(field)!r} != {expected_value!r}"
+            )
+
+
+def check_model(dist: Path, build_dir: Path, package_root: Path, model: str,
+                key: bytes, counter: bytes) -> None:
     plain_path = dist / f"{model}_plain.bin"
     enc_path = dist / f"{model}_enc.bin"
+    build_path = build_dir / f"{model}.app.bin"
 
     plain = read_file(plain_path)
     enc = read_file(enc_path)
+    built = read_file(build_path)
 
+    if len(plain) > APP_END - APP_BASE:
+        raise SystemExit(
+            f"{model}: {len(plain)}-byte image exceeds the 64 KiB APP partition"
+        )
+    if plain != built:
+        raise SystemExit(
+            f"{model}: distributed plaintext differs from source build {build_path}"
+        )
+
+    try:
+        validate_plain_app(plain)
+    except ValueError as error:
+        raise SystemExit(f"{plain_path}: {error}") from error
     check_plain_image(model, plain_path, plain)
 
     if len(plain) != len(enc):
@@ -73,8 +118,16 @@ def check_model(dist: Path, model: str) -> None:
         )
     if plain == enc:
         raise SystemExit(f"{model}: encrypted output is byte-identical to plaintext")
+    if aes256_ctr_transform(enc, key, counter) != plain:
+        raise SystemExit(
+            f"{model}: AES-256-CTR decrypt does not reproduce plaintext"
+        )
 
-    print(f"{model}: encrypted ok, {len(enc)} bytes, sha256={sha256_short(enc)}…")
+    check_manifest(package_root, model, plain, enc)
+    print(
+        f"{model}: encrypted round-trip and manifest ok, {len(enc)} bytes, "
+        f"sha256={sha256_short(enc)}…"
+    )
 
 
 def main() -> int:
@@ -87,12 +140,36 @@ def main() -> int:
         default=Path("dist/development"),
         help="directory containing dm4310_* and dm8009_* firmware outputs",
     )
+    parser.add_argument(
+        "--build-dir",
+        type=Path,
+        default=Path("build"),
+        help="directory containing source-built MODEL.app.bin images",
+    )
+    parser.add_argument(
+        "--package-root",
+        type=Path,
+        default=Path("build/package"),
+        help="directory containing per-model package manifests",
+    )
+    parser.add_argument(
+        "--profile",
+        type=Path,
+        default=Path("config/update_profile.json"),
+        help="audited update profile used to decrypt the encrypted outputs",
+    )
     args = parser.parse_args()
 
-    for model in MODELS:
-        check_model(args.dist, model)
+    try:
+        key, counter, _ = load_update_profile(args.profile)
+    except (OSError, ValueError) as error:
+        raise SystemExit(f"invalid update profile {args.profile}: {error}") from error
 
-    print("firmware outputs verified: artifact sanity checks passed")
+    for model in MODELS:
+        check_model(args.dist, args.build_dir, args.package_root, model,
+                    key, counter)
+
+    print("firmware outputs verified: source, size, AES round-trip and manifests passed")
     return 0
 
 

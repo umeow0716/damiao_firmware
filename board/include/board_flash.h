@@ -13,5 +13,14 @@
 bool board_flash_replace_sector_prefix(uint32_t sector_address,
                                        const void *data,
                                        size_t length);
+#if defined(DAMIAO_DM4310)
+/* Factory fixed-entry five-word writer at 0x1fff8640. */
+void board_flash_write_boot_record(void);
+void board_flash_write_zero_record(void);
+void board_flash_write_zero_record_from(uint32_t sector_address,
+                                        const uint32_t *source);
+/* Factory erase-only primitive at 0x1fff9a38; caller supplies the address. */
+void board_flash_erase_sector_from_sram(uint32_t sector_address);
+#endif
 
 #endif

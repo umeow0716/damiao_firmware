@@ -1,0 +1,8 @@
+task	input	expected_static_effect	data_needed
+Capture command ingress for mode open	send or observe ESC, m, s sequence	parser_state+0x38 transitions 0/2/4; parser_state+0x3c set on ESC/m	RX bytes, state+0x38/+0x3c, rx_context+0x80
+Validate Ue/Uf readout	U e 0xaa, U f 0xaa in state 4	Ue sends 13 bytes; Uf sends 9 bytes and resets state+0x38=0	0x2379c TX bytes and state+0x38 after Uf
+Validate Ug bulk ingress	UgU/UgZ/UgQ 0x83-byte frames	0x80 bytes copied to working-config-like storage; flag+0x28 = 2/4/6	working-config-like block before/after, flag+0x28
+Validate 0x26d00 dump/apply	invoke/trigger param=1 and param=6 flows	param1 emits g+0x80+0xaa; param6 copies derived fields and emits UgQ	TX bytes, runtime derived cache fields, call trigger source
+Validate remote reset authority	X length 1 and 0x26d00 param2 path	SYSRESETREQ write after cleanup/delay	state before reset, reset cause, host authorization context
+Validate routing	bus capture plus firmware trace	external frame fills DAT_00022520 buffer before Vector_20 parse	CAN/UART trace, RX buffer memory, status register 0x100 event
+Validate TX blocking risk	disconnect/hold TX-not-ready during known sends	0x2379c blocks per byte with no timeout	latency, IRQ stall, watchdog/reset behavior

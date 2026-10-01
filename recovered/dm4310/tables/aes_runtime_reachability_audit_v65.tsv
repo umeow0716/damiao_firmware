@@ -1,0 +1,4 @@
+audit	result	details
+Vector_20 transitive call graph reaches AES cluster	NO	no AES helper reachable through direct pseudo-C calls from 0x22244
+AES use classification	firmware/update/security island	do not use AES as runtime command authorization evidence
+Known limitation	direct static calls only	indirect function pointers and 1fff body are outside this audit

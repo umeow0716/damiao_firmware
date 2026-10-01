@@ -8,13 +8,13 @@ void board_adc_build_config(BoardAdcRegisterImage *config)
 {
     memset(config, 0, sizeof(*config));
     config->channel_select = 0x00000007UL;
-#if defined(DAMIAO_DM4310)
-    config->adc1_channel_mux = 0x3210U;
-    config->adc2_channel_mux = 0x3510U;
-    config->adc3_channel_mux = 0x3B76U;
-#elif defined(DAMIAO_DM8009)
+#if defined(DAMIAO_DM8009_V3)
     config->adc1_channel_mux = 0x0213U;
     config->adc2_channel_mux = 0x3015U;
+    config->adc3_channel_mux = 0x3B76U;
+#elif defined(DAMIAO_DM4310)
+    config->adc1_channel_mux = 0x3210U;
+    config->adc2_channel_mux = 0x3510U;
     config->adc3_channel_mux = 0x3B76U;
 #endif
     config->trigger_select = 0x0081U;

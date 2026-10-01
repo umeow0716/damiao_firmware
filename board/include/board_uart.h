@@ -25,6 +25,13 @@ typedef struct {
 } BoardUartRegisterImage;
 
 void board_uart_build_config(BoardUartRegisterImage *config);
+#if defined(DAMIAO_DM4310)
+void board_uart_initialize_state(void);
+uint16_t board_uart_expected_payload_length(void);
+uint16_t board_uart_received_length(void);
+bool board_uart_begin_receive_irq(const uint8_t **data, int16_t *length);
+void board_uart_rearm_receive_irq(void);
+#endif
 bool board_uart_init(void);
 bool board_uart_init_polled(void);
 bool board_uart_receive(uint8_t *byte);

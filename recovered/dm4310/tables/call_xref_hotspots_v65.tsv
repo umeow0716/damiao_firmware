@@ -1,0 +1,42 @@
+callee	callee_role	caller	caller_role	evidence
+0x00022244	Vector_20 runtime command parser			no direct pseudo-C caller in current export
+0x0002359c	debug USART/DMA init candidate	0x0002359c	debug_usart1_dma_init	pseudo-C direct call
+0x0002359c	debug USART/DMA init candidate	0x000252f4	dm4310_main_commissioning_event_dispatch	pseudo-C direct call
+0x0002359c	debug USART/DMA init candidate	0x000256c8	power_stage_self_test_or_halt	pseudo-C direct call
+0x0002379c	blocking debug byte TX	0x00022244	debug_uart_receive_irq	pseudo-C direct call
+0x0002379c	blocking debug byte TX	0x0002379c	debug_uart_write	pseudo-C direct call
+0x0002379c	blocking debug byte TX	0x00024448	dm4310_position_sensor_calibration_inner_sweep	pseudo-C direct call
+0x0002379c	blocking debug byte TX	0x000246f8	dm4310_output_calibration_outer_flow	pseudo-C direct call
+0x0002379c	blocking debug byte TX	0x00024b20	measure_encoder_alignment	pseudo-C direct call
+0x0002379c	blocking debug byte TX	0x000257c4	dm4310_run_motor_parameter_identification	pseudo-C direct call
+0x0002379c	blocking debug byte TX	0x000264a4	dm4310_detect_motor_direction_and_pole_pairs	pseudo-C direct call
+0x0002379c	blocking debug byte TX	0x00026d00	handle_firmware_control_request	pseudo-C direct call
+0x000252f4	main runtime dispatcher	0x00020368	runtime_main_after_scatterload_and_app_dispatch	pseudo-C direct call
+0x000252f4	main runtime dispatcher	0x000252f4	dm4310_main_commissioning_event_dispatch	pseudo-C direct call
+0x00026d00	config dump/apply/reset worker	0x000252f4	dm4310_main_commissioning_event_dispatch	pseudo-C direct call
+0x00026d00	config dump/apply/reset worker	0x00026d00	handle_firmware_control_request	pseudo-C direct call
+0x000257c4	motor identification worker	0x000252f4	dm4310_main_commissioning_event_dispatch	pseudo-C direct call
+0x000257c4	motor identification worker	0x000257c4	dm4310_run_motor_parameter_identification	pseudo-C direct call
+0x000246f8	output calibration worker	0x000246f8	dm4310_output_calibration_outer_flow	pseudo-C direct call
+0x000246f8	output calibration worker	0x000252f4	dm4310_main_commissioning_event_dispatch	pseudo-C direct call
+0x000264a4	sensor/alignment pre-worker	0x000252f4	dm4310_main_commissioning_event_dispatch	pseudo-C direct call
+0x000264a4	sensor/alignment pre-worker	0x000264a4	dm4310_detect_motor_direction_and_pole_pairs	pseudo-C direct call
+0x00024b20	sensor sweep worker	0x00024b20	measure_encoder_alignment	pseudo-C direct call
+0x00024b20	sensor sweep worker	0x000252f4	dm4310_main_commissioning_event_dispatch	pseudo-C direct call
+0x00021cc8	MCAN classic setup	0x00021cc8	mcan1_configure_classic	pseudo-C direct call
+0x00021fc4	MCAN FD setup	0x00021fc4	mcan1_configure_fd	pseudo-C direct call
+0x00022658	calibration/config validation reload	0x00022658	load_and_validate_calibration	pseudo-C direct call
+0x00022658	calibration/config validation reload	0x000252f4	dm4310_main_commissioning_event_dispatch	pseudo-C direct call
+0x000228c0	motor config loader/derive	0x000228c0	load_motor_configuration	pseudo-C direct call
+0x000228c0	motor config loader/derive	0x000252f4	dm4310_main_commissioning_event_dispatch	pseudo-C direct call
+0x00026eb8	device key binding/check	0x00024b20	measure_encoder_alignment	pseudo-C direct call
+0x00026eb8	device key binding/check	0x00025138	derive_control_parameters	pseudo-C direct call
+0x00026eb8	device key binding/check	0x000257c4	dm4310_run_motor_parameter_identification	pseudo-C direct call
+0x00026eb8	device key binding/check	0x000264a4	dm4310_detect_motor_direction_and_pole_pairs	pseudo-C direct call
+0x00026eb8	device key binding/check	0x00026eb8	enforce_device_key_binding_or_halt	pseudo-C direct call
+0x00021c1c	AES CTR/XOR helper	0x00021c1c	aes_ctr_xor_stream_internal_counter_template	pseudo-C direct call
+0x00021c1c	AES CTR/XOR helper	0x00026eb8	enforce_device_key_binding_or_halt	pseudo-C direct call
+0x00022570	AES key expansion	0x00022570	aes256_key_expansion_240bytes	pseudo-C direct call
+0x00022570	AES key expansion	0x00026eb8	enforce_device_key_binding_or_halt	pseudo-C direct call
+0x00021ed0	AES block encrypt	0x00021c1c	aes_ctr_xor_stream_internal_counter_template	pseudo-C direct call
+0x00021ed0	AES block encrypt	0x00021ed0	aes256_encrypt_block	pseudo-C direct call

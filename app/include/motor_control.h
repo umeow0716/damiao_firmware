@@ -6,6 +6,19 @@
 #include "motor_math.h"
 #include "motor_types.h"
 
+struct Dm4310PositionSensorScratch;
+
+#if defined(DAMIAO_DM4310)
+typedef struct Dm4310OuterLoopReferences {
+    volatile void *sample;
+    volatile void *motor;
+    uintptr_t temperature_scratch;
+    volatile uint32_t *status;
+    const volatile float *limits;
+    volatile float *speed;
+} Dm4310OuterLoopReferences;
+#endif
+
 typedef struct {
     float phase_u;
     float phase_v;
@@ -21,6 +34,12 @@ typedef struct {
     /* Gear-scaled feedback reconstructed from the motor-side encoder. */
     float output_position;
     float output_velocity;
+#if defined(DAMIAO_DM4310)
+    bool position_sample_ready;
+    uint16_t output_sensor_raw_u;
+    uint16_t output_sensor_raw_v;
+    bool outer_loop_due;
+#endif
 } AdcSample;
 
 /* State layout recovered from current_controller_step at 0x1fffa07a.  Keeping
@@ -99,9 +118,60 @@ void motor_control_set_current_calibration(MotorController *controller,
 void motor_control_arm(MotorController *controller);
 void motor_control_disarm(MotorController *controller);
 void motor_control_trip(MotorController *controller);
+#if defined(DAMIAO_DM4310)
+void motor_control_set_runtime_fault(MotorFault fault);
+MotorFault motor_control_runtime_fault(void);
+void motor_control_set_raw_rotor_velocity(float raw_rotor_velocity);
+void motor_control_set_position_runtime(float rotor_position,
+                                        int32_t revolutions,
+                                        float output_position);
+void dm4310_motion_observer_helper(MotionObserver *observer);
+float dm4310_current_controller_helper(CurrentController *axis);
+void dm4310_motion_observer_state_step(MotionObserver *observer);
+float dm4310_current_controller_state_step(CurrentController *axis);
+void dm4310_reset_control_state_helper(void);
+void motor_control_reset_dynamic_state(MotorController *controller);
+uint32_t motor_control_console_mode(void);
+void motor_control_set_console_mode(uint32_t mode);
+void motor_control_post_state_change(void);
+bool motor_control_take_state_change(uint32_t *mode);
+void dm4310_motor_control_begin_sample(Dm4310OuterLoopReferences *references);
+void dm4310_motor_control_clear_command(MotorController *controller);
+float dm4310_motor_control_fast_sample_prefix(MotorController *controller,
+                                             AdcSample *sample,
+                                             const volatile uint16_t *raw,
+                                             Dm4310OuterLoopReferences *references);
+float dm4310_motor_control_fast_transform(MotorController *controller,
+                                         const MotorConfig *config,
+                                         AdcSample *sample, float voltage_scale,
+                                         volatile struct Dm4310PositionSensorScratch *scratch,
+                                         Dm4310OuterLoopReferences *references);
+CurrentController *dm4310_motor_control_fast_prepare(MotorController *controller,
+                                       const MotorConfig *config,
+                                       const AdcSample *sample, float cleared,
+                                       const Dm4310OuterLoopReferences *references);
+void dm4310_motor_control_fast_apply_state(MotorController *controller,
+    const Dm4310OuterLoopReferences *references);
+AlphaBeta dm4310_motor_control_fast_finish(volatile CurrentController *current_d,
+    const Dm4310OuterLoopReferences *references);
+#endif
 void motor_control_configure(MotorController *controller,
                              const MotorConfig *config,
                              float bus_voltage);
+void motor_control_configure_velocity_filter(MotorController *controller,
+                                             float bandwidth);
+/* DM WRITE has already selected the factory comparison branch. */
+#if defined(DAMIAO_DM4310)
+void dm4310_motor_control_configure_velocity_filter_selected(
+    MotorController *controller, float bandwidth, bool filtered);
+void dm4310_motor_control_configure_velocity_filter_irq(
+    float bandwidth, bool filtered, volatile float *coefficients,
+    float radians);
+#endif
+#if defined(DAMIAO_DM4310)
+void dm4310_motor_control_configure_runtime_motor(MotorController *controller,
+                                                 const MotorConfig *config);
+#endif
 float motor_control_current_step(CurrentController *axis,
                                  float reference, float measurement);
 void motor_control_motion_observer_step(MotionObserver *observer,

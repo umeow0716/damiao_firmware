@@ -1,0 +1,17 @@
+cmd	required_state	length_guard	payload	side_effect	response	patch_sensitivity
+ESC	any after IRQ gate	none visible	none	parser_state+0x38=0; rx_context mode reset if needed; parser_state+0x3c=1	none	low but affects mode machine
+m	any after IRQ gate	none visible	none	if rx_context+0x80 < 2: parser_state+0x38=2; rx_context+0x80=1; parser_state+0x3c=1	none	opens intermediate mode
+s	any after IRQ gate	none visible	none	parser_state+0x38=4	none	opens command mode
+X	any after IRQ gate	rx_len==1	none	cleanup + AIRCR reset	none	high: remote reset surface
+Uc	state 4	none visible beyond state gate	rx[1]='c'	flag_block+0x10=1	none	host flag/control path
+Ul	state 4	none visible beyond state gate	rx[1]='l'	flag_block+0x14=1	none	host flag/control path
+Ud	state 4	rx_len == scratch_len + 1	scratch from rx+1; scratch[0x3d] count; scratch[0x3e] index	copy scratch+1 to D-slot table base + index*0x3c; length=count<<2; special index 0x11 sets flag+0x1c=1	2 bytes: ['d', index]	high: slot write and no visible max-copy guard
+UM	state 4	rx_len == scratch_len + 1	scratch from rx+1; scratch[0x3d] count; scratch[0x3e] index	copy scratch+1 to M-slot table base + index*0x3c; length=count<<1; special index 0x88 sets flag+0x1c=2	2 bytes: ['M', index]	high: slot write and no visible max-copy guard
+Ue 0xaa	state 4	rx_len==3	none	none besides TX build	13 bytes: 'e' + config+0x44/+0x48/+0x4c	readout contract
+UeU	state 4	rx_len==3	none	flag_block+0x24=1	none	host flag path
+Uf 0xaa	state 4	rx_len==3	none	parser_state+0x38=0 after TX	9 bytes: 'f' + persistent+0x08/+0x0c	readout + mode reset contract
+Ug 0xaa	state 4	rx_len==3	none	flag_block+0x28=1	none	config phase flag
+UgU	state 4	rx_len==0x83	0x80 bytes from rx+3	copy payload to working-config-like storage; flag+0x28=2	none	high: bulk config ingress
+UgZ	state 4	rx_len==0x83	0x80 bytes from rx+3	copy payload to working-config-like storage; flag+0x28=4	none	high: bulk config ingress
+UgQ	state 4	rx_len==0x83	0x80 bytes effectively from rx+3	copy payload to working-config-like storage; flag+0x28=6	none in Vector_20; 0x26d00 later can send UgQ	high: bulk apply/commit ingress
+FCB[0..11]	state 4	selector digit normalized < 0x0c	rx[3] digit/selector	working_config+0x8c=selector; table pointers selected by selector<5; flag+0x0c=1	none	table/config selector; host policy unknown

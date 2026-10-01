@@ -1,0 +1,13 @@
+metric	v64	v65	status
+factory APP evidence	verified	verified	retained
+rebuilt dm4310_plain.bin	excluded	excluded	retained guard
+function role/signature map	154/154	154/154	retained
+DAT owner/module classification	483/483	483/483	retained
+DAT semantic naming	431/483	431/483	retained
+debug USART/DMA ingress mechanism	partial	resolved as primary static model	improved
+CANFD -> Vector_20 route	gap	likely not direct; still trace target	refined
+command-to-worker dispatcher	implicit	14 mapped command/flag rows	added
+bulk ingress invariants	8 rows	5 normalized schema rows with dispatcher links	deepened
+AES runtime command auth	excluded	direct-call audit no reachability	confirmed
+0x1fff helper bodies	deferred	deferred	unchanged
+firmware patch	none	none	not included

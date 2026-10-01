@@ -1,0 +1,5 @@
+metric	count	status	note
+total_DAT_rows	483	retained	from v49/v50 inventory lineage
+semantic_named_DAT	431	retained	high/mid value DAT semantic labels already complete for protocol/control/TX/motor-ID
+remaining_DAT	52	quarantined_low_value_runtime	mostly libm/float-format/runtime constants; not promoted into firmware behavior names
+DAT_patch_ready	0	not_applicable	DAT naming does not imply patch readiness

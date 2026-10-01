@@ -33,6 +33,10 @@ void board_position_build_config(BoardPositionRegisterImage *config);
 bool board_position_init(void);
 bool board_position_take_sample(uint16_t *dma_word);
 void board_position_handle_timer_interrupt(void);
-void board_position_ack_dma_interrupt(void);
+void board_position_ack_dma_interrupt(bool sample_ready, volatile uint32_t *dma_count);
+#if defined(DAMIAO_DM4310)
+bool board_position_dma_sample_pending(void);
+void board_position_clear_timer_event_after_flash(void);
+#endif
 
 #endif

@@ -1,0 +1,7 @@
+start	end	bytes	instructions	classification	source_mapping	evidence
+0x00020edc	0x00020ee5	10	5	callable_source_mapped	app/src/debug_console.c:factory_stream_read	Direct reader plus parser/context differential regressions
+0x00024ea8	0x00024eb9	18	9	callable_source_mapped	app/src/debug_console.c:platform_debug_write callback path	Formatter output/callback differential regressions
+0x00028078	0x000280dd	102	48	data_not_code	factory constants and CRC32-MPEG2 table	Byte pattern includes the 0x04c11db7 polynomial table referenced as data
+0x000285e8	0x00028603	28	13	data_not_code	app/src/dm4310_decimal_power.c:large decimal powers	Seven-word continuation of the formatter decimal-power constant table
+0x00028670	0x0002867f	16	8	data_not_code	linker/hc32f448_dm4310_app.ld:.dm4310_c_locale	Four-word C locale object returned by factory runtime selector 0x27048
+0x1fff8640	0x1fff8723	228	77	callable_source_built_fixed_entry	board/src/board_flash_hc32f448.c:write_boot_record_from_sram	Exact runtime entry, startup copy and 65-case ordered Flash/MMIO differential regression

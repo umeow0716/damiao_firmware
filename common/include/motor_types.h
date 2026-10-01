@@ -97,7 +97,11 @@ typedef struct {
     uint32_t bootloader_version;
     uint16_t can_id;
     uint16_t master_id;
+#if defined(DAMIAO_DM4310)
+    uint32_t pole_pairs;
+#else
     uint8_t pole_pairs;
+#endif
     uint8_t can_data_rate_selector;
     MotorControlMode control_mode;
     bool sensor_inverted;

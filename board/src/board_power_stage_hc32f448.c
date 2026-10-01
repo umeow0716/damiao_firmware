@@ -35,6 +35,13 @@ static void drive_step(const BoardPowerStageTestStep *step, bool high)
         }
     } else {
         if (high) {
+#if defined(DAMIAO_DM4310)
+            /* Factory 0x22e7a uniquely replaces POSRB for the PB14 test. */
+            if (step->pin_mask == (uint16_t)(1U << 14U)) {
+                CM_GPIO->POSRB = step->pin_mask;
+                return;
+            }
+#endif
             CM_GPIO->POSRB |= step->pin_mask;
         } else {
             CM_GPIO->PORRB |= step->pin_mask;
@@ -53,10 +60,19 @@ static uint16_t trigger_and_read(uint8_t adc_index)
 
     while ((selected->ISR & ADC_ISR_EOCAF) == 0U) {
     }
+#if defined(DAMIAO_DM4310)
+    /* switch_response_test clears all three EOCA flags before loading the
+     * selected DR0 halfword.  Preserve that MMIO order. */
+    CM_ADC1->ISCLRR = ADC_ISR_EOCAF;
+    CM_ADC2->ISCLRR = ADC_ISR_EOCAF;
+    CM_ADC3->ISCLRR = ADC_ISR_EOCAF;
+    const uint16_t sample = selected->DR0;
+#else
     const uint16_t sample = selected->DR0;
     CM_ADC1->ISCLRR = ADC_ISR_EOCAF;
     CM_ADC2->ISCLRR = ADC_ISR_EOCAF;
     CM_ADC3->ISCLRR = ADC_ISR_EOCAF;
+#endif
     return sample;
 }
 

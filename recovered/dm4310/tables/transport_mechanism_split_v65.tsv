@@ -1,0 +1,8 @@
+layer	entry	role	evidence	v65_interpretation
+Ingress init	0x2359c	debug_usart1_dma_init	programs USART-like registers and DMA-like control slots; sets DMA buffer/length registers	Supports debug USART/DMA ingress, not CANFD ingress
+Ingress IRQ	0x22244	Vector_20_Handler	checks status bit 0x100; computes rx_len=200 - remaining_count; reads bytes from rx buffer DAT_00022520	Strong evidence parser consumes DMA-filled byte buffer
+Ingress teardown/rearm	0x22244	Vector_20_Handler	sets DMA count back to 200, updates buffer pointer, clears DMA/IRQ flags, writes NVIC ICER mask 0x10	Stateful DMA receive cycle; not a direct CAN frame parser
+Egress	0x2379c	debug_uart_write	polls status bit then writes one uint16 data register per byte; no timeout	Blocking byte TX response path
+CAN setup classic	0x21cc8	mcan1_configure_classic	sets MCAN message RAM/filter/timing and NVIC enable mask 8	CANFD setup exists but is a separate layer
+CAN setup FD	0x21fc4	mcan1_configure_fd	sets MCAN FD timing/message RAM/filter and NVIC enable mask 8	No direct static proof that MCAN RX buffers feed Vector_20 byte parser
+Conclusion	static APP	transport model	debug USART/DMA command parser plus separate MCAN configuration	CANFD routing remains a trace target, but Vector_20 mechanism is more likely debug UART/DMA

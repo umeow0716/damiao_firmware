@@ -139,9 +139,12 @@ set(DAMIAO_APP_SOURCES
     app/src/calibration_upload.c
     app/src/commissioning.c
     app/src/commissioning_math.c
+    app/src/ram_helpers.c
+    app/src/runtime_compat.c
     app/src/app_commands.c
     app/src/app_state.c
     app/src/motor_control.c
+    app/src/motor_lookup_storage.c
     app/src/output_sensor.c
     app/src/position_sensor.c
     app/src/sensor_calibration.c
@@ -204,6 +207,7 @@ function(damiao_firmware TARGET_NAME LINKER_SCRIPT VECTOR_OFFSET)
     endforeach()
     target_compile_options(${TARGET_NAME} PRIVATE ${FIRMWARE_COMPILE_FLAGS})
     target_link_options(${TARGET_NAME} PRIVATE
+        ${DAMIAO_TARGET_LINK_OPTIONS}
         ${HC32F448_CPU_FLAGS}
         -nostartfiles
         --specs=nano.specs
@@ -225,6 +229,8 @@ function(damiao_firmware TARGET_NAME LINKER_SCRIPT VECTOR_OFFSET)
         ${BOARD_LED_SOURCE}
     )
     set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".elf")
+    set_property(TARGET ${TARGET_NAME} APPEND PROPERTY
+        LINK_DEPENDS "${LINKER_SCRIPT}")
 
     add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
         COMMAND ${CMAKE_OBJCOPY} -O binary
@@ -240,6 +246,7 @@ endfunction()
 
 function(damiao_add_profiled_firmware TARGET_NAME PROFILE_PATH)
     unset(DAMIAO_TARGET_COMPILE_DEFINITIONS)
+    unset(DAMIAO_TARGET_LINK_OPTIONS)
     set(DAMIAO_TARGET_LINKER_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/linker/hc32f448_app.ld")
     set(DAMIAO_TARGET_VECTOR_OFFSET 0x00000000UL)
     include("${PROFILE_PATH}")
@@ -248,7 +255,24 @@ function(damiao_add_profiled_firmware TARGET_NAME PROFILE_PATH)
         ${DAMIAO_TARGET_VECTOR_OFFSET})
 endfunction()
 
-damiao_add_profiled_firmware(dm4310_v4_7318
+damiao_add_profiled_firmware(dm4310
     "${CMAKE_CURRENT_SOURCE_DIR}/config/targets/dm4310.cmake")
-damiao_add_profiled_firmware(dm8009_v4_7318
+damiao_add_profiled_firmware(dm4340
+    "${CMAKE_CURRENT_SOURCE_DIR}/config/targets/dm4340.cmake")
+damiao_add_profiled_firmware(dm8009
     "${CMAKE_CURRENT_SOURCE_DIR}/config/targets/dm8009.cmake")
+
+# The recovered DM43xx applications occupy a fixed 64 KiB APP partition and
+# share the recovered arithmetic/runtime implementation.  Per-model constants
+# and fixed SRAM placement remain selected by the target profile and linker.
+set(DAMIAO_DM43XX_RECOVERY_SOURCES
+    app/src/dm4310_binary64_extended.c
+    app/src/dm4310_extended_arithmetic.c
+    app/src/dm4310_extended_core.S
+    app/src/dm4310_decimal_power.c
+    app/src/dm4310_fixed_scaled.c
+)
+foreach(target IN ITEMS dm4310 dm4340 dm8009)
+    target_compile_options(${target} PRIVATE -Os)
+    target_sources(${target} PRIVATE ${DAMIAO_DM43XX_RECOVERY_SOURCES})
+endforeach()

@@ -1,0 +1,9 @@
+mechanism	v65_status	remaining_requirement
+debug UART/DMA command ingress	mostly resolved v65	Need live trace only to bind exact peripheral instance/register names; static behavior now coherent
+CANFD -> Vector_20 routing	likely not direct / still unproven	MCAN setup exists, but Vector_20 looks like debug USART DMA byte-buffer parser
+command authorization	not cryptographic in Vector_20	Only state/length/command gates visible; AES explicitly excluded from runtime command auth
+bulk Ud/UM table bounds	unresolved safety invariant	Need host schema or trace for scratch[0x3d]/[0x3e] bounds; parser lacks visible cap
+UgZ param=4 worker	unresolved/odd path	Vector_20 can set +0x28=4, main dispatcher calls 0x26d00(4), but 0x26d00 current pseudo-C has only param 1/2/6 visible
+FCB selector effect	partially resolved	Selector 0..11 and pointer pair switch known; final 1fff copy/write still deferred
+motor-ID math core	deferred by 1fff	Non-1fff entry/TX/final frame known, helper bodies still deferred
+config bank persistent write	deferred by 1fff	Outer dispatch known; actual 1fff9950 copy/write effect remains deferred

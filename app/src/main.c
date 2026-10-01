@@ -9,6 +9,7 @@
 #include "firmware_control.h"
 #include "hc32f448.h"
 #include "platform.h"
+#include "position_sensor.h"
 
 #define APP_VECTOR_TABLE_ADDRESS (0x00020000UL)
 
@@ -16,59 +17,115 @@ static void service_deferred_events(void)
 {
     app_service_motor_state_change();
     app_service_control_status_tick();
+#if !defined(DAMIAO_DM4310)
     firmware_control_service();
-    const uint8_t can_error = g_app.events.can_error;
+#endif
+#if defined(DAMIAO_DM4310)
+    const uint32_t can_error = APP_DEFERRED_EVENTS.can_error;
+    if (can_error == 1U) {
+        debug_console_printf("CAN Error 1\n\r");
+        APP_DEFERRED_EVENTS.can_error = 0U;
+    } else if (can_error == 2U) {
+        debug_console_printf("CAN Error 2\n\r");
+        APP_DEFERRED_EVENTS.can_error = 0U;
+    }
+#else
+    const uint8_t can_error = (uint8_t)APP_DEFERRED_EVENTS.can_error;
     if (can_error != 0U) {
-        g_app.events.can_error = 0U;
+        APP_DEFERRED_EVENTS.can_error = 0U;
         if (can_error == 1U) {
             debug_console_printf("CAN Error 1\n\r");
         } else {
             debug_console_printf("CAN Error 2\n\r");
         }
     }
+#endif
+#if defined(DAMIAO_DM4310)
+    if (APP_DEFERRED_EVENTS.save_staged_parameters) {
+        __disable_irq();
+        platform_store_staged_parameters();
+        APP_DEFERRED_EVENTS.save_staged_parameters = false;
+        platform_finish_flash_commit();
+        __enable_irq();
+    }
+    if (APP_DEFERRED_EVENTS.reserved_08 != 0U) {
+        APP_DEFERRED_EVENTS.reserved_08 = 0U;
+    }
+    if (APP_DEFERRED_EVENTS.commission_direction) {
+        commissioning_run_direction_and_alignment(&g_app.config);
+        APP_DEFERRED_EVENTS.commission_direction = false;
+        debug_console_return_to_menu();
+    }
+#endif
+#if defined(DAMIAO_DM4310)
+    const uint32_t calibration_request =
+        APP_DEFERRED_EVENTS.calibration_commit_request;
+#else
     const CalibrationUploadKind calibration_request =
-        (CalibrationUploadKind)g_app.events.calibration_commit_request;
+        (CalibrationUploadKind)APP_DEFERRED_EVENTS.calibration_commit_request;
+#endif
 
     if (calibration_request != CALIBRATION_UPLOAD_NONE) {
         __disable_irq();
 
         if (calibration_request == CALIBRATION_UPLOAD_MOTOR_ENCODER) {
             platform_store_motor_encoder_calibration(calibration_upload_motor_record());
-        } else if (calibration_request ==
+        }
+#if defined(DAMIAO_DM4310)
+        if (APP_DEFERRED_EVENTS.calibration_commit_request ==
+#else
+        else if (calibration_request ==
+#endif
                 CALIBRATION_UPLOAD_OUTPUT_SENSOR) {
+#if defined(DAMIAO_DM4310)
+            /* Factory captures parameter words only after the table writer
+             * returns, directly from their fixed calibration source. */
+            platform_store_output_sensor_calibration(
+                calibration_upload_output_table(),
+                (const float *)(uintptr_t)FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff078), UINT32_C(0x1ffff004)));
+#else
             float calibration[4];
 
             if (platform_commissioning_get_output_calibration(calibration)) {
                 platform_store_output_sensor_calibration(
                     calibration_upload_output_table(), calibration);
             }
+#endif
         }
 
-        g_app.events.calibration_commit_request = CALIBRATION_UPLOAD_NONE;
+        APP_DEFERRED_EVENTS.calibration_commit_request =
+            CALIBRATION_UPLOAD_NONE;
         platform_load_motor_calibration(&g_app.motor);
+#if defined(DAMIAO_DM4310)
+        position_sensor_reset_accumulated_delta();
+        platform_finish_flash_commit();
+#endif
 
         __enable_irq();
 
         debug_console_return_to_menu();
     }
-    if (g_app.events.commission_direction) {
-        commissioning_run_direction_and_alignment(&g_app.config);
-        g_app.events.commission_direction = false;
-#if defined(DAMIAO_DM8009)
-        debug_console_printf("E_OFF = %f\r\n",
-                             (double)g_app.motor.electrical_offset);
-#endif
-        debug_console_return_to_menu();
-    }
-    if (g_app.events.commission_position_sensor) {
-        commissioning_run_output_sensor_calibration();
-        g_app.events.commission_position_sensor = false;
-    }
-    if (g_app.events.identify_motor) {
+    if (APP_DEFERRED_EVENTS.identify_motor) {
         commissioning_run_motor_identification(&g_app.config);
-        g_app.events.identify_motor = false;
+        APP_DEFERRED_EVENTS.identify_motor = false;
         debug_console_return_to_menu();
     }
+#if defined(DAMIAO_DM4310)
+    const uint32_t firmware_request =
+        APP_DEFERRED_EVENTS.firmware_control_request;
+    if (firmware_request != 0U) {
+        firmware_control_service((uint8_t)firmware_request);
+        APP_DEFERRED_EVENTS.firmware_control_request = 0U;
+        debug_console_return_to_menu();
+    }
+    if (APP_DEFERRED_EVENTS.commission_position_sensor) {
+        commissioning_run_output_sensor_calibration();
+        APP_DEFERRED_EVENTS.commission_position_sensor = false;
+    }
+#endif
+#if !defined(DAMIAO_DM4310)
+    /* DM factory main uses the fixed mode/event pair for its menu; its
+     * device-information diagnostic is only called during startup. */
     if (g_app.events.print_menu) {
         g_app.events.print_menu = false;
         debug_console_print_banner();
@@ -91,6 +148,8 @@ static void service_deferred_events(void)
 
         g_app.pending_store_response_valid = false;
     }
+#endif
+#if !defined(DAMIAO_DM4310)
     if (g_app.events.save_zero_position) {
         g_app.events.save_zero_position = false;
         if (!platform_store_zero_position(&g_app.motor)) {
@@ -101,10 +160,13 @@ static void service_deferred_events(void)
             platform_set_status_led(PLATFORM_LED_RED);
         }
     }
+#endif
+#if !defined(DAMIAO_DM4310)
     if (g_app.events.reconfigure_mcan) {
         g_app.events.reconfigure_mcan = false;
         platform_reconfigure_mcan();
     }
+#endif
 }
 
 int main(void)
@@ -127,6 +189,11 @@ int main(void)
     debug_console_reset();
     platform_prepare_board_startup();
     platform_initialize_peripherals();
+#if defined(DAMIAO_DM4310)
+    /* V5017's configuration loader performs its erased-record writeback
+     * internally and then continues with the single Flash-to-SRAM copy. */
+    platform_load_parameters(&g_app.config);
+#else
     if (!platform_load_parameters(&g_app.config)) {
         __disable_irq();
         platform_store_factory_parameters();
@@ -134,20 +201,28 @@ int main(void)
 
         platform_load_parameters(&g_app.config);
     }
+#endif
     /* The reference keeps the selected control mode in the zeroed command
      * object from startup; FC enables that mode even before the first
      * setpoint frame.  Parameter writes already synchronize this field. */
     memset(&g_app.motor.command, 0, sizeof(g_app.motor.command));
     g_app.motor.command.mode = g_app.config.control_mode;
+#if defined(DAMIAO_DM4310)
+    platform_prepare_runtime_configuration();
+#endif
     platform_initialize_runtime();
     /* main@0x252f4 prints this block once after sensor/ADC and MCAN setup. */
     debug_console_print_status();
+#if !defined(DAMIAO_DM4310)
     g_app.events.print_menu = true;
+#endif
     platform_check_startup_bus_voltage();
     platform_start_control_loop();
 
     for (;;) {
         service_deferred_events();
+#if !defined(DAMIAO_DM4310)
         platform_idle();
+#endif
     }
 }

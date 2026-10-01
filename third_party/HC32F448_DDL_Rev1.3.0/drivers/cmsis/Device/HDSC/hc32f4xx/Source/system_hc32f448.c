@@ -64,9 +64,17 @@
  */
 
 /*!< System clock frequency */
+#if defined(DAMIAO_DM4310)
+uint32_t SystemCoreClock
+    __attribute__((section(".dm4310_system_core_clock")));
+/*!< High speed RC frequency (HRC clock) */
+uint32_t HRC_VALUE
+    __attribute__((section(".dm4310_hrc_value")));
+#else
 __NO_INIT uint32_t SystemCoreClock;
 /*!< High speed RC frequency (HRC clock) */
 __NO_INIT uint32_t HRC_VALUE;
+#endif
 
 /**
  * @}
@@ -126,7 +134,12 @@ void SystemCoreClockUpdate(void)
     u8SysClkSrc = CM_CMU->CKSWR & CMU_CKSWR_CKSW;
     switch (u8SysClkSrc) {
         case 0x00U: /* use internal high speed RC */
+#if defined(DAMIAO_DM4310)
+            /* Factory reloads the fixed SRAM word after reading CKSWR. */
+            SystemCoreClock = *(volatile const uint32_t *)&HRC_VALUE;
+#else
             SystemCoreClock = HRC_VALUE;
+#endif
             break;
         case 0x01U: /* use internal middle speed RC */
             SystemCoreClock = MRC_VALUE;
@@ -145,10 +158,19 @@ void SystemCoreClockUpdate(void)
             plln = (CM_CMU->PLLHCFGR & CMU_PLLHCFGR_PLLHN) >> CMU_PLLHCFGR_PLLHN_POS;
             pllp = (CM_CMU->PLLHCFGR & CMU_PLLHCFGR_PLLHP) >> CMU_PLLHCFGR_PLLHP_POS;
             pllm = (CM_CMU->PLLHCFGR & CMU_PLLHCFGR_PLLHM) >> CMU_PLLHCFGR_PLLHM_POS;
+#if defined(DAMIAO_DM4310)
+            /* Fourth full-word read at factory 0x23516, not bit-band. */
+            if (0UL == (CM_CMU->PLLHCFGR & 0x80UL)) {
+#else
             if (0UL == bCM_CMU->PLLHCFGR_b.PLLSRC) {    /* use external high speed OSC as PLL source */
+#endif
                 u32PllSrcFreq = XTAL_VALUE;
             } else {                                    /* use internal high RC as PLL source */
+#if defined(DAMIAO_DM4310)
+                u32PllSrcFreq = *(volatile const uint32_t *)&HRC_VALUE;
+#else
                 u32PllSrcFreq = HRC_VALUE;
+#endif
             }
             SystemCoreClock = u32PllSrcFreq / (pllm + 1UL) * (plln + 1UL) / (pllp + 1UL);
             break;

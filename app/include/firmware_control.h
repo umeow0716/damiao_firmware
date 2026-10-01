@@ -14,6 +14,10 @@ void firmware_control_export_block(
 bool firmware_control_import_block(
     MotorConfig *config,
     const uint8_t block[FIRMWARE_CONTROL_BLOCK_SIZE]);
+#if defined(DAMIAO_DM4310)
+void firmware_control_service(uint8_t request);
+#else
 void firmware_control_service(void);
+#endif
 
 #endif

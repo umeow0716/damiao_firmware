@@ -4,7 +4,20 @@
 #include <string.h>
 
 #include "aes256_ctr.h"
-#include "update_profile.h"
+
+/* Device binding uses the factory literals at 0x26fd8 and 0x21c88.
+ * Keep these independent of the configurable firmware-update profile. */
+static const uint8_t device_binding_key[32] = {
+    0x62,0x11,0x66,0x2f,0x52,0x18,0x73,0x89,
+    0x6d,0x2a,0x62,0x11,0x72,0x31,0x77,0x40,
+    0x73,0xca,0x73,0xca,0x59,0x79,0x66,0x2f,
+    0x62,0x11,0x76,0x84,0x59,0x73,0x79,0x5e,
+};
+
+static const uint8_t device_binding_initial_counter[16] = {
+    0x00,0x11,0x22,0x33,0x44,0x55,0x66,0x77,
+    0x88,0x99,0xaa,0xbb,0xcc,0xdd,0xee,0xff,
+};
 
 void boot_device_derive_token(
     const uint8_t uid[BOOT_DEVICE_UID_SIZE],
@@ -21,8 +34,8 @@ void boot_device_derive_token(
 
     aes256_ctr_init(
         &cipher,
-        app_update_key,
-        app_update_initial_counter);
+        device_binding_key,
+        device_binding_initial_counter);
 
     aes256_ctr_transform(
         &cipher,
@@ -38,6 +51,8 @@ int boot_device_find_matching_slot(
         return -1;
     }
     for (uint8_t slot = 0U; slot < BOOT_DEVICE_KEY_SLOT_COUNT; ++slot) {
+        /* 0x26f7e..0x26fc0 compares all four little-endian words,
+         * accepting the first complete match.  Byte equality is equivalent. */
         if (memcmp(token, slots[slot], BOOT_DEVICE_TOKEN_SIZE) == 0) {
             return (int)slot;
         }

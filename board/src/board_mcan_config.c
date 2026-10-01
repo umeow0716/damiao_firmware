@@ -9,7 +9,7 @@ typedef struct {
     uint8_t sync_jump_width;
 } DataBitTiming;
 
-static DataBitTiming data_timing_for_selector(uint8_t selector)
+static DataBitTiming data_timing_for_selector(uint16_t selector)
 {
     if (selector < 4U) {
         selector = 4U;
@@ -36,7 +36,7 @@ static DataBitTiming data_timing_for_selector(uint8_t selector)
     }
 }
 
-static uint32_t nominal_timing_for_selector(uint8_t selector)
+static uint32_t nominal_timing_for_selector(uint16_t selector)
 {
     /* The captured 1 Mbps image uses 80 time quanta at an 80 MHz MCAN
      * source clock. Selectors 0..3 preserve its sample point and scale the
@@ -47,7 +47,7 @@ static uint32_t nominal_timing_for_selector(uint8_t selector)
 }
 
 void board_mcan_build_config(uint16_t node_id,
-                                       uint8_t data_rate_selector,
+                                       uint16_t data_rate_selector,
                                        BoardMcanRegisterImage *config)
 {
     if (config == NULL) {
@@ -76,7 +76,11 @@ void board_mcan_build_config(uint16_t node_id,
         .rxesc = 0x00000777UL,
         .txbc = 0x03000328UL,
         .txesc = 0x00000007UL,
+#if defined(DAMIAO_DM4310)
+        .txefc = 0x00030308UL,
+#else
         .txefc = 0x00040308UL,
+#endif
         .ie = 0x02800011UL,
         .ils = 0x02800001UL,
         .ile = 0x00000003UL,

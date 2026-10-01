@@ -1,0 +1,9 @@
+phase	guard	state_reads	state_writes	meaning	v63_status
+IRQ gate	(*DAT_00022514 & 0x100) != 0	peripheral/status + RX count-like register	ack bit in controller +0x34; rx_len scratch; controller +0x44 = RX buffer	Only parse when RX/status bit 0x100 is set; otherwise exit clean-up only	static_exact_guard
+RX length derivation	inside IRQ gate	(controller+0x68)>>16	rx_len = 200 - high16(controller+0x68); DAT_0002251c[1]=rx_len	Length is derived from peripheral FIFO/count-like field, not from first payload byte	static_exact_formula_but_register_semantics_unknown
+neutral/reset	rx[0] == ESC	rx_context+0x80	parser_state+0x38=0; rx_context+0x80 maybe reset; parser_state+0x3c=1	ESC returns parser to neutral and marks parser state changed	static_known
+m entry	rx[0]=='m' and rx_context+0x80 < 2	rx_context+0x80	parser_state+0x38=2; rx_context+0x80=1; parser_state+0x3c=1	First-level mode gate; no cryptographic/auth call visible in this body	static_known_auth_gap
+s entry	rx[0]=='s'	none beyond rx[0]	parser_state+0x38=4	Opens U/FCB command mode; subsequent U/FCB handlers require this state	static_known_auth_gap
+hard reset	rx[0]=='X' and rx_len==1	none beyond rx[0]/rx_len	disable IRQ; cleanup helper; delay; AIRCR SYSRESETREQ write; infinite loop	Remote reset surface if external transport can reach parser	high_risk_static_known
+U/FCB command mode	parser_state+0x38 == 4	rx[0..2]	command-dependent	All U* and FCB branches are gated by state 4, but state 4 can be entered by plain 's' command in visible body	state_gate_known_auth_gap
+exit/IRQ completion	always after parse or no-parse path	peripheral IRQ/status registers	controller +0x1c=1; clear/ack peripheral bit; NVIC ICER write 0x10	Parser disables/acks one interrupt line at exit; re-enable path must be elsewhere	static_known_routing_gap

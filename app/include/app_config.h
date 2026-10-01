@@ -17,5 +17,14 @@ bool app_config_decode_persistent(MotorConfig *config,
                                   const uint32_t words[APP_CONFIG_WORD_COUNT]);
 void app_config_decode_runtime(MotorConfig *config,
                                const uint32_t words[APP_CONFIG_WORD_COUNT]);
+#if defined(DAMIAO_DM4310)
+uint32_t *app_config_staging_record(void);
+void app_config_initialize_scatter_defaults(void);
+bool app_config_dm4310_record_present(
+    const volatile uint32_t words[APP_CONFIG_WORD_COUNT]);
+void app_config_dm4310_stage_and_decode(
+    MotorConfig *config,
+    const volatile uint32_t words[APP_CONFIG_WORD_COUNT]);
+#endif
 
 #endif

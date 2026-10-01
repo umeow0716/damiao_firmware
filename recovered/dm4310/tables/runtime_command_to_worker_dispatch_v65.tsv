@@ -1,0 +1,15 @@
+parser	command_or_condition	field	value	consumer	meaning
+Vector_20	ESC	state +0x38	0	immediate	neutral/reset parser state; if working +0x80 == 1 clear it
+Vector_20	m	state +0x38	2	immediate	only when working +0x80 < 2; sets working +0x80=1 and state +0x3c=1
+Vector_20	s	state +0x38	4	immediate	command mode; U*/FCB branches require this state
+Vector_20	X len=1	AIRCR SYSRESETREQ	reset	immediate	disable IRQ, cleanup, delay 100, DSB, write AIRCR key/mask, loop
+Vector_20	Uc	dispatcher +0x10	1	main loop 0x252f4	main loop calls 0x264a4 then 0x24b20; clears +0x10
+Vector_20	Ul	dispatcher +0x14	1	main loop 0x252f4	main loop calls 0x246f8; clears +0x14
+Vector_20	Ud with slot index 0x11	dispatcher +0x1c	1	main loop 0x252f4	main loop disableIRQ, 1fff9950(dst,src,0x103), clear +0x1c, call 0x22658 reload/validate, rearm hardware
+Vector_20	UM with slot index 0x88	dispatcher +0x1c	2	main loop 0x252f4	main loop disableIRQ, two 1fff9950 copies length 0x800 and 4, clear +0x1c, call 0x22658 reload/validate, rearm hardware
+Vector_20	Ue third byte U, len=3	dispatcher +0x24	1	main loop 0x252f4	main loop calls motor-ID 0x257c4; clears +0x24
+Vector_20	Ug aa len=3	dispatcher +0x28	1	main loop 0x252f4	main loop calls 0x26d00(1): send g + 0x80 config + 0xaa, length 0x82
+Vector_20	Ug U len=0x83	dispatcher +0x28	2	main loop 0x252f4	main loop calls 0x26d00(2): 1fff9950 copy/commit, sends U g U, reset
+Vector_20	Ug Z len=0x83	dispatcher +0x28	4	main loop 0x252f4	0x26d00 has no explicit param=4 branch in current pseudo-C; flag clears after call
+Vector_20	Ug Q len=0x83	dispatcher +0x28	6	main loop 0x252f4	main loop calls 0x26d00(6): derive/apply config, sends U g Q
+Vector_20	FCB[0-9A-B]	dispatcher +0x0c	1	main loop 0x252f4	main loop disableIRQ, 1fff9950 copy length 0x25, rearm hardware; also sets working_config +0x8c selector and two pointer refs

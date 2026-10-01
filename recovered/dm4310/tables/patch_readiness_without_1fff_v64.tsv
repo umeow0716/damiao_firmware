@@ -1,0 +1,7 @@
+candidate	known_good	blocking_unknown	v63_readiness
+add TX timeout to 0x2379c	body and callsites known; no timeout visible	timing impact, IRQ context safety, host compatibility	not_patch_ready
+harden Ud/UM copy bounds	slot stride and derived copy lengths known	valid host payload limits and table size	not_patch_ready
+harden Ug 0x80 config ingress	exact 0x83 length guard and copy destination known	host config schema and commit sequence	not_patch_ready
+restrict X reset	reset guard and AIRCR path known	host reset authority contract	not_patch_ready
+document Ue/Uf response parser	sender layout known	host parser/endian expectations	analysis_ready_not_patch
+CAN ID/mailbox adjustment	setup functions known	live routing and host/bus contract	not_patch_ready

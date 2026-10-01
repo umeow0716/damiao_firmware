@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 #include "motor_types.h"
+#include "output_sensor.h"
 
 #define POSITION_CALIBRATION_SAMPLE_COUNT 4096U
 
@@ -22,18 +23,15 @@ typedef struct {
 
 MotorFault sensor_calibration_validate_position(
     const uint16_t *samples, size_t sample_count, float *maximum_step);
-#if defined(DAMIAO_DM8009)
-MotorFault sensor_calibration_validate_current_record(
-    const float *correction, size_t sample_count, float *maximum_value,
-    float *minimum_value);
-MotorFault sensor_calibration_validate_output_record(
-    const float *correction, size_t sample_count, float *maximum_value,
-    float *minimum_value);
-#endif
 bool sensor_calibration_validate_output_parameters(
     const float calibration[4]);
 bool sensor_calibration_analyze_output_extrema(
     const OutputSensorExtrema *extrema, float calibration[4]);
+#if defined(DAMIAO_DM4310)
+void sensor_calibration_publish_output_extrema(
+    const OutputSensorExtrema *extrema, OutputSensorState *sensor,
+    volatile float calibration[4]);
+#endif
 bool sensor_calibration_current_means_valid(float sensor_u, float sensor_v);
 bool sensor_calibration_current_mean_valid(float sensor_mean);
 bool sensor_calibration_startup_bus_valid(float raw_average,

@@ -1,0 +1,6 @@
+command	entry_guard	length_guard	destination	copy_len	response	deferred_effect
+Ud	state +0x38 == 4; first byte U second d	iVar15 == *DAT_0002251c + 1	dst = Dslot_base + scratch[0x3e] * 0x3c	len = scratch[0x3d] << 2	ack [0x64,index]	visible special index 0x11 triggers dispatcher +0x1c=1
+UM	state +0x38 == 4; first byte U second M	iVar15 == *DAT_0002251c + 1	dst = Mslot_base + scratch[0x3e] * 0x3c	len = scratch[0x3d] << 1	ack [0x4d,index]	visible special index 0x88 triggers dispatcher +0x1c=2
+UgU	state +0x38 == 4; U g U	iVar15 == 0x83	working_config_like = rx+3	0x80	none immediate; dispatcher +0x28=2	main loop 0x26d00(2) later commit/copy/reset
+UgZ	state +0x38 == 4; U g Z	iVar15 == 0x83	working_config_like = rx+3	0x80	none immediate; dispatcher +0x28=4	no explicit param=4 branch in 0x26d00 current pseudo-C; likely requires validation/trace
+UgQ	state +0x38 == 4; U g Q	iVar15 == 0x83	working_config_like = rx+3	iVar15-3 = 0x80	none immediate; dispatcher +0x28=6	main loop 0x26d00(6) applies derived config and acks UgQ

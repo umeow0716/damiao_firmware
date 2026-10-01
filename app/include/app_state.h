@@ -12,6 +12,7 @@ typedef struct {
     volatile bool print_menu;
     volatile bool print_debug_info;
     volatile bool save_parameters;
+    volatile bool save_staged_parameters;
     volatile bool save_zero_position;
     volatile bool reconfigure_mcan;
     volatile bool commission_direction;
@@ -43,6 +44,13 @@ typedef struct {
 } AppState;
 
 extern AppState g_app;
+#if defined(DAMIAO_DM4310)
+#define APP_DEFERRED_EVENTS dm4310_runtime_status
+#define APP_FAULT_INDICATOR_TICKS dm4310_runtime_status.fault_indicator_ticks
+#else
+#define APP_DEFERRED_EVENTS g_app.events
+#define APP_FAULT_INDICATOR_TICKS g_app.fault_indicator_ticks
+#endif
 void app_state_init(void);
 
 #endif

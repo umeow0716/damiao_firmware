@@ -6,6 +6,10 @@
 
 #include "motor_types.h"
 
+#if defined(DAMIAO_DM4310)
+typedef struct Dm4310McanIrqReferences Dm4310McanIrqReferences;
+#endif
+
 typedef struct {
     uint32_t id;
     uint8_t length;
@@ -25,6 +29,15 @@ typedef enum {
 CanCommandKind can_protocol_decode_command(const CanFrame *frame,
                                            const MotorConfig *config,
                                            MotorCommand *command);
+#if defined(DAMIAO_DM4310)
+CanCommandKind dm4310_can_protocol_decode_command_irq(
+    const CanFrame *frame, MotorCommand *command,
+    const Dm4310McanIrqReferences *references);
+void dm4310_can_protocol_encode_feedback_irq(
+    Dm4310McanIrqReferences *references, CanFrame *frame);
+void dm4310_can_protocol_encode_parameter_feedback_irq(
+    Dm4310McanIrqReferences *references, CanFrame *frame);
+#endif
 void can_protocol_encode_feedback(const MotorFeedback *feedback,
                                   const MotorConfig *config,
                                   CanFrame *frame);

@@ -30,6 +30,12 @@ void board_sampling_timer_build_config(
     BoardSamplingTimerRegisterImage *config);
 bool board_sampling_timer_init(void);
 uint16_t board_sampling_timer_duty_to_compare(float duty, uint16_t period);
+void board_sampling_timer_write_modulation(float phase_u, float phase_v,
+                                           float phase_w);
+#if defined(DAMIAO_DM4310)
+void board_sampling_timer_write_space_vector(float alpha, float beta);
+void dm4310_svpwm_helper(float alpha, float beta);
+#endif
 void board_sampling_timer_write_pwm(float phase_u, float phase_v, float phase_w);
 bool board_sampling_timer_is_initialized(void);
 

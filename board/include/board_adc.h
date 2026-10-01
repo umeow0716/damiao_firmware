@@ -50,7 +50,13 @@ bool board_adc_calibrate_output_sensor(
 bool board_adc_configure_runtime_sampling(void);
 bool board_adc_enable_runtime_irq(void);
 bool board_adc_read(BoardAdcRawSample *sample);
+#if defined(DAMIAO_DM4310)
+const volatile uint16_t *board_adc_read_control_irq(void);
+#endif
 void board_adc_ack_polling_sample(void);
 void board_adc_ack_interrupt(void);
+#if defined(DAMIAO_DM4310)
+void board_adc_clear_primary_conversion_flags(void);
+#endif
 
 #endif

@@ -11,34 +11,13 @@
 
 /* Literal constants used by load_and_validate_calibration at 0x22658. */
 #define POSITION_COUNT_TO_RAD 0x1.921fb6p-10f
-#define PI_F                  0x1.921fb6p+1f
 #define TWO_PI_F              0x1.921fb6p+2f
-#define MAX_POSITION_STEP     0x1.657184p-5f
 
 /* validate_current_sensors at 0x24ec0 implements this interval through an
  * unsigned float-bit range comparison.  Naming the resulting limits is much
  * clearer and produces the same decision for finite positive ADC means. */
 #define CURRENT_SENSOR_MINIMUM 186.18182373046875f
 #define CURRENT_SENSOR_MAXIMUM 3909.818359375f
-
-/* DM8009 calibration validation limits, recovered from 0x229b0/0x229b8
- * and 0x22a24/0x22a28/0x22a2c in APP_DM8009_V4_V7318_04. */
-#define DM8009_I_SENSOR_LIMIT          300.0f
-#define DM8009_O_SENSOR_LIMIT          0x1.657186p-3f
-#define DM8009_O_SENSOR_SUM_LIMIT      0x1.657186p-4f
-
-#if defined(DAMIAO_DM8009)
-static bool official_nan_to_zero(float *value)
-{
-    uint32_t bits;
-    memcpy(&bits, value, sizeof(bits));
-    if ((bits & 0x7FFFFFFFUL) > 0x7F800000UL) {
-        *value = 0.0f;
-        return true;
-    }
-    return false;
-}
-#endif
 
 MotorFault sensor_calibration_validate_position(
     const uint16_t *samples, size_t sample_count, float *maximum_step)
@@ -53,114 +32,86 @@ MotorFault sensor_calibration_validate_position(
     }
 
     for (size_t index = 1U; index < sample_count; ++index) {
+#if defined(DAMIAO_DM4310)
+        volatile const uint16_t *const live_samples = samples;
+        const uint16_t current = live_samples[index];
+        const uint16_t previous = live_samples[index - 1U];
+        float previous_angle;
+        float current_angle;
+        /* Factory reads current then previous, and scales both even when
+         * either is erased, before branching on the 0xffff sentinel. */
+        __asm volatile (
+            "vmov %0, %2\nvcvt.f32.u32 %0, %0\n"
+            "vmul.f32 %0, %0, %4\n"
+            "vmov %1, %3\nvcvt.f32.u32 %1, %1\n"
+            "vmul.f32 %1, %1, %4"
+            : "=&t" (previous_angle), "=&t" (current_angle)
+            : "r" ((uint32_t)previous), "r" ((uint32_t)current),
+              "t" (POSITION_COUNT_TO_RAD)
+            : "memory");
+#else
         const uint16_t previous = samples[index - 1U];
         const uint16_t current = samples[index];
+#endif
         if ((previous == UINT16_MAX) || (current == UINT16_MAX)) {
             if (maximum_step != NULL) {
+#if defined(DAMIAO_DM4310)
+                /* Factory 0x2278c loads literal 0x45800000 (4096), not Inf. */
+                *maximum_step = 4096.0f;
+#else
                 *maximum_step = INFINITY;
+#endif
             }
             return MOTOR_FAULT_OUTPUT_CALIBRATION_MISSING;
         }
 
-        float step = fabsf(((float)current - (float)previous) *
-                           POSITION_COUNT_TO_RAD);
-        if (step > PI_F) {
-            step = fabsf(step - TWO_PI_F);
+        /* Factory converts and scales each unsigned count separately before
+         * subtracting.  Combining the subtraction ahead of the multiply can
+         * differ by several float ULPs and changes the reported maximum. */
+#if !defined(DAMIAO_DM4310)
+        const float previous_angle =
+            (float)previous * POSITION_COUNT_TO_RAD;
+        const float current_angle =
+            (float)current * POSITION_COUNT_TO_RAD;
+#endif
+        float step = fabsf(current_angle - previous_angle);
+#if defined(DAMIAO_DM4310)
+        int32_t step_bits;
+        memcpy(&step_bits, &step, sizeof(step_bits));
+        if (step_bits > INT32_C(0x40c90fdb)) {
+            step -= TWO_PI_F;
+        } else if (step_bits > INT32_C(0x40490fdb)) {
+            step = TWO_PI_F - step;
+        }
+        __asm volatile (
+            "vcmpe.f32 %1, %0\nvmrs APSR_nzcv, FPSCR\n"
+            "it gt\nvmovgt.f32 %0, %1"
+            : "+t" (largest) : "t" (step) : "cc");
+#else
+        if (step > TWO_PI_F) {
+            step -= TWO_PI_F;
+        } else if (step > PI_F) {
+            step = TWO_PI_F - step;
         }
         if (step > largest) {
             largest = step;
         }
+#endif
     }
 
     if (maximum_step != NULL) {
         *maximum_step = largest;
     }
+#if defined(DAMIAO_DM4310)
+    int32_t largest_bits;
+    memcpy(&largest_bits, &largest, sizeof(largest_bits));
+    return largest_bits <= INT32_C(0x3d32b8c2) ? MOTOR_FAULT_NONE :
+                                               MOTOR_FAULT_OUTPUT_CALIBRATION;
+#else
     return (largest <= MAX_POSITION_STEP) ? MOTOR_FAULT_NONE :
                                             MOTOR_FAULT_OUTPUT_CALIBRATION;
-}
-
-#if defined(DAMIAO_DM8009)
-MotorFault sensor_calibration_validate_current_record(
-    const float *correction, size_t sample_count, float *maximum_value,
-    float *minimum_value)
-{
-    float largest = -65536.0f;
-    float smallest = 65536.0f;
-    if ((correction == NULL) || (sample_count != 256U)) {
-        if (maximum_value != NULL) {
-            *maximum_value = INFINITY;
-        }
-        if (minimum_value != NULL) {
-            *minimum_value = -INFINITY;
-        }
-        return MOTOR_FAULT_OUTPUT_CALIBRATION_MISSING;
-    }
-    for (size_t index = 0U; index < sample_count; ++index) {
-        float value = correction[index];
-        official_nan_to_zero(&value);
-        if (value > largest) {
-            largest = value;
-        }
-        if (value < smallest) {
-            smallest = value;
-        }
-    }
-    if (maximum_value != NULL) {
-        *maximum_value = largest;
-    }
-    if (minimum_value != NULL) {
-        *minimum_value = smallest;
-    }
-    if (largest >= DM8009_I_SENSOR_LIMIT ||
-        smallest <= -DM8009_I_SENSOR_LIMIT) {
-        return MOTOR_FAULT_OUTPUT_SENSOR;
-    }
-    return MOTOR_FAULT_NONE;
-}
-
-MotorFault sensor_calibration_validate_output_record(
-    const float *correction, size_t sample_count, float *maximum_value,
-    float *minimum_value)
-{
-    float largest = -100.0f;
-    float smallest = 100.0f;
-    if ((correction == NULL) || (sample_count != 256U)) {
-        if (maximum_value != NULL) {
-            *maximum_value = INFINITY;
-        }
-        if (minimum_value != NULL) {
-            *minimum_value = -INFINITY;
-        }
-        return MOTOR_FAULT_OUTPUT_CALIBRATION_MISSING;
-    }
-    bool missing_entry = false;
-    for (size_t index = 0U; index < sample_count; ++index) {
-        float value = correction[index];
-        missing_entry = official_nan_to_zero(&value) || missing_entry;
-        if (value > largest) {
-            largest = value;
-        }
-        if (value < smallest) {
-            smallest = value;
-        }
-    }
-    if (maximum_value != NULL) {
-        *maximum_value = largest;
-    }
-    if (minimum_value != NULL) {
-        *minimum_value = smallest;
-    }
-    if (largest >= DM8009_O_SENSOR_LIMIT ||
-        smallest <= -DM8009_O_SENSOR_LIMIT ||
-        fabsf(largest + smallest) >= DM8009_O_SENSOR_SUM_LIMIT) {
-        return MOTOR_FAULT_OUTPUT_CALIBRATION;
-    }
-    if (missing_entry) {
-        return MOTOR_FAULT_OUTPUT_CALIBRATION_MISSING;
-    }
-    return MOTOR_FAULT_NONE;
-}
 #endif
+}
 
 bool sensor_calibration_decode_motor_record(
     const uint32_t record[MOTOR_ENCODER_RECORD_WORD_COUNT],
@@ -177,10 +128,45 @@ bool sensor_calibration_decode_motor_record(
      * 0x7f800000: each NaN is normalized independently, while infinities are
      * deliberately preserved. */
     for (size_t index = 0U; index < MOTOR_ENCODER_CORRECTION_COUNT; ++index) {
+#if defined(DAMIAO_DM4310)
+        const uint32_t bits = record[index];
+        volatile uint32_t *const destination =
+            (volatile uint32_t *)(void *)&correction[index];
+        /* Factory 0x22672..84 publishes raw bits before normalization,
+         * without a floating comparison or signaling-NaN exception. */
+        *destination = bits;
+        if ((bits & UINT32_C(0x7fffffff)) > UINT32_C(0x7f800000)) {
+            __asm volatile ("vstr %1, [%0]"
+                            : : "r" (destination), "t" (0.0f) : "memory");
+        }
+#else
         float value;
         memcpy(&value, &record[index], sizeof(value));
         correction[index] = isnan(value) ? 0.0f : value;
+#endif
     }
+#if defined(DAMIAO_DM4310)
+    uint32_t offset_bits = record[MOTOR_ENCODER_ELECTRICAL_OFFSET_WORD];
+    volatile uint32_t *const fixed_offset =
+        (volatile uint32_t *)(uintptr_t)FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff09c), UINT32_C(0x1ffff028));
+    *fixed_offset = offset_bits;
+    if ((offset_bits & UINT32_C(0x7fffffff)) > UINT32_C(0x7f800000)) {
+        __asm volatile ("vstr %1, [%0]"
+                        : : "r" (fixed_offset), "t" (0.0f) : "memory");
+        offset_bits = 0U;
+    }
+    uint32_t direction_bits = record[MOTOR_ENCODER_DIRECTION_WORD];
+    volatile uint32_t *const fixed_direction =
+        (volatile uint32_t *)(uintptr_t)FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff0bc), UINT32_C(0x1ffff048));
+    *fixed_direction = direction_bits;
+    if ((direction_bits & UINT32_C(0x7fffffff)) > UINT32_C(0x7f800000)) {
+        __asm volatile ("vstr %1, [%0]"
+                        : : "r" (fixed_direction), "t" (1.0f) : "memory");
+        direction_bits = UINT32_C(0x3f800000);
+    }
+    memcpy(electrical_offset, &offset_bits, sizeof(offset_bits));
+    memcpy(direction, &direction_bits, sizeof(direction_bits));
+#else
     float offset;
     float stored_direction;
     memcpy(&offset, &record[MOTOR_ENCODER_ELECTRICAL_OFFSET_WORD],
@@ -189,6 +175,7 @@ bool sensor_calibration_decode_motor_record(
            sizeof(stored_direction));
     *electrical_offset = isnan(offset) ? 0.0f : offset;
     *direction = isnan(stored_direction) ? 1.0f : stored_direction;
+#endif
     return true;
 }
 
@@ -205,14 +192,64 @@ bool sensor_calibration_validate_output_parameters(
 
 static float wrap_signed(float angle)
 {
+#if defined(DAMIAO_DM4310)
+    uint32_t bits;
+    memcpy(&bits, &angle, sizeof(bits));
+    /* extrema@0x24966/0x24984: one signed upper comparison, then
+     * one unsigned lower comparison, not floating comparisons or loops. */
+    if ((int32_t)bits > (int32_t)UINT32_C(0x40490fdb)) {
+        angle -= TWO_PI_F;
+    } else if (bits > UINT32_C(0xc0490fdb)) {
+        angle += TWO_PI_F;
+    }
+#else
     while (angle > PI_F) {
         angle -= TWO_PI_F;
     }
     while (angle < -PI_F) {
         angle += TWO_PI_F;
     }
+#endif
     return angle;
 }
+
+#if defined(DAMIAO_DM4310)
+void sensor_calibration_publish_output_extrema(
+    const OutputSensorExtrema *extrema, OutputSensorState *sensor,
+    volatile float calibration[4])
+{
+    volatile OutputSensorState *const state = sensor;
+    float maximum_phase =
+        extrema->angle_at_maximum_v - extrema->angle_at_maximum_u;
+    __asm volatile ("" : "+t" (maximum_phase) : : "memory");
+    state->center_u = 0.5f *
+        (float)((uint32_t)extrema->maximum_u + extrema->minimum_u);
+    state->center_v = 0.5f *
+        (float)((uint32_t)extrema->maximum_v + extrema->minimum_v);
+    float span_u = (float)((int32_t)extrema->maximum_u - extrema->minimum_u);
+    float span_v = (float)((int32_t)extrema->maximum_v - extrema->minimum_v);
+    __asm volatile ("" : "+t" (span_u), "+t" (span_v) : : "memory");
+    maximum_phase = wrap_signed(maximum_phase);
+    const float minimum_phase = wrap_signed(
+        extrema->angle_at_minimum_v - extrema->angle_at_minimum_u);
+    float phase;
+    /* Preserve operand order for NaN payload selection as well as finite
+     * values: factory 0x2499a adds maximum phase to minimum phase. */
+    __asm volatile ("vadd.f32 %0, %1, %2\nvmul.f32 %0, %0, %3"
+                    : "=&t" (phase)
+                    : "t" (maximum_phase), "t" (minimum_phase), "t" (0.5f)
+                    : "memory");
+    /* Helper publishes sine then cosine directly to the live fields. */
+    motor_target_sincos(phase, &sensor->phase_sine, &sensor->phase_cosine);
+    float gain = span_u / span_v;
+    __asm volatile ("" : "+t" (gain) : : "memory");
+    state->gain_v = gain;
+    calibration[0] = state->center_u;
+    calibration[1] = state->center_v;
+    calibration[2] = gain;
+    calibration[3] = phase;
+}
+#endif
 
 bool sensor_calibration_analyze_output_extrema(
     const OutputSensorExtrema *extrema, float calibration[4])
@@ -246,9 +283,13 @@ bool sensor_calibration_current_means_valid(float sensor_u, float sensor_v)
 
 bool sensor_calibration_current_mean_valid(float sensor_mean)
 {
-    return isfinite(sensor_mean) &&
-           (sensor_mean >= CURRENT_SENSOR_MINIMUM) &&
-           (sensor_mean < CURRENT_SENSOR_MAXIMUM);
+    uint32_t bits;
+    memcpy(&bits, &sensor_mean, sizeof(bits));
+    /* validate_current_sensors@0x24f66 uses ADD/CMP/BCC on the raw float
+     * word.  Preserve that unsigned interval transform, including
+     * its behavior for non-canonical NaNs and signed values. */
+    return (bits + APP_PROFILE_CURRENT_SENSOR_RANGE_OFFSET) <=
+           APP_PROFILE_CURRENT_SENSOR_RANGE_MAX;
 }
 
 bool sensor_calibration_startup_bus_valid(float raw_average,

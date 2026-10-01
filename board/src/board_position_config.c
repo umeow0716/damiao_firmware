@@ -20,17 +20,9 @@ void board_position_build_config(BoardPositionRegisterImage *config)
     /* Bit 4 is present in the live read-back but the factory APP writes the
      * 0x50000000 configuration image. */
     config->spi_cfg1 = 0x50000000UL;
-#if defined(DAMIAO_DM4310)
     config->spi_cfg2 = 0x0000EC08UL;
-#elif defined(DAMIAO_DM8009)
-    config->spi_cfg2 = 0x0000ED0DUL;
-#endif
     config->dma_dtctl0 = 0x00010001UL;
-#if defined(DAMIAO_DM4310)
     config->dma_chctl0 = 0x00001100UL;
-#elif defined(DAMIAO_DM8009)
-    config->dma_chctl0 = 0x00001300UL;
-#endif
     config->dma_intmask0 = 0x00010001UL;
     config->dma_intmask1 = 0x00010000UL;
     config->dma_trigger = 0x00000173UL;

@@ -8,7 +8,12 @@ void board_uart_build_config(BoardUartRegisterImage *config)
 
     /* These values are independently present in the application code and in
      * the captured USART1/TMR0/AOS register images. */
+#if defined(DAMIAO_DM4310)
+    /* Factory 0x2360a arithmetic for baud=921600; live init recalculates it. */
+    config->usart_brr = 0x00000562UL;
+#else
     config->usart_brr = 0x000005E2UL;
+#endif
     config->usart_cr1_dma = 0xA000000FUL;
     config->usart_cr1_polled = 0xA000000CUL;
     config->usart_cr2 = 0x00000800UL;

@@ -1,0 +1,7 @@
+layer	entry	static_evidence	proved	not_proved
+MCAN/classic setup	0x21cc8	programs timing, message RAM, filter words, interrupt priority/enable, uses param_2&0x7ff in filter word	setup-time MCAN-like configuration exists	that this exact channel feeds Vector_20 commands on the live product
+MCAN/FD setup	0x21fc4	programs FD timing variants, message RAM pointers, filter words, IRQ setup, uses param_2&0x7ff	FD-capable configuration exists	host frame ID contract or live bus routing
+Vector_20 RX parser	0x22244	status bit 0x100 gate, assigns RX buffer pointer to controller+0x44, parses ASCII commands	byte-stream parser body known	peripheral source identity solely from APP evidence
+response TX	0x2379c	blocking byte write to MMIO status/data registers	responses use byte-stream TX, not MCAN mailbox body in this helper	host physical transport and line discipline
+IRQ priority helpers	0x2386c/0x23816	NVIC priority/enable/clear helpers used around setup/exit	interrupt line manipulation known	complete re-enable sequence after Vector_20 exit
+host-routing gap	external	none inside APP beyond setup+parser body	gap is outside currently proven static APP body	CAN ID, mailbox, DMA/RX FIFO slot, framing adapter, or host bridge behavior

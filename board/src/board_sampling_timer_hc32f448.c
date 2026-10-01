@@ -1,6 +1,9 @@
 #include "board_sampling_timer.h"
 
+#include "factory_layout.h"
+
 #include "hc32f448.h"
+#include "motor_math.h"
 
 static bool sampling_timer_initialized;
 static BoardSamplingTimerRegisterImage sampling_timer_config;
@@ -91,6 +94,67 @@ void board_sampling_timer_write_pwm(float phase_u, float phase_v, float phase_w)
     CM_TMR4_1->OCCRWL = board_sampling_timer_duty_to_compare(
         phase_w, sampling_timer_config.period);
 }
+
+#if defined(DAMIAO_DM4310)
+static uint16_t modulation_compare(float phase, float scale)
+{
+    uint32_t compare;
+    float converted;
+    const float one = 1.0f;
+    __asm volatile (
+        "vsub.f32 %0, %2, %3\n"
+        "vmul.f32 %0, %0, %4\n"
+        "vcvt.u32.f32 %0, %0\n"
+        "vmov %1, %0"
+        : "=&t" (converted), "=r" (compare)
+        : "t" (one), "t" (phase), "t" (scale) : "memory");
+    return (uint16_t)compare;
+}
+#endif
+
+void board_sampling_timer_write_modulation(float phase_u, float phase_v,
+                                           float phase_w)
+{
+#if defined(DAMIAO_DM4310)
+    /* svpwm_write_compare@0x1fff9c40 uses the literal 2500.0f and writes
+     * unconditionally; it does not consult the initialization shadow. */
+#else
+    if (!sampling_timer_initialized) {
+        return;
+    }
+    const float compare_scale = (float)sampling_timer_config.neutral_compare;
+#endif
+#if defined(DAMIAO_DM4310)
+    /* Factory writes W (+0x14), V (+0x0c), then U (+0x04), each
+     * immediately after its unsigned conversion. Do not reorder by name. */
+    CM_TMR4_1->OCCRWL = modulation_compare(phase_w, 2500.0f);
+    CM_TMR4_1->OCCRVL = modulation_compare(phase_v, 2500.0f);
+    CM_TMR4_1->OCCRUL = modulation_compare(phase_u, 2500.0f);
+#else
+    CM_TMR4_1->OCCRUL = (uint16_t)((1.0f - phase_u) * compare_scale);
+    CM_TMR4_1->OCCRVL = (uint16_t)((1.0f - phase_v) * compare_scale);
+    CM_TMR4_1->OCCRWL = (uint16_t)((1.0f - phase_w) * compare_scale);
+#endif
+}
+
+#if defined(DAMIAO_DM4310)
+void board_sampling_timer_write_space_vector(float alpha, float beta)
+{
+    const float projection_scale = *(volatile const float *)FACTORY_SRAM_ADDRESS(0x1FFF9D4CUL, 0x1FFF9D84UL);
+    const PhaseDuty duty = motor_svpwm_modulation_scaled((AlphaBeta) {
+        .alpha = alpha,
+        .beta = beta,
+    }, projection_scale);
+    /* Factory caches the scale, converts W, then reads the timer pointer
+     * before the W/V/U stores. Do not reload either pool word per phase. */
+    const float compare_scale = *(volatile const float *)FACTORY_SRAM_ADDRESS(0x1FFF9D50UL, 0x1FFF9D88UL);
+    const uint16_t compare_w = modulation_compare(duty.modulation_c, compare_scale);
+    const uintptr_t timer = *(volatile const uint32_t *)FACTORY_SRAM_ADDRESS(0x1FFF9D54UL, 0x1FFF9D8CUL);
+    *(volatile uint16_t *)(timer + 0x14U) = compare_w;
+    *(volatile uint16_t *)(timer + 0x0CU) = modulation_compare(duty.modulation_b, compare_scale);
+    *(volatile uint16_t *)(timer + 0x04U) = modulation_compare(duty.modulation_a, compare_scale);
+}
+#endif
 
 bool board_sampling_timer_is_initialized(void)
 {
