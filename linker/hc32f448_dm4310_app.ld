@@ -130,7 +130,9 @@ SECTIONS
         *(.text.commissioning_current_dq)
         *(.text.send_alignment_sample)
         *(.text.commissioning_run_direction_and_alignment)
-        *(.text.commissioning_run_output_sensor_calibration)
+        /* Keep the larger output-sensor calibration routine in the ordinary
+         * collector.  The factory extended-arithmetic bank below owns
+         * 0x212f0..0x2199b. */
         /* Source-owned motor-ID grows with recovered staging logic; let
          * the generic text collector place it after the fixed IRQ entry. */
         *(.text.commissioning_rls2*)
@@ -138,6 +140,16 @@ SECTIONS
         *(.text.commissioning_flux_observer*)
         *(.text.commissioning_sine_regression_init)
         *(.text.commissioning_sine_regression_step)
+        . = 0x000010B0;
+        KEEP(*(.text.dm4310_factory_extended_divide_core))
+        . = 0x000013E8;
+        KEEP(*(.text.dm4310_factory_extended_round_core))
+        . = 0x000014C4;
+        KEEP(*(.text.dm4310_factory_extended_divide_entry))
+        . = 0x000014EE;
+        KEEP(*(.text.dm4310_factory_extended_multiply_entry))
+        . = 0x00001518;
+        KEEP(*(.text.dm4310_factory_extended_multiply_core))
         /* Factory callback targets fit in the existing reserved IRQ gap.
          * Both entries are source-built C wrappers around shared setup. */
         . = 0x00001A88;
@@ -154,17 +166,62 @@ SECTIONS
          * occupies the following bank without changing its C ownership. */
         *(EXCLUDE_FILE (*debug_console.c.obj *platform.c.obj *board*.c.obj
                        *runtime_compat.c.obj *dm4310_extended_core.S.obj) .text*)
-        /* Keep the source-owned reciprocal seeds at the factory read address.
-         * Runtime code follows its table within the existing flash bank. */
-        . = 0x00007210;
-        __dm4310_division_seeds_start__ = .;
-        KEEP(*(.dm4310_division_seeds))
-        __dm4310_division_seeds_end__ = .;
-        *runtime_compat.c.obj(.text*)
         *(.glue_7 .glue_7t)
         KEEP(*(.init))
         KEEP(*(.fini))
         . = ALIGN(4);
+    } > FLASH
+
+    .dm4310_factory_d2f 0x00027074 : {
+        KEEP(*(.text.dm4310_factory_d2f))
+        . = 0x00000058;
+        KEEP(*(.text.dm4310_factory_d2f_exception_result))
+        . = 0x00000064;
+    } > FLASH
+    ASSERT(__dm8009_layout || SIZEOF(.dm4310_factory_d2f) == 0x64,
+           "DM4310 double-to-float runtime layout changed")
+
+    /* Keep the recovered ARM runtime outside .text so GNU ld can put its
+     * source-only long-call veneers in the free bank before 0x270d8. */
+    .dm4310_factory_runtime 0x000270D8 : {
+        KEEP(*(.text.dm4310_factory_dadd))
+        . = 0x00000150;
+        KEEP(*(.text.dm4310_factory_ddiv))
+        . = 0x00000378;
+        __dm4310_division_seeds_start__ = .;
+        KEEP(*(.dm4310_division_seeds))
+        __dm4310_division_seeds_end__ = .;
+        KEEP(*(.rodata.dm4310_factory_ddiv_literals))
+        . = 0x00000400;
+        KEEP(*(.text.dm4310_factory_d2uiz))
+        . = 0x00000458;
+        KEEP(*(.text.dm4310_factory_d2uiz_saturate))
+        . = 0x0000045A;
+        KEEP(*(.text.dm4310_factory_ui2d))
+        . = 0x00000480;
+        KEEP(*(.text.dm4310_factory_dmul))
+        . = 0x000005D4;
+        KEEP(*(.text.dm4310_factory_softdouble_exception))
+        . = 0x0000067C;
+        KEEP(*(.text.dm4310_factory_reverse_subtract))
+        . = 0x0000082C;
+        KEEP(*(.text.dm4310_factory_dsub))
+        . = 0x00000A00;
+        KEEP(*(.text.dm4310_factory_f2d))
+        . = 0x00000A48;
+        KEEP(*(.text.dm4310_factory_f2d_exception_result))
+        . = 0x00000A56;
+        KEEP(*(.text.dm4310_factory_float_to_int))
+        . = 0x00000A64;
+        KEEP(*(.text.dm4310_factory_uint64_to_float_entry))
+        . = 0x00000A7E;
+        KEEP(*(.text.dm4310_factory_uint64_to_float_core))
+        . = 0x00000AC4;
+        KEEP(*(.text.dm4310_factory_softfloat_exception))
+        . = 0x00000B5A;
+        KEEP(*(.text.dm4310_factory_d2f_pack))
+        . = 0x00000B64;
+        KEEP(*(.text.dm4310_factory_round_even))
     } > FLASH
 
     ASSERT(__dm8009_layout || dm4310_runtime_main_entry == 0x00020368,
@@ -174,6 +231,8 @@ SECTIONS
            "DM4310 reciprocal seeds must retain the factory address")
     ASSERT(__dm8009_layout || __dm4310_division_seeds_end__ - __dm4310_division_seeds_start__ == 0x80,
            "DM4310 reciprocal seed table must contain 128 bytes")
+    ASSERT(__dm8009_layout || SIZEOF(.dm4310_factory_runtime) == 0xBC8,
+           "DM4310 factory arithmetic runtime layout changed")
 
     .dm4310_temperature_table 0x00027CA0 : {
         KEEP(*(.rodata.temperature_celsius_table))

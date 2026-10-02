@@ -12,8 +12,12 @@ SOURCE_ENTRY = SOURCE_FUNCTION + (0x1a0 if model == 'dm8009' else 0x1a8)
 SOURCE_BOUND_SITE = SOURCE_FUNCTION + 0x1e4
 SOURCE_STOP = SOURCE_FUNCTION + 0x234
 FACTORY_PWM = {0x219b0}
-SOURCE_PWM = {0x27a70, symbols['__dm4310_svpwm_helper_veneer'],
-              symbols['board_sampling_timer_write_space_vector']}
+SOURCE_PWM = {
+    symbol['st_value'] & ~1
+    for symbol in elf.get_section_by_name('.symtab').iter_symbols()
+    if symbol.name == '__dm4310_svpwm_helper_veneer'
+}
+SOURCE_PWM.add(symbols['board_sampling_timer_write_space_vector'])
 FACTORY_DELAY = F(0x21f60)
 SOURCE_DELAY = symbols['platform_commissioning_delay_us']
 FACTORY_UART = F(0x2379c)

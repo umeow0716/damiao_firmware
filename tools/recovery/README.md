@@ -47,6 +47,19 @@ for model in dm4310 dm4340 dm8009; do
 done
 ```
 
+DM4310 factory byte-exact 進度（size、SHA、vector、191 個真實 Ghidra function body、
+fixed-SRAM section 與 load-image 組成）：
+
+```sh
+.venv/bin/python tools/recovery/report_dm4310_byte_parity.py \
+    --details-output build/recovery/dm4310_byte_parity_functions.tsv
+```
+
+這個報告直接使用
+`recovered/dm4310/tables/factory_function_body_ranges.tsv` 保存的非連續 function body
+address sets，不以 `entry + size` 猜測範圍。需要重新匯出 ranges 時使用
+`DumpFunctionBodyRanges.java`；報告與匯出器都不屬於一般 CMake/make。
+
 固定 IRQ000/IRQ001 的 timer、DMA、pointer-pool、SRAM/MMIO 與 FPSCR 矩陣：
 
 ```sh

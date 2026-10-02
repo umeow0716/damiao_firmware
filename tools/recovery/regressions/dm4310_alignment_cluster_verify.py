@@ -14,8 +14,12 @@ ANGLE = A(0x1ffff198)
 FACTORY_AUTH = F(0x26eb8)
 SOURCE_AUTH = symbols['platform_require_device_authentication']
 FACTORY_PWM = {0x219b0}
-SOURCE_PWM = {0x27a70, symbols['__dm4310_svpwm_helper_veneer'],
-              symbols['board_sampling_timer_write_space_vector']}
+SOURCE_PWM = {
+    symbol['st_value'] & ~1
+    for symbol in elf.get_section_by_name('.symtab').iter_symbols()
+    if symbol.name == '__dm4310_svpwm_helper_veneer'
+}
+SOURCE_PWM.add(symbols['board_sampling_timer_write_space_vector'])
 FACTORY_DELAY = F(0x21f60)
 SOURCE_DELAY = symbols['platform_commissioning_delay_us']
 FACTORY_UART = F(0x2379c)

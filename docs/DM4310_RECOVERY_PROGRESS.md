@@ -1,18 +1,22 @@
 # DM4310 V3 V5017 復原進度
 
-最後更新：2026-10-02
+最後更新：2026-10-03
 
 三型號總進度與剩餘任務見 `docs/FIRMWARE_RECOVERY_PROGRESS.md`。
+新增的 DM4310 machine-code byte-exact 目標與獨立進度見
+`docs/DM4310_BYTE_EXACT_PROGRESS.md`；本頁的完成狀態表示行為復原完成，不表示 factory
+plain image 的 SHA 已相同。
 
 ## 目前基準
 
 - Factory APP：`recovered/binaries/dm4310/dm4310_v3_v5017_app_flash_00020000_memory.bin`
 - Factory SHA-256：`65aab219268e9159b196d4578d3cd530e6fa90a731a82670a0d3d3be609b59d4`
 - Factory image：51,284 bytes
-- Source-built APP image：62,360 bytes
-- 64 KiB APP 剩餘空間：3,176 bytes
-- Source-built plain SHA-256：`26a0385a87bbd06ef1e1d3c4e25d1d1bd87cd88460fa3111f08db6f633ea25d1`
-- Source-built encrypted SHA-256：`f290ffbb4caccb60ae42c557649df113f18fc78e0746357d4a5930a8d8c2f089`
+- Source-built APP image：59,472 bytes
+- 64 KiB APP 剩餘空間：6,064 bytes
+- Source-built plain SHA-256：`d18f01d4d9b694a61cdb784438ad04b8ef7a724872bea0b6635065f802913356`
+- Published encrypted artifact 仍是前一個 behavior checkpoint；byte-exact 完成前不將中間產物
+  宣告為最終 `dm4310_enc.bin`。
 - 行為叢集差分：65 / 65 通過（100%）
 - Factory function closure：195 / 195 已建立 source/fixed-runtime owner
 - Ghidra unowned instruction ranges：6 / 6 已分類（3 callable、3 data）
@@ -70,8 +74,8 @@
 
 ### 4. 映像與容量
 
-- [x] APP load image 為 62,360 bytes，嚴格小於 65,536 bytes；linker 另對所有 sparse
-      `AT(...)` LMA 的最終尾端強制檢查，剩餘 3,176 bytes。
+- [x] APP load image 為 59,472 bytes，嚴格小於 65,536 bytes；linker 另對所有 sparse
+      `AT(...)` LMA 的最終尾端強制檢查，剩餘 6,064 bytes。
 - [x] vector、42 個 file-backed LOAD segment、45 個初始化 RAM section、35 個 zero-fill
       section、RAMB、fixed helper、heap/stack 均無 VMA/LMA 重疊。
 - [x] 全域存活函式 body 雜湊掃描沒有任何 >=16-byte 重複實作；僅有四個必要的 8-byte

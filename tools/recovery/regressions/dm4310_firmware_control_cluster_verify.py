@@ -30,9 +30,13 @@ source_calls = {
     'flash': symbols['board_flash_replace_sector_prefix'],
     'uart': symbols['platform_debug_write'],
     'delay': symbols['board_delay_us'],
-    # firmware_control_service's local linker veneer; the symbol table also
-    # contains a second same-named veneer for a later call site.
-    'derive': 0x27a50,
+    # firmware_control_service uses the first same-named GNU linker veneer;
+    # derive it from the current ELF because its address follows .text size.
+    'derive': min(
+        symbol['st_value'] & ~1
+        for symbol in elf.get_section_by_name('.symtab').iter_symbols()
+        if symbol.name == '__dm4310_derive_control_parameters_helper_veneer'
+    ),
     'free': symbols['dm4310_runtime_free'],
 }
 factory_barriers = {F(0x26d62), F(0x26d74)}

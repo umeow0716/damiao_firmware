@@ -26,7 +26,7 @@ mapping = [(0x270d8, '__wrap___aeabi_dadd', 0x150),
            (0x27754, 'dm4310_softdouble_reverse_subtract_core', 0x16),
            (0x27904, '__wrap___aeabi_dsub', 0x1d4),
            (0x27558, '__wrap___aeabi_dmul', 0x154),
-           (0x27228, '__wrap___aeabi_ddiv', 0x22c)]
+           (0x27228, '__wrap___aeabi_ddiv', 0x228)]
 def machine(original):
     u = Uc(UC_ARCH_ARM, UC_MODE_THUMB)
     u.mem_map(0x20000, 0x20000)
@@ -42,8 +42,6 @@ def normalize(value):
         new = symbols[name]
         if new <= (value & ~1) < new + size:
             offset = value - new
-            if name == '__wrap___aeabi_ddiv' and offset >= 0x6c:
-                offset -= 4  # two non-flag-setting address halves replace ADR
             return old + offset
     return value
 edges = [0, 1, 0x8000000000000000, 0x0010000000000000,

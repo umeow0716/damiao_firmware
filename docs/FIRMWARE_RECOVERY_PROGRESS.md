@@ -1,6 +1,10 @@
 # Firmware Recovery Progress
 
-最後更新：2026-10-02
+最後更新：2026-10-03
+
+下表是 source/behavior recovery 的完成狀態。2026-10-03 新增的 DM4310 factory
+byte-exact 目標目前為 30 / 191 function bodies、6,904 / 51,284 同位址 bytes；另見
+`docs/DM4310_BYTE_EXACT_PROGRESS.md`。現有 development artifacts 尚不是 factory SHA。
 
 ## 型號進度
 
@@ -23,9 +27,12 @@
 | `dist/development/dm8009_plain.bin` | 62,372 | `2e72f182355fda9143f41deb8f78cc7a1c52dead6e4ad0162c5d4d9d16dc8f74` |
 | `dist/development/dm8009_enc.bin` | 62,372 | `a455f712dce8cf15aca2620a46485ed8bf7458ec3d9645958e87bd78cbb1e195` |
 
-DM4310/DM4340 距 64 KiB APP 上限尚有 3,176 bytes；DM8009 尚有 3,164 bytes。
+上述已發布 DM4310/DM4340 距 64 KiB APP 上限尚有 3,176 bytes；DM8009 尚有 3,164 bytes。
 每份 plain 均逐 byte 等於對應 ELF 的 objcopy，encrypted 均已通過 AES-256-CTR
 解密 round-trip，manifest 的大小與 SHA-256 也已核對。
+
+上表是前一個已發布 behavior checkpoint。進行中的 byte-exact source build 已將 DM4310/DM4340
+縮至 59,472 bytes（剩餘 6,064 bytes），但在 factory SHA 完成前不覆寫表中的六份發布產物。
 
 ## 完成證據
 

@@ -70,6 +70,7 @@ Thumbs.db
 /docs/*
 !/docs/FIRMWARE_RECOVERY_PROGRESS.md
 !/docs/DM4310_RECOVERY_PROGRESS.md
+!/docs/DM4310_BYTE_EXACT_PROGRESS.md
 /analysis/
 # Persist disassembly-derived tables required by the recovery regressions,
 # but continue excluding dumped firmware binaries and scratch snapshots.
