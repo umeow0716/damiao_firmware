@@ -105,6 +105,9 @@ for case in range(96):
         def hook(uc, access, address, size, value, _):
             observed = value if access == UC_MEM_WRITE else int.from_bytes(
                 uc.mem_read(address, size), 'little')
+            if not original and size == 4:
+                observed = normalize_source_flash_value(
+                    observed, symbols, symbol_sizes)
             trace.append((access, address, size, observed))
             if access == UC_MEM_WRITE and address == STOP:
                 done[0] = True

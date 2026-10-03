@@ -10,6 +10,7 @@
 #include "motor_math.h"
 #include "output_sensor.h"
 #include "platform.h"
+#include "temperature_table.h"
 
 float dm4310_wrap_angle_helper(float angle);
 void dm4310_initialize_shared_literals(void);
@@ -31,7 +32,8 @@ static const uint32_t dm4310_literals_1fff83f8[26] = {
     UINT32_C(0x1ffff17c), UINT32_C(0x1fffa558), UINT32_C(0x1ffff090), UINT32_C(0x1ffff014),
     UINT32_C(0x42f00000), UINT32_C(0x40040000), UINT32_C(0x1ffff348), UINT32_C(0x40040450),
     UINT32_C(0x40040850), UINT32_C(0x40040452), UINT32_C(0x40040852), UINT32_C(0x40040454),
-    UINT32_C(0x40040854), UINT32_C(0x1fffa648), UINT32_C(0x00027ca0), APP_PROFILE_RUNTIME_CACHE_0_BITS,
+    UINT32_C(0x40040854), UINT32_C(0x1fffa648),
+    (uintptr_t)temperature_celsius_table, APP_PROFILE_RUNTIME_CACHE_0_BITS,
     UINT32_C(0x3f13cd3a), UINT32_C(0x3a000000), UINT32_C(0x1ffff134), UINT32_C(0x1ffff11c),
     UINT32_C(0x40c90fdb), UINT32_C(0x40490fdb), UINT32_C(0xc0490fdb), UINT32_C(0xbf13cd3a),
     UINT32_C(0x1fffa650), UINT32_C(0x00000000), UINT32_C(0x447a0000)
@@ -39,7 +41,8 @@ static const uint32_t dm4310_literals_1fff83f8[26] = {
     UINT32_C(0x1ffff1f0), UINT32_C(0x1fffa5c8), UINT32_C(0x1ffff104), UINT32_C(0x1ffff088),
     UINT32_C(0x42f00000), UINT32_C(0x40040000), UINT32_C(0x1fffc778), UINT32_C(0x40040450),
     UINT32_C(0x40040850), UINT32_C(0x40040452), UINT32_C(0x40040852), UINT32_C(0x40040454),
-    UINT32_C(0x40040854), UINT32_C(0x1fffa560), UINT32_C(0x00027ca0), APP_PROFILE_RUNTIME_CACHE_0_BITS,
+    UINT32_C(0x40040854), UINT32_C(0x1fffa560),
+    (uintptr_t)temperature_celsius_table, APP_PROFILE_RUNTIME_CACHE_0_BITS,
     UINT32_C(0x3f13cd3a), UINT32_C(0x3a000000), UINT32_C(0x1ffff1a8), UINT32_C(0x1ffff190),
     UINT32_C(0x40c90fdb), UINT32_C(0x40490fdb), UINT32_C(0xc0490fdb), UINT32_C(0x1fffa568),
     UINT32_C(0x00000000), UINT32_C(0x447a0000)
@@ -75,14 +78,18 @@ static const uint32_t dm4310_literals_1fff9830[19] = {
 #if defined(DAMIAO_DM8009_V3)
     UINT32_C(0x03544000), UINT32_C(0x1ffff1c8), UINT32_C(0x1fffa650), UINT32_C(0x1fffa678),
     UINT32_C(0x42820000), UINT32_C(0x43fa0000), UINT32_C(0x447a0000), UINT32_C(0x461c4000),
-    UINT32_C(0x00021cc9), UINT32_C(0x00021fc5), UINT32_C(0x1fff9b05), UINT32_C(0x1fff9bd9),
+    (uintptr_t)board_mcan_init_classic,
+    (uintptr_t)board_mcan_init_fd,
+    UINT32_C(0x1fff9b05), UINT32_C(0x1fff9bd9),
     UINT32_C(0x1fffcbd8), UINT32_C(0xaa000055), UINT32_C(0x880000ff), UINT32_C(0x4002b000),
     UINT32_C(0xaa020155), UINT32_C(0xe000ed0c), UINT32_C(0x05fa0004),
     UINT32_C(0x1ffff228)
 #else
     UINT32_C(0x03544000), UINT32_C(0x1ffff23c), UINT32_C(0x1fffa568), UINT32_C(0x1fffa590),
-    UINT32_C(0x43fa0000), UINT32_C(0x447a0000), UINT32_C(0x461c4000), UINT32_C(0x00021cc9),
-    UINT32_C(0x00021fc5), UINT32_C(0x1fff9acd), UINT32_C(0x1fff9ba1), UINT32_C(0x1fffcc4c),
+    UINT32_C(0x43fa0000), UINT32_C(0x447a0000), UINT32_C(0x461c4000),
+    (uintptr_t)board_mcan_init_classic,
+    (uintptr_t)board_mcan_init_fd,
+    UINT32_C(0x1fff9acd), UINT32_C(0x1fff9ba1), UINT32_C(0x1fffcc4c),
     UINT32_C(0xaa000055), UINT32_C(0x880000ff), UINT32_C(0x4002b000), UINT32_C(0xaa020155),
     UINT32_C(0xe000ed0c), UINT32_C(0x05fa0004), UINT32_C(0x1ffff29c)
 #endif

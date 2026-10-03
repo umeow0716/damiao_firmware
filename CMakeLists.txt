@@ -82,6 +82,14 @@ set(FIRMWARE_COMPILE_FLAGS
     -Werror
 )
 
+# Keep the firmware optimization policy independent of CMAKE_BUILD_TYPE so all
+# source owners, including the common library, use the same setting.  Making it
+# a cache value also allows reproducible size/performance comparison builds
+# without editing the production configuration.
+set(FIRMWARE_SIZE_OPTIMIZATION -Os CACHE STRING
+    "Optimization level used for firmware sources")
+set_property(CACHE FIRMWARE_SIZE_OPTIMIZATION PROPERTY STRINGS -Oz -Os -O2 -O3)
+
 set(APP_PLATFORM_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/app/src/platform.c"
     CACHE FILEPATH "Default app board-port implementation")
@@ -128,7 +136,9 @@ target_include_directories(damiao_common
     PUBLIC common/include
     PRIVATE common/generated
 )
-target_compile_options(damiao_common PRIVATE ${FIRMWARE_COMPILE_FLAGS})
+target_compile_options(damiao_common PRIVATE
+    ${FIRMWARE_COMPILE_FLAGS}
+    ${FIRMWARE_SIZE_OPTIMIZATION})
 
 set(DAMIAO_APP_SOURCES
     startup/startup_hc32f448.S
@@ -273,6 +283,6 @@ set(DAMIAO_DM43XX_RECOVERY_SOURCES
     app/src/dm4310_fixed_scaled.c
 )
 foreach(target IN ITEMS dm4310 dm4340 dm8009)
-    target_compile_options(${target} PRIVATE -Os)
+    target_compile_options(${target} PRIVATE ${FIRMWARE_SIZE_OPTIMIZATION})
     target_sources(${target} PRIVATE ${DAMIAO_DM43XX_RECOVERY_SOURCES})
 endforeach()

@@ -110,69 +110,32 @@ SECTIONS
 
     .text : {
         . = ALIGN(4);
-        /* Keep the runtime BL at the factory address so its saved LR is
-         * naturally 0x2036d, rather than a fabricated SRAM value. */
-        . = 0x00000128;
+        /* Development/source builds use ordinary sequential Flash placement.
+         * Fixed SRAM VMAs below remain ABI contracts; Flash function addresses
+         * are deliberately free to move as source code evolves. */
         KEEP(*(.dm4310_runtime_main_entry))
-        . = 0x00000150;
-        /* Keep the reset/startup prefix ahead of the reserved
-         * factory Vector_20 entry in flash.  These sections are consumed
-         * here before the generic .text* wildcard below. */
-        *(.text.Reset_Handler)
-        *(.text.Default_Handler)
-        *(.text.SystemCoreClockUpdate)
-        *(.text.SystemInit)
-        *(.text.main)
-        *(.text.app_config*)
-        *(.text.calibration_store*)
-        *(.text.calibration_upload*)
-        *(.text.refresh_commissioning_position)
-        *(.text.commissioning_current_dq)
-        *(.text.send_alignment_sample)
-        *(.text.commissioning_run_direction_and_alignment)
-        /* Keep the larger output-sensor calibration routine in the ordinary
-         * collector.  The factory extended-arithmetic bank below owns
-         * 0x212f0..0x2199b. */
-        /* Source-owned motor-ID grows with recovered staging logic; let
-         * the generic text collector place it after the fixed IRQ entry. */
-        *(.text.commissioning_rls2*)
-        *(.text.commissioning_identification_filter_step)
-        *(.text.commissioning_flux_observer*)
-        *(.text.commissioning_sine_regression_init)
-        *(.text.commissioning_sine_regression_step)
-        . = 0x000010B0;
-        KEEP(*(.text.dm4310_factory_extended_divide_core))
-        . = 0x000013E8;
-        KEEP(*(.text.dm4310_factory_extended_round_core))
-        . = 0x000014C4;
-        KEEP(*(.text.dm4310_factory_extended_divide_entry))
-        . = 0x000014EE;
-        KEEP(*(.text.dm4310_factory_extended_multiply_entry))
-        . = 0x00001518;
-        KEEP(*(.text.dm4310_factory_extended_multiply_core))
-        /* Factory callback targets fit in the existing reserved IRQ gap.
-         * Both entries are source-built C wrappers around shared setup. */
-        . = 0x00001A88;
+        *(EXCLUDE_FILE (*dm4310_extended_core.S.obj) .text*)
         KEEP(*(.dm4310_mcan_init_classic))
-        . = 0x00001CE0;
         KEEP(*(.dm4310_mcan_transition_delay))
-        . = 0x00001D84;
         KEEP(*(.dm4310_mcan_init_fd))
-        /* Assignments inside an output section are section-relative. */
-        . = 0x00002004;
         KEEP(*(.dm4310_irq004))
-        . = ALIGN(4);
-        /* Reserve the factory locale pointer target; console/board/platform code
-         * occupies the following bank without changing its C ownership. */
-        *(EXCLUDE_FILE (*debug_console.c.obj *platform.c.obj *board*.c.obj
-                       *runtime_compat.c.obj *dm4310_extended_core.S.obj) .text*)
+
+        /* The recovered arithmetic implementation remains isolated from C,
+         * but its Flash base is sequential.  Keep only the internal ordering
+         * required by its hand-audited instruction/literal relationships. */
+        KEEP(*(.text.dm4310_factory_runtime_round_to_int))
+        KEEP(*(.text.dm4310_factory_extended_divide_core))
+        KEEP(*(.text.dm4310_factory_extended_round_core))
+        KEEP(*(.text.dm4310_factory_extended_divide_entry))
+        KEEP(*(.text.dm4310_factory_extended_multiply_entry))
+        KEEP(*(.text.dm4310_factory_extended_multiply_core))
         *(.glue_7 .glue_7t)
         KEEP(*(.init))
         KEEP(*(.fini))
         . = ALIGN(4);
     } > FLASH
 
-    .dm4310_factory_d2f 0x00027074 : {
+    .dm4310_factory_d2f : {
         KEEP(*(.text.dm4310_factory_d2f))
         . = 0x00000058;
         KEEP(*(.text.dm4310_factory_d2f_exception_result))
@@ -183,7 +146,7 @@ SECTIONS
 
     /* Keep the recovered ARM runtime outside .text so GNU ld can put its
      * source-only long-call veneers in the free bank before 0x270d8. */
-    .dm4310_factory_runtime 0x000270D8 : {
+    .dm4310_factory_runtime : {
         KEEP(*(.text.dm4310_factory_dadd))
         . = 0x00000150;
         KEEP(*(.text.dm4310_factory_ddiv))
@@ -224,27 +187,22 @@ SECTIONS
         KEEP(*(.text.dm4310_factory_round_even))
     } > FLASH
 
-    ASSERT(__dm8009_layout || dm4310_runtime_main_entry == 0x00020368,
-           "DM4310 runtime entry must retain the factory return-PC contract")
-
-    ASSERT(__dm8009_layout || __dm4310_division_seeds_start__ == 0x00027450,
-           "DM4310 reciprocal seeds must retain the factory address")
     ASSERT(__dm8009_layout || __dm4310_division_seeds_end__ - __dm4310_division_seeds_start__ == 0x80,
            "DM4310 reciprocal seed table must contain 128 bytes")
     ASSERT(__dm8009_layout || SIZEOF(.dm4310_factory_runtime) == 0xBC8,
            "DM4310 factory arithmetic runtime layout changed")
 
-    .dm4310_temperature_table 0x00027CA0 : {
+    .dm4310_temperature_table : {
         KEEP(*(.rodata.temperature_celsius_table))
     } > FLASH
     ASSERT(__dm8009_layout || SIZEOF(.dm4310_temperature_table) == 0x400,
            "DM4310 temperature table must retain all 256 factory words")
 
-    .dm4310_c_locale_name 0x00028668 : {
+    .dm4310_c_locale_name : {
         KEEP(*(.dm4310_c_locale_name))
     } > FLASH
 
-    .dm4310_c_locale 0x00028670 : {
+    .dm4310_c_locale : {
         KEEP(*(.dm4310_c_locale))
     } > FLASH
 
@@ -999,8 +957,6 @@ SECTIONS
     /* V6417 uses a different, fully recovered fixed-SRAM ordering.  Keep
      * direct constants here as an independent guard around the model layout
      * table above: changing a table entry must not silently move the ABI. */
-    ASSERT(!__dm8009_layout || dm4310_runtime_main_entry == 0x00020368,
-           "DM8009 runtime entry moved")
     ASSERT(!__dm8009_layout || IRQ000_Handler == 0x1FFF8104,
            "DM8009 IRQ000 RAM entry moved")
     ASSERT(!__dm8009_layout || IRQ001_Handler == 0x1FFF8130,
@@ -1009,8 +965,6 @@ SECTIONS
            "DM8009 IRQ002 RAM entry moved")
     ASSERT(!__dm8009_layout || IRQ003_Handler == 0x1FFF8278,
            "DM8009 IRQ003 RAM entry moved")
-    ASSERT(!__dm8009_layout || IRQ004_Handler == 0x00022244,
-           "DM8009 IRQ004 flash entry moved")
     ASSERT(!__dm8009_layout ||
            (ADDR(.dm4310_boot_record_writer) == 0x1FFF8000 &&
             ADDR(.dm4310_helper_fault_monitor) == 0x1FFF9314 &&
@@ -1150,8 +1104,6 @@ SECTIONS
            "DM4310 IRQ002 RAM entry moved")
     ASSERT(__dm8009_layout || IRQ003_Handler == 0x1FFF88B8,
            "DM4310 IRQ003 RAM entry moved")
-    ASSERT(__dm8009_layout || IRQ004_Handler == 0x00022244,
-           "DM4310 IRQ004 flash entry moved")
     ASSERT(__dm8009_layout || ADDR(.dm4310_helper_fault_monitor) == 0x1FFF8000,
            "DM4310 fault-monitor helper moved")
     ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_fault_monitor) <= 0x136,

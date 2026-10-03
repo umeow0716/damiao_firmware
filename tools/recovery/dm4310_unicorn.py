@@ -13,6 +13,7 @@ from regressions.dm4310_model_layout import (
     FACTORY_STATE_BASE,
     FACTORY_STATE_SOURCE,
     FIXED_IMAGE_BASE,
+    elf_symbol_sizes,
 )
 
 
@@ -42,6 +43,12 @@ def load_images(elf_path=DEFAULT_ELF_PATH):
         if segment["p_type"] == "PT_LOAD" and segment["p_filesz"]
     ]
     return factory, symbols, segments
+
+
+def load_symbol_sizes(elf_path=DEFAULT_ELF_PATH):
+    """Load source symbol extents without changing the loader's public tuple."""
+    elf = ELFFile(BytesIO(Path(elf_path).read_bytes()))
+    return elf_symbol_sizes(elf)
 
 
 def make_machine(original, factory, segments):

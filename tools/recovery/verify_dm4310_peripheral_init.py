@@ -373,7 +373,12 @@ def run_mcan_init(original, fd_enabled, selector, node_id, pages, nvic,
                begin=0x1fff0000, end=0x1fffffff)
     u.hook_add(UC_HOOK_MEM_READ | UC_HOOK_MEM_WRITE, memory,
                begin=0x20000000, end=0x2000dfff)
-    entry = F(0x21fc4 if fd_enabled else 0x21cc8)
+    if original:
+        entry = F(0x21fc4 if fd_enabled else 0x21cc8)
+    else:
+        entry = symbols[
+            'board_mcan_init_fd' if fd_enabled else 'board_mcan_init_classic'
+        ]
     u.emu_start(entry | 1, 0x30000, count=200000)
     assert u.reg_read(arm.UC_ARM_REG_PC) == 0x30000, (
         original, fd_enabled, hex(u.reg_read(arm.UC_ARM_REG_PC)))

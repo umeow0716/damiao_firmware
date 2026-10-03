@@ -3,20 +3,19 @@
 最後更新：2026-10-03
 
 三型號總進度與剩餘任務見 `docs/FIRMWARE_RECOVERY_PROGRESS.md`。
-新增的 DM4310 machine-code byte-exact 目標與獨立進度見
-`docs/DM4310_BYTE_EXACT_PROGRESS.md`；本頁的完成狀態表示行為復原完成，不表示 factory
-plain image 的 SHA 已相同。
+Factory byte-exact 目標已停止；`docs/DM4310_BYTE_EXACT_PROGRESS.md` 僅保存歷史分析。
+目前完成標準是 factory 行為、固定 SRAM/MMIO ABI、64 KiB 映像約束及可持續開發的
+source build，不要求 Flash 函式位址或 whole-file SHA 相同。
 
 ## 目前基準
 
 - Factory APP：`recovered/binaries/dm4310/dm4310_v3_v5017_app_flash_00020000_memory.bin`
 - Factory SHA-256：`65aab219268e9159b196d4578d3cd530e6fa90a731a82670a0d3d3be609b59d4`
 - Factory image：51,284 bytes
-- Source-built APP image：59,472 bytes
-- 64 KiB APP 剩餘空間：6,064 bytes
-- Source-built plain SHA-256：`d18f01d4d9b694a61cdb784438ad04b8ef7a724872bea0b6635065f802913356`
-- Published encrypted artifact 仍是前一個 behavior checkpoint；byte-exact 完成前不將中間產物
-  宣告為最終 `dm4310_enc.bin`。
+- Source-built APP image：53,784 bytes（factory +2,500 bytes，+4.87%）
+- 64 KiB APP 剩餘空間：11,752 bytes
+- Source-built plain SHA-256：`bf38aaf88f85e3441a2115d8d5839fa4d273dd3a24ae1403a2cc52885e19acc2`
+- Source-built encrypted SHA-256：`2e18dc7061845367c92958147f19523f0885fdd1b31ef8b9a071b74ac34d74f8`
 - 行為叢集差分：65 / 65 通過（100%）
 - Factory function closure：195 / 195 已建立 source/fixed-runtime owner
 - Ghidra unowned instruction ranges：6 / 6 已分類（3 callable、3 data）
@@ -74,12 +73,18 @@ plain image 的 SHA 已相同。
 
 ### 4. 映像與容量
 
-- [x] APP load image 為 59,472 bytes，嚴格小於 65,536 bytes；linker 另對所有 sparse
-      `AT(...)` LMA 的最終尾端強制檢查，剩餘 6,064 bytes。
+- [x] APP load image 為 53,784 bytes，嚴格小於 65,536 bytes；linker 另對所有 sparse
+      `AT(...)` LMA 的最終尾端強制檢查，剩餘 11,752 bytes。
 - [x] vector、42 個 file-backed LOAD segment、45 個初始化 RAM section、35 個 zero-fill
       section、RAMB、fixed helper、heap/stack 均無 VMA/LMA 重疊。
 - [x] 全域存活函式 body 雜湊掃描沒有任何 >=16-byte 重複實作；僅有四個必要的 8-byte
       fixed-helper veneer。未為縮小映像刪除行為或破壞固定地址契約。
+- [x] 一般 Flash code 使用連續配置，不再鎖定 factory function address、插入 factory padding
+      或要求函式維持特定長度；一般函式可隨後續開發自由增減，直到真正碰到 64 KiB 上限。
+- [x] 全域採 GCC 14 `-Os`。同一份 source 的 `-Oz` 產物逐 byte 相同；全域 `-O2`/`-O3`
+      分別增至 57,780/61,496 bytes，因此不採用。最佳化層級是可覆寫的 CMake cache 設定。
+- [x] 不採用 LTO。探測顯示 LTO 會跨越 hand-audited fixed-SRAM IRQ/literal ABI；這類容量
+      捷徑會使 compatibility layer 脆弱，沒有進入正式配置。
 
 ### 5. DM4310 收尾
 
@@ -92,8 +97,10 @@ plain image 的 SHA 已相同。
 - [x] 已產出 `dist/development/dm4310_plain.bin` 與 `dm4310_enc.bin`，並驗證 plain 等於
       ELF objcopy、AES-256-CTR round-trip、manifest hash、向量及長度。
 
-DM4310 通過以上閘門後，DM4340 與 DM8009 已沿用同一 source graph 完成差分復原；三型號
-目前均已產出各自的 plain/enc 映像，整體結果見 `FIRMWARE_RECOVERY_PROGRESS.md`。
+固定 SRAM code/literal 只存在於 `ram_helpers.c` 與專用 linker compatibility layer；其位址是
+原廠 IRQ、PC-relative literal 與 retained SRAM ABI 的一部分，不是一般程式配置技巧。後續新增
+產品邏輯不應放入這些 section。DM4340 與正確 V3/V6417 DM8009 reference 的重新復原另列為
+後續工作，不以舊的錯誤移植產物宣告完成。
 
 ## 已永久保存的核心差分驗證
 
@@ -121,3 +128,5 @@ DM4310 通過以上閘門後，DM4340 與 DM8009 已沿用同一 source graph �
 - `tools/recovery/dm4310_unicorn.py`
 
 這些腳本只讀 factory reference 與 source-built ELF；不會把原始 binary 連結進韌體。
+以上是離線 disassembly、差分執行與映像層面的完成；真實馬達、功率級與最差中斷延遲仍需
+實機驗收，不能由 Unicorn 模擬結果取代。

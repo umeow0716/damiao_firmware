@@ -7,11 +7,17 @@ from unicorn import (UC_HOOK_CODE, UC_HOOK_MEM_READ, UC_HOOK_MEM_WRITE,
                      UC_MEM_READ)
 import unicorn.arm_const as arm
 
-from dm4310_unicorn import A, load_fixed_sram_runtime, load_images, make_machine
-from regressions.dm4310_model_layout import F
+from dm4310_unicorn import (A, load_fixed_sram_runtime, load_images,
+                            load_symbol_sizes, make_machine)
+from regressions.dm4310_model_layout import (
+    F,
+    normalize_source_flash_value,
+    normalize_source_flash_words,
+)
 
 
 FACTORY, SYMBOLS, SEGMENTS = load_images()
+SYMBOL_SIZES = load_symbol_sizes()
 FACTORY_IRQ = F(0x22244)
 SOURCE_IRQ = SYMBOLS["IRQ004_Handler"]
 FACTORY_LOOP = F(0x2540E)
@@ -89,6 +95,9 @@ def run(original, command, received_length, primask):
         observed = (int.from_bytes(machine.mem_read(address, size), "little")
                     if access == UC_MEM_READ else
                     value & ((1 << (size * 8)) - 1))
+        if not original and size == 4:
+            observed = normalize_source_flash_value(
+                observed, SYMBOLS, SYMBOL_SIZES)
         events.append((phase[0], access, address, size, observed))
 
     def return_from_stub(machine):
@@ -170,11 +179,15 @@ def run(original, command, received_length, primask):
     emu.emu_start((FACTORY_LOOP if original else SOURCE_LOOP) | 1,
                   0x30000, count=500000)
     assert loop_visits[0] == 2
+    state_image = bytes(emu.mem_read(STATE_CAPTURE_BASE, STATE_CAPTURE_SIZE))
+    if not original:
+        state_image = normalize_source_flash_words(
+            state_image, SYMBOLS, SYMBOL_SIZES)
     return (
         events,
         semantic_calls,
         published_status,
-        bytes(emu.mem_read(STATE_CAPTURE_BASE, STATE_CAPTURE_SIZE)),
+        state_image,
         bytes(emu.mem_read(0x4001C000, 0x1000)),
         bytes(emu.mem_read(0x40053000, 0x100)),
         bytes(emu.mem_read(0xE000E000, 0x1000)),

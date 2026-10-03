@@ -75,8 +75,10 @@ for address, size in [(A(0x1fff8630), 16), (A(0x1fff8724), 32),
                       (A(0x1fff9d4c), 16), (A(0x1fffa118), 72),
                       (A(0x1fffa300), 12), (A(0x1fffa4bc), 32)]:
     offset = address - FIXED_IMAGE_BASE + FACTORY_FIXED_SOURCE
-    assert bytes(machines[1].mem_read(address, size)) == factory[offset:offset + size], hex(address)
-print('PASS: all 308 shared SRAM literal bytes match after actual source Reset')
+    source_literals = normalize_source_flash_words(
+        bytes(machines[1].mem_read(address, size)), symbols, symbol_sizes)
+    assert source_literals == factory[offset:offset + size], hex(address)
+print('PASS: all 308 shared SRAM literal bytes match after Flash relocation normalization')
 for address in (A(0x1fff982e), A(0x1fff9932), A(0x1fff9c32),
                 A(0x1fffa2fe), A(0x1fffa4ba), A(0x1fffa50e)):
     assert bytes(machines[1].mem_read(address, 2)) == bytes(2), hex(address)
@@ -89,12 +91,16 @@ for original, u in zip((True, False), machines):
     stop = F(0x252f4) if original else symbols['main']
     u.emu_start(entry | 1, stop, count=100000)
     assert u.reg_read(arm.UC_ARM_REG_PC) == stop
-    runtime.append(bytes(u.mem_read(A(0x1ffff490), 0x60)))
+    runtime_image = bytes(u.mem_read(A(0x1ffff490), 0x60))
+    if not original:
+        runtime_image = normalize_source_flash_words(
+            runtime_image, symbols, symbol_sizes)
+    runtime.append(runtime_image)
     entry_stacks.append(u.reg_read(arm.UC_ARM_REG_SP))
     heaps.append(bytes(u.mem_read(A(0x1ffff4f8), 0x400)))
     assert u.reg_read(arm.UC_ARM_REG_PRIMASK) == interrupt_mask
 assert runtime[0] == runtime[1]
-print('PASS: full 0x60 runtime-context bytes match before main, including actual saved return PC 0x2036d')
+print('PASS: full 0x60 runtime-context bytes match before main, including normalized saved return PC')
 assert heaps[0] == heaps[1]
 print('PASS: complete fixed 0x400-byte heap matches before main')
 assert entry_stacks == [FACTORY_STACK_TOP, FACTORY_STACK_TOP]

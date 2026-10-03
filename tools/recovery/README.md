@@ -14,17 +14,16 @@ python -m venv .venv
 永久保存的 65 支全域差分驗證可一次執行：
 
 ```sh
-for model in dm4310 dm4340 dm8009; do
-    .venv/bin/python tools/recovery/verify_dm4310_full_regressions.py --model "$model"
-done
+.venv/bin/python tools/recovery/verify_dm4310_full_regressions.py --model dm4310
 ```
+
+DM4340/DM8009 完成各自復原後，使用相同 runner 的 `--model` 參數驗證；目前不能把舊移植
+結果當作完成證據。
 
 較慢但使用整理後共用 loader 的核心流程驗證可另外執行：
 
 ```sh
-for model in dm4310 dm4340 dm8009; do
-    .venv/bin/python tools/recovery/verify_dm4310_core_regressions.py --model "$model"
-done
+.venv/bin/python tools/recovery/verify_dm4310_core_regressions.py --model dm4310
 ```
 
 實際執行 Reset/SystemInit/scatter/runtime 到 main entry 的組合矩陣：
@@ -42,13 +41,10 @@ done
 最終 ELF／binary 的 64 KiB、VMA/LMA、copy-down、zero-fill、RAMB 與 heap/stack 佈局：
 
 ```sh
-for model in dm4310 dm4340 dm8009; do
-    .venv/bin/python tools/recovery/verify_dm4310_image_layout.py --model "$model"
-done
+.venv/bin/python tools/recovery/verify_dm4310_image_layout.py --model dm4310
 ```
 
-DM4310 factory byte-exact 進度（size、SHA、vector、191 個真實 Ghidra function body、
-fixed-SRAM section 與 load-image 組成）：
+已停止的 DM4310 factory byte-exact 歷史報告（不屬於完成閘門）：
 
 ```sh
 .venv/bin/python tools/recovery/report_dm4310_byte_parity.py \

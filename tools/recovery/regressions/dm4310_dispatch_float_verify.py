@@ -19,7 +19,8 @@ for old, name in [(0x20328, 'factory_dispatch')]:
             u.reg_write(arm.UC_ARM_REG_R0, 0x20001000)
             conversion = 'f'
             u.mem_write(0x20003000, struct.pack('<Q', [0x3ff4000000000000, 0xbff4000000000000, 0x7ff0000000000000, 0x7ff8000000000001][case % 4]))
-            u.mem_write(A(0x1ffff4bc), struct.pack('<I', 0x28670))
+            locale = F(0x28670) if original else symbols['dm4310_c_locale']
+            u.mem_write(A(0x1ffff4bc), struct.pack('<I', locale))
             u.reg_write(arm.UC_ARM_REG_C1_C0_2, 0xf00000)
             u.reg_write(arm.UC_ARM_REG_FPEXC, 0x40000000)
             u.reg_write(arm.UC_ARM_REG_R1, ord(conversion))

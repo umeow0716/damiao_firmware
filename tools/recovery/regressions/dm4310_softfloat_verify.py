@@ -17,6 +17,9 @@ from dm4310_model_layout import (
     FACTORY_STATE_SIZE,
     FACTORY_STACK_TOP,
     FIXED_IMAGE_BASE,
+    elf_symbol_sizes,
+    normalize_source_flash_value,
+    normalize_source_flash_words,
 )
 
 root = Path(__file__).resolve().parents[3]
@@ -31,6 +34,7 @@ if model not in factory_paths:
 factory = factory_paths[model].read_bytes()
 elf = ELFFile(BytesIO((root / f'build/{model}.elf').read_bytes()))
 symbols = {s.name: s['st_value'] & ~1 for s in elf.get_section_by_name('.symtab').iter_symbols()}
+symbol_sizes = elf_symbol_sizes(elf)
 segments = [(s['p_paddr'], s.data()) for s in elf.iter_segments() if s['p_type'] == 'PT_LOAD' and s['p_filesz']]
 rng = random.Random(957)
 mapping = [(0x27ad8, '__wrap___aeabi_f2d', 0x58),(0x270d8, '__wrap___aeabi_dadd', 0x150),

@@ -115,7 +115,6 @@ ELF_SYMBOLS = {
     "IRQ002_Handler": (0x1FFF8136, 0x0004),
     "write_boot_record_from_sram": (0x1FFF8640, 0x00D8),
     "IRQ003_Handler": (0x1FFF88B8, 0x0004),
-    "IRQ004_Handler": (0x00022244, 0x0004),
     "erase_and_program_from_sram": (0x1FFF9950, 0x00D8),
     "board_flash_erase_sector_from_sram": (0x1FFF9A38, 0x0088),
     "dm4310_clear_runtime_loop_states_helper": (0x1FFF9D5C, 0x0004),
@@ -193,7 +192,12 @@ ELF_VECTOR_WORDS = {
     17: 0x1FFF8771,
     18: 0x1FFF8137,
     19: 0x1FFF88B9,
-    20: 0x00022245,
+}
+
+# Flash handlers use ordinary sequential placement.  Check the vector-to-
+# symbol relationship without turning the current Flash address into an ABI.
+ELF_VECTOR_SYMBOLS = {
+    20: "IRQ004_Handler",
 }
 
 
@@ -284,6 +288,20 @@ def verify_elf(
             fail(
                 f"ELF vector {index}: got 0x{actual:08x}, "
                 f"expected 0x{expected:08x}"
+            )
+    for index, symbol_name in ELF_VECTOR_SYMBOLS.items():
+        symbol = symbols.get(symbol_name)
+        if symbol is None:
+            fail(f"ELF vector target symbol is missing: {symbol_name}")
+        expected = symbol[0] | 1
+        offset = index * 4
+        if offset + 4 > len(vectors):
+            fail(f"ELF vector {index} outside .vectors section")
+        actual = struct.unpack_from("<I", vectors, offset)[0]
+        if actual != expected:
+            fail(
+                f"ELF vector {index}: got 0x{actual:08x}, "
+                f"expected {symbol_name}|1 = 0x{expected:08x}"
             )
 
     disassembly = subprocess.run(

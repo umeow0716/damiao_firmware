@@ -412,14 +412,14 @@ bool board_mcan_send(const BoardMcanFrame *frame)
 
 #if defined(DAMIAO_DM4310)
 __attribute__((noinline, section(".dm4310_mcan_init_classic")))
-static void mcan_init_classic(uint16_t data_rate_selector, uint16_t node_id)
+void board_mcan_init_classic(uint16_t data_rate_selector, uint16_t node_id)
 {
     const uint8_t selector = data_rate_selector > 4U ? 4U : (uint8_t)data_rate_selector;
     mcan_init_common(node_id, selector, false);
 }
 
 __attribute__((noinline, section(".dm4310_mcan_init_fd")))
-static void mcan_init_fd(uint16_t data_rate_selector, uint16_t node_id)
+void board_mcan_init_fd(uint16_t data_rate_selector, uint16_t node_id)
 {
     const uint16_t selector = data_rate_selector < 4U ? 4U : data_rate_selector;
     mcan_init_common(node_id, selector, true);
@@ -594,10 +594,10 @@ static void select_transport_format(volatile Dm4310McanDispatch *dispatch,
     /* Vector_20 FCB swaps the classic/FD send-function pair immediately;
      * it does not put MCAN back into INIT or rewrite bit timing. */
     if (data_rate_selector > 4U) {
-        dispatch->initialize = mcan_init_fd;
+        dispatch->initialize = board_mcan_init_fd;
         dispatch->send = dm4310_mcan_send_fd_helper;
     } else {
-        dispatch->initialize = mcan_init_classic;
+        dispatch->initialize = board_mcan_init_classic;
         dispatch->send = dm4310_mcan_send_classic_helper;
     }
 }

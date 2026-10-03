@@ -60,6 +60,8 @@ bool board_mcan_init(uint16_t node_id, uint16_t data_rate_selector);
 bool board_mcan_receive(BoardMcanFrame *frame);
 bool board_mcan_send(const BoardMcanFrame *frame);
 #if defined(DAMIAO_DM4310)
+void board_mcan_init_classic(uint16_t data_rate_selector, uint16_t node_id);
+void board_mcan_init_fd(uint16_t data_rate_selector, uint16_t node_id);
 void board_mcan_begin_irq(Dm4310McanIrqReferences *references);
 bool board_mcan_receive_payload(uint32_t *id, uint8_t *length, uint8_t *data,
                                 Dm4310McanIrqReferences *references);

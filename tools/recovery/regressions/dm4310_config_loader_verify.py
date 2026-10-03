@@ -18,6 +18,9 @@ from dm4310_model_layout import (
     FACTORY_STATE_SOURCE,
     FACTORY_STATE_SIZE,
     FIXED_IMAGE_BASE,
+    elf_symbol_sizes,
+    normalize_source_flash_value,
+    normalize_source_flash_words,
 )
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -33,6 +36,7 @@ FACTORY = FACTORY_PATHS[MODEL].read_bytes()
 ELF = ELFFile(BytesIO((ROOT / f'build/{MODEL}.elf').read_bytes()))
 SYMBOLS = {symbol.name: symbol['st_value'] & ~1
            for symbol in ELF.get_section_by_name('.symtab').iter_symbols()}
+SYMBOL_SIZES = elf_symbol_sizes(ELF)
 SEGMENTS = [(segment['p_paddr'], segment.data())
             for segment in ELF.iter_segments()
             if segment['p_type'] == 'PT_LOAD' and segment['p_filesz']]
@@ -134,9 +138,16 @@ def run(original, state, flash, rounding):
     def memory(emu, access, address, size, value, _):
         if access == UC_MEM_READ:
             value = int.from_bytes(emu.mem_read(address, size), 'little')
+            if not original and size == 4:
+                value = normalize_source_flash_value(
+                    value, SYMBOLS, SYMBOL_SIZES)
             trace.append(('r', address, size, value))
         else:
-            trace.append(('w', address, size, value & ((1 << (size * 8)) - 1)))
+            value &= (1 << (size * 8)) - 1
+            if not original and size == 4:
+                value = normalize_source_flash_value(
+                    value, SYMBOLS, SYMBOL_SIZES)
+            trace.append(('w', address, size, value))
 
     def code(emu, address, size, _):
         if original and address == 0x219a6:
@@ -175,8 +186,12 @@ def run(original, state, flash, rounding):
         call(uc, SOURCE_LOAD, SYMBOLS['g_app'])
         call(uc, SOURCE_PREPARE)
 
+    state_image = bytes(uc.mem_read(STATE_BASE, STATE_END - STATE_BASE + 1))
+    if not original:
+        state_image = normalize_source_flash_words(
+            state_image, SYMBOLS, SYMBOL_SIZES)
     return (trace,
-            bytes(uc.mem_read(STATE_BASE, STATE_END - STATE_BASE + 1)),
+            state_image,
             bytes(uc.mem_read(CONFIG_FLASH, 0x94)),
             uc.reg_read(arm.UC_ARM_REG_PRIMASK),
             uc.reg_read(arm.UC_ARM_REG_FPSCR))

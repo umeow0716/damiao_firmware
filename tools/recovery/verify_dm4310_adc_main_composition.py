@@ -6,11 +6,17 @@ import struct
 from unicorn import UC_HOOK_CODE, UC_HOOK_MEM_READ, UC_HOOK_MEM_WRITE, UC_MEM_READ
 import unicorn.arm_const as arm
 
-from dm4310_unicorn import A, load_fixed_sram_runtime, load_images, make_machine
-from regressions.dm4310_model_layout import F
+from dm4310_unicorn import (A, load_fixed_sram_runtime, load_images,
+                            load_symbol_sizes, make_machine)
+from regressions.dm4310_model_layout import (
+    F,
+    normalize_source_flash_value,
+    normalize_source_flash_words,
+)
 
 
 FACTORY, SYMBOLS, SEGMENTS = load_images()
+SYMBOL_SIZES = load_symbol_sizes()
 IRQ002 = A(0x1FFF8136)
 FACTORY_LOOP = F(0x2540E)
 SOURCE_LOOP = SYMBOLS["main"] + 0x60
@@ -94,6 +100,9 @@ def run(original, outer_loop_due, fault, indicator_ticks, fpscr, primask):
         observed = (int.from_bytes(emu.mem_read(address, size), "little")
                     if access == UC_MEM_READ else
                     value & ((1 << (size * 8)) - 1))
+        if not original and size == 4:
+            observed = normalize_source_flash_value(
+                observed, SYMBOLS, SYMBOL_SIZES)
         events.append((phase[0], access, address, size, observed))
 
     def code(emu, address, size, unused):
@@ -140,13 +149,19 @@ def run(original, outer_loop_due, fault, indicator_ticks, fpscr, primask):
     machine.emu_start((FACTORY_LOOP if original else SOURCE_LOOP) | 1,
                       0x30000, count=200000)
     assert loop_visits[0] == 2
+    def snapshot(address, size):
+        data = bytes(machine.mem_read(address, size))
+        return (normalize_source_flash_words(data, SYMBOLS, SYMBOL_SIZES)
+                if not original else data)
+
     return (
         events,
-        published_status,
-        bytes(machine.mem_read(STATUS, 0x4C)),
-        bytes(machine.mem_read(SAMPLE, 0xA4)),
-        bytes(machine.mem_read(MOTOR, 0x7C)),
-        bytes(machine.mem_read(SPEED, 0x50)),
+        (normalize_source_flash_words(published_status, SYMBOLS, SYMBOL_SIZES)
+         if not original else published_status),
+        snapshot(STATUS, 0x4C),
+        snapshot(SAMPLE, 0xA4),
+        snapshot(MOTOR, 0x7C),
+        snapshot(SPEED, 0x50),
         bytes(machine.mem_read(0x40038000, 0x9000)),
         bytes(machine.mem_read(0xE000E100, 0x200)),
         machine.reg_read(arm.UC_ARM_REG_PRIMASK),

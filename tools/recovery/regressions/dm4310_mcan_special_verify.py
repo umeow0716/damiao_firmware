@@ -158,8 +158,12 @@ for case in range(len(scenarios) * 2):
         factory_write_pcs = []
         callback_args = []
         def memory(uc, access, address, size, value, _):
-            trace.append((access, address, size, value if access == 17 else
-                          int.from_bytes(uc.mem_read(address, size), 'little')))
+            observed = value if access == 17 else int.from_bytes(
+                uc.mem_read(address, size), 'little')
+            if not original and size == 4:
+                observed = normalize_source_flash_value(
+                    observed, symbols, symbol_sizes)
+            trace.append((access, address, size, observed))
         def callback(uc, _address, _size, _):
             callback_args.append(tuple(uc.reg_read(reg) for reg in
                 (arm.UC_ARM_REG_R0, arm.UC_ARM_REG_R1, arm.UC_ARM_REG_R2)))
@@ -236,16 +240,20 @@ for case in range(len(scenarios) * 2):
         assert len(callback_args) == 1, (case, original,
                                          hex(u.reg_read(arm.UC_ARM_REG_PC)),
                                          bytes(u.mem_read(0x4003a080, 2)))
+        def snapshot(address, size):
+            data = bytes(u.mem_read(address, size))
+            return (normalize_source_flash_words(data, symbols, symbol_sizes)
+                    if not original else data)
         results.append((trace, callback_args,
-                        bytes(u.mem_read(status, 0x4c)),
-                        bytes(u.mem_read(sample, 0xa4)),
-                        bytes(u.mem_read(motor, 0x7c)),
-                        bytes(u.mem_read(parameter_scratch, 0x20)),
-                        bytes(u.mem_read(calibration, 0x10)),
-                        bytes(u.mem_read(zero_staging, 8)),
-                        bytes(u.mem_read(output, 0x48)),
-                        bytes(u.mem_read(response, 0xa4)),
-                        bytes(u.mem_read(scratch, 0x20)),
+                        snapshot(status, 0x4c),
+                        snapshot(sample, 0xa4),
+                        snapshot(motor, 0x7c),
+                        snapshot(parameter_scratch, 0x20),
+                        snapshot(calibration, 0x10),
+                        snapshot(zero_staging, 8),
+                        snapshot(output, 0x48),
+                        snapshot(response, 0xa4),
+                        snapshot(scratch, 0x20),
                         u.reg_read(arm.UC_ARM_REG_FPSCR)))
     if results[0] != results[1]:
         for component, (left, right) in enumerate(zip(*results)):

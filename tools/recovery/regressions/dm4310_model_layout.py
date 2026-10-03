@@ -201,6 +201,55 @@ def F(address):
     return address
 
 
+# These objects are intentionally allowed to move in source builds.  Factory
+# traces and retained SRAM can nevertheless contain their addresses, so
+# differential tests compare the object-relative address instead of requiring
+# the source linker to reproduce the factory Flash layout.
+_RELOCATED_FLASH_OBJECTS = (
+    (0x00020368, "dm4310_runtime_main_entry", True),
+    (0x00021CC8, "board_mcan_init_classic", True),
+    (0x00021FC4, "board_mcan_init_fd", True),
+    (0x00022244, "IRQ004_Handler", True),
+    (0x00027CA0, "temperature_celsius_table", False),
+    (0x00028668, "dm4310_c_locale_name", False),
+    (0x00028670, "dm4310_c_locale", False),
+)
+
+
+def elf_symbol_sizes(elf):
+    """Return non-zero symbol extents used by Flash-pointer normalization."""
+    return {
+        symbol.name: max(symbol["st_size"], 1)
+        for symbol in elf.get_section_by_name(".symtab").iter_symbols()
+        if symbol.name
+    }
+
+
+def normalize_source_flash_value(value, symbols, symbol_sizes):
+    """Translate a movable source Flash pointer to its factory counterpart."""
+    for factory_address, name, is_function in _RELOCATED_FLASH_OBJECTS:
+        if name not in symbols:
+            continue
+        source_address = symbols[name]
+        size = symbol_sizes.get(name, 1)
+        candidate = value & ~1 if is_function else value
+        if source_address <= candidate < source_address + size:
+            offset = candidate - source_address
+            thumb = value & 1 if is_function else 0
+            return F(factory_address) + offset + thumb
+    return value
+
+
+def normalize_source_flash_words(data, symbols, symbol_sizes):
+    """Normalize aligned 32-bit Flash pointers embedded in a byte snapshot."""
+    normalized = bytearray(data)
+    for offset in range(0, len(normalized) - 3, 4):
+        value = int.from_bytes(normalized[offset:offset + 4], "little")
+        value = normalize_source_flash_value(value, symbols, symbol_sizes)
+        normalized[offset:offset + 4] = value.to_bytes(4, "little")
+    return bytes(normalized)
+
+
 FACTORY_FIXED_SOURCE = 0x8680
 FIXED_IMAGE_BASE = 0x1FFF8000
 FACTORY_FIXED_SIZE = {

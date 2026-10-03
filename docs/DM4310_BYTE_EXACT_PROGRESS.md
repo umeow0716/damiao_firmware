@@ -1,10 +1,11 @@
-# DM4310 V3 V5017.04 byte-exact 復原進度
+# DM4310 V3 V5017.04 byte-exact 復原進度（已停止）
 
 最後更新：2026-10-03
 
-本頁追蹤 source-built `dm4310_plain.bin` 與 factory APP 的逐 byte 復原。
-既有的行為、SRAM/MMIO、ABI 與流程差分完成度仍記錄在
-`docs/DM4310_RECOVERY_PROGRESS.md`；行為相等不等於本頁的機器碼相等。
+本頁保存停止 byte-exact 工作時的歷史證據，不再是完成閘門。專案已改採可持續開發的
+連續 Flash 配置；不固定一般函式位址、不保留 factory padding，也不要求 whole-file SHA。
+現行行為、SRAM/MMIO、ABI、容量與流程完成度以
+`docs/DM4310_RECOVERY_PROGRESS.md` 為準。下列數字均是停止前的歷史 checkpoint。
 
 ## 完成定義
 

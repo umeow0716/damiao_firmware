@@ -124,11 +124,11 @@ def run(original, state, peripheral, system, electrical_count, flux_count,
             events.append(('auth',))
             return_from_stub(emu)
             return
-        if address == FACTORY_DELAY_US:
+        if original and address == FACTORY_DELAY_US:
             events.append(('delay-us', emu.reg_read(arm.UC_ARM_REG_R0)))
             return_from_stub(emu)
             return
-        if address == FACTORY_DELAY_MS:
+        if original and address == FACTORY_DELAY_MS:
             events.append(('delay-us',
                            emu.reg_read(arm.UC_ARM_REG_R0) * 1000))
             return_from_stub(emu)
