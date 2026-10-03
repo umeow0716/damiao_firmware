@@ -325,7 +325,9 @@ def write_details(path: Path, results: list[FunctionResult]) -> None:
         "current_sha256",
     )
     with path.open("w", newline="", encoding="utf-8") as target:
-        writer = csv.DictWriter(target, fieldnames=fields, delimiter="\t")
+        writer = csv.DictWriter(
+            target, fieldnames=fields, delimiter="\t", lineterminator="\n"
+        )
         writer.writeheader()
         for result in results:
             writer.writerow(

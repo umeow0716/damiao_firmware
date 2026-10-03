@@ -12,7 +12,9 @@ import ghidra.program.model.mem.MemoryBlock;
 import ghidra.program.model.symbol.SourceType;
 
 public class PrepareDmFactory extends GhidraScript {
-    private static final long SCATTER_DESCRIPTOR = 0x00028634L;
+    private static final long APP_BASE = 0x00020000L;
+    private static final long APP_END = 0x00030000L;
+    private static final long FIXED_SRAM_BASE = 0x1fff8000L;
 
     private Address address(long value) {
         return currentProgram.getAddressFactory()
@@ -21,6 +23,44 @@ public class PrepareDmFactory extends GhidraScript {
 
     private long unsignedInt(Memory memory, long address) throws Exception {
         return Integer.toUnsignedLong(memory.getInt(address(address)));
+    }
+
+    private long findScatterDescriptor(Memory memory) throws Exception {
+        for (long candidate = APP_BASE;
+                candidate + 44L < APP_END; candidate += 4L) {
+            if (!memory.contains(address(candidate)) ||
+                    !memory.contains(address(candidate + 44L))) {
+                continue;
+            }
+            long fixedSource = unsignedInt(memory, candidate);
+            long fixedBase = unsignedInt(memory, candidate + 4L);
+            long fixedSize = unsignedInt(memory, candidate + 8L);
+            long copyRoutine = unsignedInt(memory, candidate + 12L);
+            long stateSource = unsignedInt(memory, candidate + 16L);
+            long stateBase = unsignedInt(memory, candidate + 20L);
+            long stateSize = unsignedInt(memory, candidate + 24L);
+            long zeroRoutine = unsignedInt(memory, candidate + 28L);
+            long bssSource = unsignedInt(memory, candidate + 32L);
+            long bssBase = unsignedInt(memory, candidate + 36L);
+            long bssSize = unsignedInt(memory, candidate + 40L);
+
+            boolean valid = fixedBase == FIXED_SRAM_BASE &&
+                fixedSource >= APP_BASE && fixedSource < APP_END &&
+                fixedSize >= 0x1000L && fixedSize <= 0x4000L &&
+                copyRoutine >= APP_BASE && copyRoutine < fixedSource &&
+                stateSource == fixedSource + fixedSize &&
+                stateBase == fixedBase + fixedSize &&
+                stateSize >= 0x1000L && stateSize <= 0x4000L &&
+                zeroRoutine >= APP_BASE && zeroRoutine < fixedSource &&
+                bssSource >= stateSource && bssSource < APP_END &&
+                bssBase == stateBase + stateSize &&
+                bssSize >= 0x1000L && bssSize <= 0x8000L;
+            if (valid) {
+                return candidate;
+            }
+        }
+        throw new IllegalStateException(
+            "could not locate the factory scatter descriptor");
     }
 
     private void setThumb(long start, long end) throws Exception {
@@ -46,13 +86,14 @@ public class PrepareDmFactory extends GhidraScript {
     @Override
     protected void run() throws Exception {
         Memory memory = currentProgram.getMemory();
-        long flashRamImage = unsignedInt(memory, SCATTER_DESCRIPTOR);
-        long fixedRamBase = unsignedInt(memory, SCATTER_DESCRIPTOR + 4L);
-        long fixedRamSize = unsignedInt(memory, SCATTER_DESCRIPTOR + 8L);
-        long stateBase = unsignedInt(memory, SCATTER_DESCRIPTOR + 20L);
-        long stateSize = unsignedInt(memory, SCATTER_DESCRIPTOR + 24L);
-        long bssBase = unsignedInt(memory, SCATTER_DESCRIPTOR + 36L);
-        long bssSize = unsignedInt(memory, SCATTER_DESCRIPTOR + 40L);
+        long scatterDescriptor = findScatterDescriptor(memory);
+        long flashRamImage = unsignedInt(memory, scatterDescriptor);
+        long fixedRamBase = unsignedInt(memory, scatterDescriptor + 4L);
+        long fixedRamSize = unsignedInt(memory, scatterDescriptor + 8L);
+        long stateBase = unsignedInt(memory, scatterDescriptor + 20L);
+        long stateSize = unsignedInt(memory, scatterDescriptor + 24L);
+        long bssBase = unsignedInt(memory, scatterDescriptor + 36L);
+        long bssSize = unsignedInt(memory, scatterDescriptor + 40L);
         if (fixedRamBase != 0x1fff8000L || stateBase != fixedRamBase + fixedRamSize ||
                 bssBase != stateBase + stateSize) {
             throw new IllegalStateException("unexpected factory scatter layout");
@@ -84,7 +125,7 @@ public class PrepareDmFactory extends GhidraScript {
             stateBlock.setExecute(false);
         }
 
-        setThumb(0x00020250L, SCATTER_DESCRIPTOR - 1L);
+        setThumb(0x00020250L, scatterDescriptor - 1L);
         setThumb(fixedRamBase, fixedRamBase + fixedRamSize - 1L);
 
         seedFunction(0x00020250L, "entry_stub");
@@ -112,7 +153,10 @@ public class PrepareDmFactory extends GhidraScript {
         }
 
         println(String.format(
-            "scatter: fixed=%08x+%x state=%08x+%x bss=%08x+%x",
-            fixedRamBase, fixedRamSize, stateBase, stateSize, bssBase, bssSize));
+            "scatter@%08x: fixed=%08x->%08x+%x state=%08x->%08x+%x " +
+            "bss=%08x+%x",
+            scatterDescriptor, flashRamImage, fixedRamBase, fixedRamSize,
+            flashRamImage + fixedRamSize, stateBase, stateSize,
+            bssBase, bssSize));
     }
 }

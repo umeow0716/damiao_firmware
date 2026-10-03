@@ -2,7 +2,7 @@ from pathlib import Path
 import struct
 from unicorn import UC_HOOK_CODE
 exec(Path(__file__).with_name('dm4310_softfloat_verify.py').read_text().split('\nfor old, name, size in mapping[:1]:')[0])
-for old, name in [(0x20f0c, 'factory_stream_nonfinite')]:
+for old, name in [(F(0x20f0c), 'factory_stream_nonfinite')]:
     for case in range(256):
         flags = (case % 32) | (2048 if case % 2 else 0)
         width = [0, 1, 4, 12, 0xffffffff][case % 5]

@@ -172,9 +172,12 @@ static const uint8_t seeds[128]
 /* Float rounding and its integer conversion caller share original ASM. */
 
 #define DM4310_RUNTIME_WORD_COUNT (24U)
-#if defined(DAMIAO_DM8009_V3)
+#if defined(DAMIAO_LAYOUT_DM800X)
 #define DM4310_HEAP_BASE          (0x1FFFF530UL)
 #define DM4310_HEAP_LIMIT         (0x1FFFF930UL)
+#elif defined(DAMIAO_LAYOUT_DM43_48V)
+#define DM4310_HEAP_BASE          (0x1FFFF500UL)
+#define DM4310_HEAP_LIMIT         (0x1FFFF900UL)
 #else
 #define DM4310_HEAP_BASE          (0x1FFFF4F8UL)
 #define DM4310_HEAP_LIMIT         (0x1FFFF8F8UL)

@@ -38,7 +38,7 @@ for case in range(128):
                     if case & 16: uc.mem_write(0x20001008, struct.pack('<I', 0x11111111))
             uc.reg_write(arm.UC_ARM_REG_PC, uc.reg_read(arm.UC_ARM_REG_LR))
         u.hook_add(UC_HOOK_CODE, callback)
-        entry = 0x205fc if original else symbols['factory_parse']
+        entry = F(0x205fc) if original else symbols['factory_parse']
         u.emu_start(entry | 1, 0x30000, count=100000)
         assert u.reg_read(arm.UC_ARM_REG_PC) == 0x30000
         results.append((reads, writes, bytes(emitted), u.reg_read(arm.UC_ARM_REG_R0),

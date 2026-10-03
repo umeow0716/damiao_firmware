@@ -71,7 +71,35 @@ for case in range(64):
         assert done[0], (case, original, hex(u.reg_read(arm.UC_ARM_REG_PC)))
         expected.append((trace, callbacks, bytes(u.mem_read(controller, 0x100)),
                          bytes(u.mem_read(status, 0x4c))))
-    assert expected[0] == expected[1], (case, expected)
+    if expected[0] != expected[1]:
+        print('MISMATCH', case, 'relocated', relocated,
+              'bus_off', bus_off, 'reinitialize', reinitialize,
+              'cccr', hex(cccr))
+        for component, (factory_part, source_part) in enumerate(
+                zip(expected[0], expected[1])):
+            if factory_part == source_part:
+                continue
+            if component == 0:
+                print('trace lengths', len(factory_part), len(source_part))
+                for index, pair in enumerate(zip(factory_part, source_part)):
+                    if pair[0] != pair[1]:
+                        print('first trace', index, pair[0], pair[1])
+                        print('factory context',
+                              factory_part[max(0, index - 8):index + 12])
+                        print('source context',
+                              source_part[max(0, index - 8):index + 12])
+                        break
+            elif component == 1:
+                print('callbacks', factory_part, source_part)
+            else:
+                differences = [
+                    index for index, pair in enumerate(
+                        zip(factory_part, source_part))
+                    if pair[0] != pair[1]
+                ]
+                print('component', component, 'byte differences',
+                      differences[:64])
+        raise AssertionError(case)
 
 print('PASS: 64 real IRQ003 no-RX/reinit/bus-off tails; retained controller/'
       'config/status/callback pools, callback ABI, ordered trace and relocation')

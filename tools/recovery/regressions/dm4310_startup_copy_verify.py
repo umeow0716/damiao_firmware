@@ -33,8 +33,9 @@ for original in (True, False):
         u.mem_write(0x40054026, clock_source.to_bytes(1, 'little'))
         u.mem_write(0x40054100, (0x39306300 | (0x80 if '--internal-pll' in sys.argv else 0)).to_bytes(4, 'little'))
     if original:
-        u.emu_start(0x20389 if real_system else 0x20259, 0x20368, count=2000000)
-        assert u.reg_read(arm.UC_ARM_REG_PC) == 0x20368
+        u.emu_start(F(0x20389) if real_system else F(0x20259),
+                    F(0x20368), count=2000000)
+        assert u.reg_read(arm.UC_ARM_REG_PC) == F(0x20368)
     else:
         system_init = symbols['SystemInit']
         def skip_system(uc, address, size, data):
@@ -65,8 +66,19 @@ for original in (True, False):
     images.append(bytes(u.mem_read(FACTORY_STATE_BASE, FACTORY_STATE_SIZE)))
     machines.append(u)
     mmio_traces.append(trace)
-assert images[0] == images[1], [(hex(FACTORY_STATE_BASE + i), a, b)
-                               for i, (a, b) in enumerate(zip(*images)) if a != b][:16]
+if images[0] != images[1]:
+    differing_words = sorted({
+        index & ~3
+        for index, pair in enumerate(zip(*images))
+        if pair[0] != pair[1]
+    })
+    details = [
+        (hex(FACTORY_STATE_BASE + offset),
+         hex(int.from_bytes(images[0][offset:offset + 4], 'little')),
+         hex(int.from_bytes(images[1][offset:offset + 4], 'little')))
+        for offset in differing_words[:16]
+    ]
+    raise AssertionError(details)
 print(f'PASS: complete {FACTORY_STATE_SIZE:#x}-byte initialized scatter range '
       'matches factory after actual startup paths')
 for address, size in [(A(0x1fff8630), 16), (A(0x1fff8724), 32),
@@ -87,7 +99,7 @@ runtime = []
 entry_stacks = []
 heaps = []
 for original, u in zip((True, False), machines):
-    entry = 0x20368 if original else symbols['dm4310_runtime_main_entry']
+    entry = F(0x20368) if original else symbols['dm4310_runtime_main_entry']
     stop = F(0x252f4) if original else symbols['main']
     u.emu_start(entry | 1, stop, count=100000)
     assert u.reg_read(arm.UC_ARM_REG_PC) == stop

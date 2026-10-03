@@ -9,20 +9,18 @@ TOOLCHAIN := cmake/arm-none-eabi-toolchain.cmake
 CAN_IF ?= can0
 .DEFAULT_GOAL := firmwares
 
-DM4310_APP_BIN := $(BUILD_DIR)/dm4310.app.bin
-DM4340_APP_BIN := $(BUILD_DIR)/dm4340.app.bin
-DM8009_APP_BIN := $(BUILD_DIR)/dm8009.app.bin
 PACK_ROOT := $(BUILD_DIR)/package
+FIRMWARE_MODELS := dm10010 dm3507 dm3507_48v dm4310 dm4310_48v \
+	dm4340 dm4340_48v dm8006 dm8009
 
-.PHONY: help all configure build firmwares dm4310 dm4340 dm8009 verify-firmware-outputs clean send provision-calibration
+.PHONY: help all configure build firmwares $(FIRMWARE_MODELS) verify-firmware-outputs clean send provision-calibration
 
 help:
 	@echo "DM firmware source-build targets:"
 	@echo "  make                  Build source APP and emit all model firmware images"
 	@echo "  make firmwares        Same as make"
-	@echo "  make dm4310           Emit only dist/development/dm4310_plain.bin + dm4310_enc.bin"
-	@echo "  make dm4340           Emit only dist/development/dm4340_plain.bin + dm4340_enc.bin"
-	@echo "  make dm8009           Emit only dist/development/dm8009_plain.bin + dm8009_enc.bin"
+	@echo "  make MODEL            Emit one model's plain + encrypted images"
+	@echo "                        MODEL: $(FIRMWARE_MODELS)"
 	@echo "  make build            Build all profiled source APP targets"
 	@echo "  make verify-firmware-outputs  Check generated files without cross-model equality"
 	@echo "  make clean            Remove build and dist outputs"
@@ -32,9 +30,9 @@ help:
 	@echo "Default toolchain root: tools/arm-gnu-toolchain"
 	@echo "Override only when needed: DM_ARM_TOOLCHAIN_ROOT=/path/to/arm-gnu-toolchain make"
 	@echo ""
-	@echo "Current DM8009 behavior: source APP target tracks the recovered V3/V6417 factory profile."
+	@echo "All model targets track the paired V3 sub-version 04 references listed in docs/FIRMWARE_RECOVERY_PROGRESS.md."
 	@echo "Bootloader source is intentionally not built or tracked in this app-only workspace."
-	@echo "No DM4310-vs-DM8009 byte-equality check is enforced; the two models may diverge during development."
+	@echo "No cross-model byte-equality check is enforced; model images may legitimately diverge."
 
 all: firmwares
 
@@ -44,51 +42,26 @@ configure:
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo
 
 build: configure
-	$(CMAKE) --build $(BUILD_DIR) --target dm4310 dm4340 dm8009 -j
+	$(CMAKE) --build $(BUILD_DIR) --target $(FIRMWARE_MODELS) -j
 
 $(DIST_DEV):
 	mkdir -p $(DIST_DEV)
 
-$(PACK_ROOT)/dm4310 $(PACK_ROOT)/dm4340 $(PACK_ROOT)/dm8009:
-	mkdir -p $@
 
-dm4310: configure $(DIST_DEV) $(PACK_ROOT)/dm4310
-	$(CMAKE) --build $(BUILD_DIR) --target dm4310 -j
-	$(PYTHON) tools/pack_update.py --app $(DM4310_APP_BIN) \
-		--profile config/update_profile.json --output-dir $(PACK_ROOT)/dm4310 \
+$(FIRMWARE_MODELS): %: configure $(DIST_DEV)
+	mkdir -p $(PACK_ROOT)/$@
+	$(CMAKE) --build $(BUILD_DIR) --target $@ -j
+	$(PYTHON) tools/pack_update.py --app $(BUILD_DIR)/$@.app.bin \
+		--profile config/update_profile.json --output-dir $(PACK_ROOT)/$@ \
 		--purpose development \
-		--plain-name dm4310_plain.bin \
-		--encrypted-name dm4310_enc.bin
-	cp $(PACK_ROOT)/dm4310/dm4310_plain.bin $(DIST_DEV)/dm4310_plain.bin
-	cp $(PACK_ROOT)/dm4310/dm4310_enc.bin $(DIST_DEV)/dm4310_enc.bin
-	@echo "wrote $(DIST_DEV)/dm4310_plain.bin"
-	@echo "wrote $(DIST_DEV)/dm4310_enc.bin"
+		--plain-name $@_plain.bin \
+		--encrypted-name $@_enc.bin
+	cp $(PACK_ROOT)/$@/$@_plain.bin $(DIST_DEV)/$@_plain.bin
+	cp $(PACK_ROOT)/$@/$@_enc.bin $(DIST_DEV)/$@_enc.bin
+	@echo "wrote $(DIST_DEV)/$@_plain.bin"
+	@echo "wrote $(DIST_DEV)/$@_enc.bin"
 
-dm4340: configure $(DIST_DEV) $(PACK_ROOT)/dm4340
-	$(CMAKE) --build $(BUILD_DIR) --target dm4340 -j
-	$(PYTHON) tools/pack_update.py --app $(DM4340_APP_BIN) \
-		--profile config/update_profile.json --output-dir $(PACK_ROOT)/dm4340 \
-		--purpose development \
-		--plain-name dm4340_plain.bin \
-		--encrypted-name dm4340_enc.bin
-	cp $(PACK_ROOT)/dm4340/dm4340_plain.bin $(DIST_DEV)/dm4340_plain.bin
-	cp $(PACK_ROOT)/dm4340/dm4340_enc.bin $(DIST_DEV)/dm4340_enc.bin
-	@echo "wrote $(DIST_DEV)/dm4340_plain.bin"
-	@echo "wrote $(DIST_DEV)/dm4340_enc.bin"
-
-dm8009: configure $(DIST_DEV) $(PACK_ROOT)/dm8009
-	$(CMAKE) --build $(BUILD_DIR) --target dm8009 -j
-	$(PYTHON) tools/pack_update.py --app $(DM8009_APP_BIN) \
-		--profile config/update_profile.json --output-dir $(PACK_ROOT)/dm8009 \
-		--purpose development \
-		--plain-name dm8009_plain.bin \
-		--encrypted-name dm8009_enc.bin
-	cp $(PACK_ROOT)/dm8009/dm8009_plain.bin $(DIST_DEV)/dm8009_plain.bin
-	cp $(PACK_ROOT)/dm8009/dm8009_enc.bin $(DIST_DEV)/dm8009_enc.bin
-	@echo "wrote $(DIST_DEV)/dm8009_plain.bin"
-	@echo "wrote $(DIST_DEV)/dm8009_enc.bin"
-
-firmwares: dm4310 dm4340 dm8009
+firmwares: $(FIRMWARE_MODELS)
 	$(MAKE) verify-firmware-outputs
 	@echo "wrote all model firmware images to $(DIST_DEV)"
 

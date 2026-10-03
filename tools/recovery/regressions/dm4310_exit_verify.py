@@ -4,7 +4,7 @@ from unicorn import UC_HOOK_CODE
 exec(Path(__file__).with_name('dm4310_softfloat_verify.py').read_text().split('\nfor old, name, size in mapping[:1]:')[0])
 new = symbols['dm4310_runtime_exit']
 def normalize(value):
-    return {new + 0x1b: 0x20381, new + 0x21: 0x20387}.get(value, value)
+    return {new + 0x1b: F(0x20381), new + 0x21: F(0x20387)}.get(value, value)
 for case in range(256):
     regs = [rng.getrandbits(32) for _ in range(13)]
     results = []
@@ -18,7 +18,7 @@ for case in range(256):
             if bytes(uc.mem_read(address, 2)) == bytes([0xab, 0xbe]):
                 uc.emu_stop()
         u.hook_add(UC_HOOK_CODE, stop)
-        u.emu_start((0x210d2 if original else new) | 1, 0x30000, count=1000)
+        u.emu_start((F(0x210d2) if original else new) | 1, 0x30000, count=1000)
         pc = u.reg_read(arm.UC_ARM_REG_PC)
         assert bytes(u.mem_read(pc, 2)) == bytes([0xab, 0xbe])
         values = [u.reg_read(arm.UC_ARM_REG_R0 + i) for i in range(13)]

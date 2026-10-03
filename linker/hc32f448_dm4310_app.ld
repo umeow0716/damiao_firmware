@@ -7,11 +7,11 @@ MEMORY
 
 ENTRY(Reset_Handler)
 
-/* V3 firmwares share one recovered source graph but not one SRAM ABI.  The
- * target profile defines DAMIAO_DM8009_LAYOUT at link time for V6417; keeping
- * every address in this table makes model differences reviewable in one
- * place and prevents source modules from inventing their own offsets. */
-__dm8009_layout = DEFINED(DAMIAO_DM8009_LAYOUT);
+/* V3 firmwares share one recovered source graph but not one SRAM ABI.  Keep
+ * every address in this table so profile differences remain reviewable and
+ * source modules do not invent local offsets. */
+__dm8009_layout = DEFINED(DAMIAO_DM8009_LAYOUT); /* DM8006/DM8009 family */
+__dm43_48v_layout = DEFINED(DAMIAO_DM43_48V_LAYOUT);
 
 __layout_helper_fault_monitor = __dm8009_layout ? 0x1FFF9314 : 0x1FFF8000;
 __layout_irq002 = __dm8009_layout ? 0x1FFF944A : 0x1FFF8136;
@@ -19,86 +19,86 @@ __layout_boot_record_writer = __dm8009_layout ? 0x1FFF8000 : 0x1FFF8640;
 __layout_irq000 = __dm8009_layout ? 0x1FFF8104 : 0x1FFF8744;
 __layout_irq001 = __dm8009_layout ? 0x1FFF8130 : 0x1FFF8770;
 __layout_irq003 = __dm8009_layout ? 0x1FFF8278 : 0x1FFF88B8;
-__layout_helper_output_sensor = __dm8009_layout ? 0x1FFF9240 : 0x1FFF987C;
-__layout_flash_writer = __dm8009_layout ? 0x1FFF9988 : 0x1FFF9950;
-__layout_flash_erase_only = __dm8009_layout ? 0x1FFF9A70 : 0x1FFF9A38;
-__layout_helper_mcan_send_classic = __dm8009_layout ? 0x1FFF9B04 : 0x1FFF9ACC;
-__layout_helper_mcan_send_variable_fd = __dm8009_layout ? 0x1FFF9B46 : 0x1FFF9B0E;
-__layout_helper_mcan_send_fd = __dm8009_layout ? 0x1FFF9BD8 : 0x1FFF9BA0;
-__layout_helper_svpwm = __dm8009_layout ? 0x1FFF9C78 : 0x1FFF9C40;
-__layout_helper_clear_runtime_loop_states = __dm8009_layout ? 0x1FFF9D94 : 0x1FFF9D5C;
-__layout_helper_reset_control_state = __dm8009_layout ? 0x1FFF9E00 : 0x1FFF9DC8;
-__layout_helper_identification_filter = __dm8009_layout ? 0x1FFF9E7C : 0x1FFF9E44;
-__layout_helper_derive_runtime_controller_states = __dm8009_layout ? 0x1FFF9EDE : 0x1FFF9EA6;
-__layout_helper_motion_observer = __dm8009_layout ? 0x1FFFA016 : 0x1FFF9FDE;
-__layout_helper_current_controller = __dm8009_layout ? 0x1FFFA0B2 : 0x1FFFA07A;
-__layout_helper_rls2 = __dm8009_layout ? 0x1FFFA198 : 0x1FFFA160;
-__layout_helper_flux_observer = __dm8009_layout ? 0x1FFFA26C : 0x1FFFA234;
-__layout_helper_sincos = __dm8009_layout ? 0x1FFFA344 : 0x1FFFA30C;
-__layout_helper_clamp = __dm8009_layout ? 0x1FFFA3C2 : 0x1FFFA38A;
-__layout_helper_wrap = __dm8009_layout ? 0x1FFFA3E2 : 0x1FFFA3AA;
-__layout_helper_limit_vector = __dm8009_layout ? 0x1FFFA44C : 0x1FFFA414;
-__layout_helper_float_to_uint = __dm8009_layout ? 0x1FFFA4A2 : 0x1FFFA46A;
-__layout_helper_uint_to_float = __dm8009_layout ? 0x1FFFA4CA : 0x1FFFA492;
-__layout_helper_derive_control_parameters = __dm8009_layout ? 0x1FFFA514 : 0x1FFFA4DC;
-__layout_helper_delay_ms = __dm8009_layout ? 0x1FFFA51E : 0x1FFFA4E6;
-__layout_helper_select_configuration_bank_b = __dm8009_layout ? 0x1FFFA528 : 0x1FFFA4F0;
-__layout_helper_atan2 = __dm8009_layout ? 0x1FFFA532 : 0x1FFFA4FA;
-__layout_helper_sqrt = __dm8009_layout ? 0x1FFFA53C : 0x1FFFA504;
+__layout_helper_output_sensor = __dm8009_layout ? 0x1FFF9240 : (__dm43_48v_layout ? 0x1FFF9880 : 0x1FFF987C);
+__layout_flash_writer = __dm8009_layout ? 0x1FFF9988 : (__dm43_48v_layout ? 0x1FFF9954 : 0x1FFF9950);
+__layout_flash_erase_only = __dm8009_layout ? 0x1FFF9A70 : (__dm43_48v_layout ? 0x1FFF9A3C : 0x1FFF9A38);
+__layout_helper_mcan_send_classic = __dm8009_layout ? 0x1FFF9B04 : (__dm43_48v_layout ? 0x1FFF9AD0 : 0x1FFF9ACC);
+__layout_helper_mcan_send_variable_fd = __dm8009_layout ? 0x1FFF9B46 : (__dm43_48v_layout ? 0x1FFF9B12 : 0x1FFF9B0E);
+__layout_helper_mcan_send_fd = __dm8009_layout ? 0x1FFF9BD8 : (__dm43_48v_layout ? 0x1FFF9BA4 : 0x1FFF9BA0);
+__layout_helper_svpwm = __dm8009_layout ? 0x1FFF9C78 : (__dm43_48v_layout ? 0x1FFF9C44 : 0x1FFF9C40);
+__layout_helper_clear_runtime_loop_states = __dm8009_layout ? 0x1FFF9D94 : (__dm43_48v_layout ? 0x1FFF9D60 : 0x1FFF9D5C);
+__layout_helper_reset_control_state = __dm8009_layout ? 0x1FFF9E00 : (__dm43_48v_layout ? 0x1FFF9DCC : 0x1FFF9DC8);
+__layout_helper_identification_filter = __dm8009_layout ? 0x1FFF9E7C : (__dm43_48v_layout ? 0x1FFF9E48 : 0x1FFF9E44);
+__layout_helper_derive_runtime_controller_states = __dm8009_layout ? 0x1FFF9EDE : (__dm43_48v_layout ? 0x1FFF9EAA : 0x1FFF9EA6);
+__layout_helper_motion_observer = __dm8009_layout ? 0x1FFFA016 : (__dm43_48v_layout ? 0x1FFF9FE2 : 0x1FFF9FDE);
+__layout_helper_current_controller = __dm8009_layout ? 0x1FFFA0B2 : (__dm43_48v_layout ? 0x1FFFA07E : 0x1FFFA07A);
+__layout_helper_rls2 = __dm8009_layout ? 0x1FFFA198 : (__dm43_48v_layout ? 0x1FFFA164 : 0x1FFFA160);
+__layout_helper_flux_observer = __dm8009_layout ? 0x1FFFA26C : (__dm43_48v_layout ? 0x1FFFA238 : 0x1FFFA234);
+__layout_helper_sincos = __dm8009_layout ? 0x1FFFA344 : (__dm43_48v_layout ? 0x1FFFA310 : 0x1FFFA30C);
+__layout_helper_clamp = __dm8009_layout ? 0x1FFFA3C2 : (__dm43_48v_layout ? 0x1FFFA38E : 0x1FFFA38A);
+__layout_helper_wrap = __dm8009_layout ? 0x1FFFA3E2 : (__dm43_48v_layout ? 0x1FFFA3AE : 0x1FFFA3AA);
+__layout_helper_limit_vector = __dm8009_layout ? 0x1FFFA44C : (__dm43_48v_layout ? 0x1FFFA418 : 0x1FFFA414);
+__layout_helper_float_to_uint = __dm8009_layout ? 0x1FFFA4A2 : (__dm43_48v_layout ? 0x1FFFA46E : 0x1FFFA46A);
+__layout_helper_uint_to_float = __dm8009_layout ? 0x1FFFA4CA : (__dm43_48v_layout ? 0x1FFFA496 : 0x1FFFA492);
+__layout_helper_derive_control_parameters = __dm8009_layout ? 0x1FFFA514 : (__dm43_48v_layout ? 0x1FFFA4E0 : 0x1FFFA4DC);
+__layout_helper_delay_ms = __dm8009_layout ? 0x1FFFA51E : (__dm43_48v_layout ? 0x1FFFA4EA : 0x1FFFA4E6);
+__layout_helper_select_configuration_bank_b = __dm8009_layout ? 0x1FFFA528 : (__dm43_48v_layout ? 0x1FFFA4F4 : 0x1FFFA4F0);
+__layout_helper_atan2 = __dm8009_layout ? 0x1FFFA532 : (__dm43_48v_layout ? 0x1FFFA4FE : 0x1FFFA4FA);
+__layout_helper_sqrt = __dm8009_layout ? 0x1FFFA53C : (__dm43_48v_layout ? 0x1FFFA508 : 0x1FFFA504);
 
 __layout_literals_1fff8630 = __dm8009_layout ? 0x1FFF9978 : 0x1FFF8630;
 __layout_literals_1fff8724 = __dm8009_layout ? 0x1FFF80E4 : 0x1FFF8724;
 __layout_literals_1fff9830 = __dm8009_layout ? 0x1FFF91F0 : 0x1FFF9830;
-__layout_literals_1fff9934 = __dm8009_layout ? 0x1FFF92F8 : 0x1FFF9934;
-__layout_literals_1fff9ac0 = __dm8009_layout ? 0x1FFF9AF8 : 0x1FFF9AC0;
-__layout_literals_1fff9c34 = __dm8009_layout ? 0x1FFF9C6C : 0x1FFF9C34;
-__layout_literals_1fff9d4c = __dm8009_layout ? 0x1FFF9D84 : 0x1FFF9D4C;
-__layout_literals_1fffa118 = __dm8009_layout ? 0x1FFFA150 : 0x1FFFA118;
-__layout_literals_1fffa13c = __dm8009_layout ? 0x1FFFA174 : 0x1FFFA13C;
-__layout_filter_literal = __dm8009_layout ? 0x1FFFA170 : 0x1FFFA138;
-__layout_motion_literal = __dm8009_layout ? 0x1FFFA194 : 0x1FFFA15C;
-__layout_rls_literals = __dm8009_layout ? 0x1FFFA338 : 0x1FFFA300;
+__layout_literals_1fff9934 = __dm8009_layout ? 0x1FFF92F8 : (__dm43_48v_layout ? 0x1FFF9938 : 0x1FFF9934);
+__layout_literals_1fff9ac0 = __dm8009_layout ? 0x1FFF9AF8 : (__dm43_48v_layout ? 0x1FFF9AC4 : 0x1FFF9AC0);
+__layout_literals_1fff9c34 = __dm8009_layout ? 0x1FFF9C6C : (__dm43_48v_layout ? 0x1FFF9C38 : 0x1FFF9C34);
+__layout_literals_1fff9d4c = __dm8009_layout ? 0x1FFF9D84 : (__dm43_48v_layout ? 0x1FFF9D50 : 0x1FFF9D4C);
+__layout_literals_1fffa118 = __dm8009_layout ? 0x1FFFA150 : (__dm43_48v_layout ? 0x1FFFA11C : 0x1FFFA118);
+__layout_literals_1fffa13c = __dm8009_layout ? 0x1FFFA174 : (__dm43_48v_layout ? 0x1FFFA140 : 0x1FFFA13C);
+__layout_filter_literal = __dm8009_layout ? 0x1FFFA170 : (__dm43_48v_layout ? 0x1FFFA13C : 0x1FFFA138);
+__layout_motion_literal = __dm8009_layout ? 0x1FFFA194 : (__dm43_48v_layout ? 0x1FFFA160 : 0x1FFFA15C);
+__layout_rls_literals = __dm8009_layout ? 0x1FFFA338 : (__dm43_48v_layout ? 0x1FFFA304 : 0x1FFFA300);
 
-__layout_initialized_state = __dm8009_layout ? 0x1FFFA548 : 0x1FFFA510;
-__layout_runtime_drive_d = __dm8009_layout ? 0x1FFFA5F8 : 0x1FFFA510;
-__layout_runtime_drive_q = __dm8009_layout ? 0x1FFFA620 : 0x1FFFA538;
-__layout_runtime_speed_loop = __dm8009_layout ? 0x1FFFA650 : 0x1FFFA568;
-__layout_runtime_position_loop = __dm8009_layout ? 0x1FFFA678 : 0x1FFFA590;
-__layout_uart_length_state = __dm8009_layout ? 0x1FFFA548 : 0x1FFFA5B8;
-__layout_hardware_variant = __dm8009_layout ? 0x1FFFA54C : 0x1FFFA5BC;
-__layout_zero_position_staging = __dm8009_layout ? 0x1FFFA550 : 0x1FFFA5C0;
-__layout_config_staging = __dm8009_layout ? 0x1FFFA558 : 0x1FFFA5C8;
-__layout_position_sensor_expected = __dm8009_layout ? 0x1FFFA5EC : 0x1FFFA65C;
-__layout_position_dma_word = __dm8009_layout ? 0x1FFFA6A0 : 0x1FFFA666;
-__layout_sine_table = __dm8009_layout ? 0x1FFFA6AC : 0x1FFFA674;
-__layout_aes_sbox = __dm8009_layout ? 0x1FFFC6B0 : 0x1FFFC678;
+__layout_initialized_state = __dm8009_layout ? 0x1FFFA548 : (__dm43_48v_layout ? 0x1FFFA514 : 0x1FFFA510);
+__layout_runtime_drive_d = __dm8009_layout ? 0x1FFFA5F8 : (__dm43_48v_layout ? 0x1FFFA514 : 0x1FFFA510);
+__layout_runtime_drive_q = __dm8009_layout ? 0x1FFFA620 : (__dm43_48v_layout ? 0x1FFFA53C : 0x1FFFA538);
+__layout_runtime_speed_loop = __dm8009_layout ? 0x1FFFA650 : (__dm43_48v_layout ? 0x1FFFA56C : 0x1FFFA568);
+__layout_runtime_position_loop = __dm8009_layout ? 0x1FFFA678 : (__dm43_48v_layout ? 0x1FFFA594 : 0x1FFFA590);
+__layout_uart_length_state = __dm8009_layout ? 0x1FFFA548 : (__dm43_48v_layout ? 0x1FFFA5BC : 0x1FFFA5B8);
+__layout_hardware_variant = __dm8009_layout ? 0x1FFFA54C : (__dm43_48v_layout ? 0x1FFFA5C0 : 0x1FFFA5BC);
+__layout_zero_position_staging = __dm8009_layout ? 0x1FFFA550 : (__dm43_48v_layout ? 0x1FFFA5C4 : 0x1FFFA5C0);
+__layout_config_staging = __dm8009_layout ? 0x1FFFA558 : (__dm43_48v_layout ? 0x1FFFA5CC : 0x1FFFA5C8);
+__layout_position_sensor_expected = __dm8009_layout ? 0x1FFFA5EC : (__dm43_48v_layout ? 0x1FFFA660 : 0x1FFFA65C);
+__layout_position_dma_word = __dm8009_layout ? 0x1FFFA6A0 : (__dm43_48v_layout ? 0x1FFFA66A : 0x1FFFA666);
+__layout_sine_table = __dm8009_layout ? 0x1FFFA6AC : (__dm43_48v_layout ? 0x1FFFA678 : 0x1FFFA674);
+__layout_aes_sbox = __dm8009_layout ? 0x1FFFC6B0 : (__dm43_48v_layout ? 0x1FFFC67C : 0x1FFFC678);
 
-__layout_boot_record_staging = __dm8009_layout ? 0x1FFFC7B0 : 0x1FFFC824;
-__layout_short_response_buffer = __dm8009_layout ? 0x1FFFC7C4 : 0x1FFFC838;
-__layout_motor_correction = __dm8009_layout ? 0x1FFFC7D8 : 0x1FFFC84C;
-__layout_can_protocol_scratch = __dm8009_layout ? 0x1FFFCBD8 : 0x1FFFCC4C;
-__layout_motor_record = __dm8009_layout ? 0x1FFFCBF8 : 0x1FFFCC6C;
-__layout_output_table = __dm8009_layout ? 0x1FFFD004 : 0x1FFFD078;
-__layout_output_calibration = __dm8009_layout ? 0x1FFFF004 : 0x1FFFF078;
-__layout_motor_runtime_state = __dm8009_layout ? 0x1FFFF014 : 0x1FFFF088;
-__layout_sample_runtime_state = __dm8009_layout ? 0x1FFFF090 : 0x1FFFF104;
-__layout_output_sensor_state = __dm8009_layout ? 0x1FFFF134 : 0x1FFFF1A8;
-__layout_runtime_status = __dm8009_layout ? 0x1FFFF17C : 0x1FFFF1F0;
-__layout_runtime_parameter_cache = __dm8009_layout ? 0x1FFFF1C8 : 0x1FFFF23C;
-__layout_mcan_dispatch = __dm8009_layout ? 0x1FFFF228 : 0x1FFFF29C;
-__layout_calibration_frame_scratch = __dm8009_layout ? 0x1FFFF2CC : 0x1FFFF340;
-__layout_motion_observer = __dm8009_layout ? 0x1FFFF30C : 0x1FFFF380;
-__layout_adc_raw = __dm8009_layout ? 0x1FFFF348 : 0x1FFFC778;
-__layout_current_d = __dm8009_layout ? 0x1FFFF35C : 0x1FFFC78C;
-__layout_current_q = __dm8009_layout ? 0x1FFFF3A8 : 0x1FFFC7D8;
-__layout_position_sensor_observed = __dm8009_layout ? 0x1FFFF3F4 : 0x1FFFF3BC;
-__layout_uart_rx_buffer = __dm8009_layout ? 0x1FFFF3FF : 0x1FFFF3C7;
-__layout_c_runtime_state = __dm8009_layout ? 0x1FFFF4C8 : 0x1FFFF490;
-__layout_system_core_clock = __dm8009_layout ? 0x1FFFF528 : 0x1FFFF4F0;
-__layout_hrc_value = __dm8009_layout ? 0x1FFFF52C : 0x1FFFF4F4;
-__layout_factory_bss_end = __dm8009_layout ? 0x1FFFF530 : 0x1FFFF4F8;
-__layout_heap_limit = __dm8009_layout ? 0x1FFFF930 : 0x1FFFF8F8;
-__layout_stack_top = __dm8009_layout ? 0x20000530 : 0x200004F8;
+__layout_boot_record_staging = __dm8009_layout ? 0x1FFFC7B0 : (__dm43_48v_layout ? 0x1FFFC828 : 0x1FFFC824);
+__layout_short_response_buffer = __dm8009_layout ? 0x1FFFC7C4 : (__dm43_48v_layout ? 0x1FFFC83C : 0x1FFFC838);
+__layout_motor_correction = __dm8009_layout ? 0x1FFFC7D8 : (__dm43_48v_layout ? 0x1FFFC850 : 0x1FFFC84C);
+__layout_can_protocol_scratch = __dm8009_layout ? 0x1FFFCBD8 : (__dm43_48v_layout ? 0x1FFFCC50 : 0x1FFFCC4C);
+__layout_motor_record = __dm8009_layout ? 0x1FFFCBF8 : (__dm43_48v_layout ? 0x1FFFCC70 : 0x1FFFCC6C);
+__layout_output_table = __dm8009_layout ? 0x1FFFD004 : (__dm43_48v_layout ? 0x1FFFD07C : 0x1FFFD078);
+__layout_output_calibration = __dm8009_layout ? 0x1FFFF004 : (__dm43_48v_layout ? 0x1FFFF07C : 0x1FFFF078);
+__layout_motor_runtime_state = __dm8009_layout ? 0x1FFFF014 : (__dm43_48v_layout ? 0x1FFFF08C : 0x1FFFF088);
+__layout_sample_runtime_state = __dm8009_layout ? 0x1FFFF090 : (__dm43_48v_layout ? 0x1FFFF108 : 0x1FFFF104);
+__layout_output_sensor_state = __dm8009_layout ? 0x1FFFF134 : (__dm43_48v_layout ? 0x1FFFF1AC : 0x1FFFF1A8);
+__layout_runtime_status = __dm8009_layout ? 0x1FFFF17C : (__dm43_48v_layout ? 0x1FFFF1F4 : 0x1FFFF1F0);
+__layout_runtime_parameter_cache = __dm8009_layout ? 0x1FFFF1C8 : (__dm43_48v_layout ? 0x1FFFF240 : 0x1FFFF23C);
+__layout_mcan_dispatch = __dm8009_layout ? 0x1FFFF228 : (__dm43_48v_layout ? 0x1FFFF2A0 : 0x1FFFF29C);
+__layout_calibration_frame_scratch = __dm8009_layout ? 0x1FFFF2CC : (__dm43_48v_layout ? 0x1FFFF344 : 0x1FFFF340);
+__layout_motion_observer = __dm8009_layout ? 0x1FFFF30C : (__dm43_48v_layout ? 0x1FFFF384 : 0x1FFFF380);
+__layout_adc_raw = __dm8009_layout ? 0x1FFFF348 : (__dm43_48v_layout ? 0x1FFFC77C : 0x1FFFC778);
+__layout_current_d = __dm8009_layout ? 0x1FFFF35C : (__dm43_48v_layout ? 0x1FFFC790 : 0x1FFFC78C);
+__layout_current_q = __dm8009_layout ? 0x1FFFF3A8 : (__dm43_48v_layout ? 0x1FFFC7DC : 0x1FFFC7D8);
+__layout_position_sensor_observed = __dm8009_layout ? 0x1FFFF3F4 : (__dm43_48v_layout ? 0x1FFFF3C0 : 0x1FFFF3BC);
+__layout_uart_rx_buffer = __dm8009_layout ? 0x1FFFF3FF : (__dm43_48v_layout ? 0x1FFFF3CB : 0x1FFFF3C7);
+__layout_c_runtime_state = __dm8009_layout ? 0x1FFFF4C8 : (__dm43_48v_layout ? 0x1FFFF494 : 0x1FFFF490);
+__layout_system_core_clock = __dm8009_layout ? 0x1FFFF528 : (__dm43_48v_layout ? 0x1FFFF4F4 : 0x1FFFF4F0);
+__layout_hrc_value = __dm8009_layout ? 0x1FFFF52C : (__dm43_48v_layout ? 0x1FFFF4F8 : 0x1FFFF4F4);
+__layout_factory_bss_end = __dm8009_layout ? 0x1FFFF530 : (__dm43_48v_layout ? 0x1FFFF500 : 0x1FFFF4F8);
+__layout_heap_limit = __dm8009_layout ? 0x1FFFF930 : (__dm43_48v_layout ? 0x1FFFF900 : 0x1FFFF8F8);
+__layout_stack_top = __dm8009_layout ? 0x20000530 : (__dm43_48v_layout ? 0x20000500 : 0x200004F8);
 
 SECTIONS
 {
@@ -500,7 +500,7 @@ SECTIONS
     } > RAM
     __dm4310_literals_1fff9830_load__ = LOADADDR(.dm4310_literals_1fff9830);
     ASSERT(SIZEOF(.dm4310_literals_1fff9830) ==
-           (__dm8009_layout ? 80 : 76),
+           ((__dm8009_layout || __dm43_48v_layout) ? 80 : 76),
            "Factory literal pool size changed")
     .dm4310_literals_1fff9934 __layout_literals_1fff9934 : AT(LOADADDR(.dm4310_literals_1fff9830) + ALIGN(SIZEOF(.dm4310_literals_1fff9830), 4)) {
         KEEP(*(.dm4310_literals_1fff9934))
@@ -1096,272 +1096,320 @@ SECTIONS
            "DM8009 C runtime/heap/stack layout mismatch")
     ASSERT(!__dm8009_layout || ADDR(.bss) >= __StackTop,
            "DM8009 source BSS overlaps the factory stack")
-    ASSERT(__dm8009_layout || IRQ000_Handler == 0x1FFF8744,
+    ASSERT(!__dm43_48v_layout ||
+           (IRQ000_Handler == 0x1FFF8744 &&
+            IRQ001_Handler == 0x1FFF8770 &&
+            IRQ002_Handler == 0x1FFF8136 &&
+            IRQ003_Handler == 0x1FFF88B8),
+           "DM43 48 V IRQ layout mismatch")
+    ASSERT(!__dm43_48v_layout ||
+           (ADDR(.dm4310_helper_output_sensor) == __layout_helper_output_sensor &&
+            ADDR(.dm4310_flash_writer) == __layout_flash_writer &&
+            ADDR(.dm4310_flash_erase_only) == __layout_flash_erase_only &&
+            ADDR(.dm4310_helper_mcan_send_classic) == __layout_helper_mcan_send_classic &&
+            ADDR(.dm4310_helper_mcan_send_variable_fd) == __layout_helper_mcan_send_variable_fd &&
+            ADDR(.dm4310_helper_mcan_send_fd) == __layout_helper_mcan_send_fd),
+           "DM43 48 V fixed helper layout mismatch")
+    ASSERT(!__dm43_48v_layout ||
+           (ADDR(.dm4310_helper_svpwm) == __layout_helper_svpwm &&
+            ADDR(.dm4310_helper_clear_runtime_loop_states) == __layout_helper_clear_runtime_loop_states &&
+            ADDR(.dm4310_helper_reset_control_state) == __layout_helper_reset_control_state &&
+            ADDR(.dm4310_helper_identification_filter) == __layout_helper_identification_filter &&
+            ADDR(.dm4310_helper_motion_observer) == __layout_helper_motion_observer &&
+            ADDR(.dm4310_helper_current_controller) == __layout_helper_current_controller),
+           "DM43 48 V control helper layout mismatch")
+    ASSERT(!__dm43_48v_layout ||
+           (ADDR(.dm4310_runtime_drive_d) == __layout_runtime_drive_d &&
+            ADDR(.dm4310_runtime_drive_q) == __layout_runtime_drive_q &&
+            ADDR(.dm4310_runtime_speed_loop) == __layout_runtime_speed_loop &&
+            ADDR(.dm4310_runtime_position_loop) == __layout_runtime_position_loop &&
+            ADDR(.dm4310_config_staging) == __layout_config_staging &&
+            ADDR(.dm4310_sine_table) == __layout_sine_table &&
+            ADDR(.dm4310_aes_sbox) == __layout_aes_sbox),
+           "DM43 48 V initialized-state layout mismatch")
+    ASSERT(!__dm43_48v_layout ||
+           (ADDR(.dm4310_adc_raw) == __layout_adc_raw &&
+            ADDR(.dm4310_current_d) == __layout_current_d &&
+            ADDR(.dm4310_current_q) == __layout_current_q &&
+            ADDR(.dm4310_boot_record_staging) == __layout_boot_record_staging &&
+            ADDR(.dm4310_output_table) == __layout_output_table &&
+            ADDR(.dm4310_runtime_status) == __layout_runtime_status &&
+            ADDR(.dm4310_c_runtime_state) == __layout_c_runtime_state),
+           "DM43 48 V BSS object layout mismatch")
+    ASSERT(!__dm43_48v_layout ||
+           (__factory_bss_end__ == __layout_factory_bss_end &&
+            __HeapBase == __layout_factory_bss_end &&
+            __HeapLimit == __layout_heap_limit &&
+            __StackTop == __layout_stack_top),
+           "DM43 48 V runtime/heap/stack layout mismatch")
+    ASSERT(!__dm43_48v_layout || ADDR(.bss) >= __StackTop,
+           "DM43 48 V source BSS overlaps the factory stack")
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || IRQ000_Handler == 0x1FFF8744,
            "DM4310 IRQ000 RAM entry moved")
-    ASSERT(__dm8009_layout || IRQ001_Handler == 0x1FFF8770,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || IRQ001_Handler == 0x1FFF8770,
            "DM4310 IRQ001 RAM entry moved")
-    ASSERT(__dm8009_layout || IRQ002_Handler == 0x1FFF8136,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || IRQ002_Handler == 0x1FFF8136,
            "DM4310 IRQ002 RAM entry moved")
-    ASSERT(__dm8009_layout || IRQ003_Handler == 0x1FFF88B8,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || IRQ003_Handler == 0x1FFF88B8,
            "DM4310 IRQ003 RAM entry moved")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_helper_fault_monitor) == 0x1FFF8000,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_helper_fault_monitor) == 0x1FFF8000,
            "DM4310 fault-monitor helper moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_fault_monitor) <= 0x136,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_fault_monitor) <= 0x136,
            "DM4310 fault-monitor veneer crossed ADC IRQ")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_output_sensor) == 0xB8,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_output_sensor) == 0xB8,
            "DM4310 output-sensor helper size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_flash_writer) == 0x1FFF9950,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_flash_writer) == 0x1FFF9950,
            "DM4310 flash writer moved")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_flash_erase_only) == 0x1FFF9A38,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_flash_erase_only) == 0x1FFF9A38,
            "DM4310 erase-only primitive moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_flash_erase_only) <= 0x94,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_flash_erase_only) <= 0x94,
            "DM4310 erase-only primitive crossed classic send helper")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_helper_clear_runtime_loop_states) == 0x1FFF9D5C,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_helper_clear_runtime_loop_states) == 0x1FFF9D5C,
            "DM4310 clear-loop-state helper moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_clear_runtime_loop_states) <= 0x6C,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_clear_runtime_loop_states) <= 0x6C,
            "DM4310 clear-loop-state helper crossed selective reset")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_boot_record_writer) == 0x1FFF8640,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_boot_record_writer) == 0x1FFF8640,
            "DM4310 fixed boot-record writer moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_boot_record_writer) <=
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_boot_record_writer) <=
                (0x1FFF8744 - 0x1FFF8640),
            "DM4310 fixed boot-record writer exceeds its recovered slot")
-    ASSERT(__dm8009_layout || dm4310_mcan_send_classic_helper == 0x1FFF9ACC,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || dm4310_mcan_send_classic_helper == 0x1FFF9ACC,
            "DM4310 classic MCAN callback moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_mcan_send_classic) == 0x0C,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_mcan_send_classic) == 0x0C,
            "DM4310 classic MCAN callback veneer size changed")
-    ASSERT(__dm8009_layout || dm4310_mcan_send_fd_helper == 0x1FFF9BA0,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || dm4310_mcan_send_fd_helper == 0x1FFF9BA0,
            "DM4310 FD MCAN callback moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_mcan_send_fd) == 0x10,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_mcan_send_fd) == 0x10,
            "DM4310 FD MCAN callback veneer size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_helper_mcan_send_variable_fd) == 0x1FFF9B0E,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_helper_mcan_send_variable_fd) == 0x1FFF9B0E,
            "DM4310 variable-length FD sender moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_mcan_send_variable_fd) == 0x0C,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_mcan_send_variable_fd) == 0x0C,
            "DM4310 variable-length FD sender copy size changed")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_svpwm) == 0x10,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_svpwm) == 0x10,
            "DM4310 SVPWM veneer size changed")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_irq002) <= (0x1FFF8640 - 0x1FFF8136),
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_irq002) <= (0x1FFF8640 - 0x1FFF8136),
            "DM4310 IRQ002 source veneer exceeds its recovered slot")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_irq000) <= (0x1FFF8770 - 0x1FFF8744),
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_irq000) <= (0x1FFF8770 - 0x1FFF8744),
            "DM4310 IRQ000 source veneer exceeds its recovered slot")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_irq001) <= (0x1FFF88B8 - 0x1FFF8770),
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_irq001) <= (0x1FFF88B8 - 0x1FFF8770),
            "DM4310 IRQ001 source veneer exceeds its recovered slot")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_flash_writer) <= (0x1FFF9A38 - 0x1FFF9950),
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_flash_writer) <= (0x1FFF9A38 - 0x1FFF9950),
            "DM4310 flash writer exceeds its recovered slot")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_sine_table) == 0x1FFFA674,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_sine_table) == 0x1FFFA674,
            "DM4310 sine table moved")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_runtime_drive_d) == 0x1FFFA510,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_runtime_drive_d) == 0x1FFFA510,
            "DM4310 D runtime drive state moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_runtime_drive_d) == 0x28,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_runtime_drive_d) == 0x28,
            "DM4310 D runtime drive state size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_runtime_drive_q) == 0x1FFFA538,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_runtime_drive_q) == 0x1FFFA538,
            "DM4310 Q runtime drive state moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_runtime_drive_q) == 0x28,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_runtime_drive_q) == 0x28,
            "DM4310 Q runtime drive state size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_runtime_speed_loop) == 0x1FFFA568,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_runtime_speed_loop) == 0x1FFFA568,
            "DM4310 speed-loop state moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_runtime_speed_loop) == 0x28,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_runtime_speed_loop) == 0x28,
            "DM4310 speed-loop state size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_runtime_position_loop) == 0x1FFFA590,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_runtime_position_loop) == 0x1FFFA590,
            "DM4310 position-loop state moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_runtime_position_loop) == 0x28,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_runtime_position_loop) == 0x28,
            "DM4310 position-loop state size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_config_staging) == 0x1FFFA5C8,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_config_staging) == 0x1FFFA5C8,
            "DM4310 config staging record moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_config_staging) == 0x94,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_config_staging) == 0x94,
            "DM4310 config staging record size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_uart_length_state) == 0x1FFFA5B8,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_uart_length_state) == 0x1FFFA5B8,
            "DM4310 UART length state moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_uart_length_state) == 0x4,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_uart_length_state) == 0x4,
            "DM4310 UART length state size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_hardware_variant) == 0x1FFFA5BC,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_hardware_variant) == 0x1FFFA5BC,
            "DM4310 hardware variant moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_hardware_variant) == 0x1,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_hardware_variant) == 0x1,
            "DM4310 hardware variant size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_helper_identification_filter) == 0x1FFF9E44,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_helper_identification_filter) == 0x1FFF9E44,
            "DM4310 identification-filter helper moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_identification_filter) <= 0x31C,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_identification_filter) <= 0x31C,
            "DM4310 identification-filter veneer crossed next helper")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_helper_output_sensor) == 0x1FFF987C,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_helper_output_sensor) == 0x1FFF987C,
            "DM4310 output-sensor helper moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_output_sensor) <= 0xD4,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_output_sensor) <= 0xD4,
            "DM4310 output-sensor veneer crossed flash writer")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_helper_svpwm) == 0x1FFF9C40,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_helper_svpwm) == 0x1FFF9C40,
            "DM4310 SVPWM helper moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_svpwm) <= 0x204,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_svpwm) <= 0x204,
            "DM4310 SVPWM veneer crossed identification helper")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_helper_reset_control_state) == 0x1FFF9DC8,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_helper_reset_control_state) == 0x1FFF9DC8,
            "DM4310 control-reset helper moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_reset_control_state) == 0x10,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_reset_control_state) == 0x10,
            "DM4310 control-reset veneer copy size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_helper_motion_observer) == 0x1FFF9FDE,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_helper_motion_observer) == 0x1FFF9FDE,
            "DM4310 motion-observer helper moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_motion_observer) <= 0x9C,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_motion_observer) <= 0x9C,
            "DM4310 motion-observer veneer crossed current helper")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_helper_current_controller) == 0x1FFFA07A,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_helper_current_controller) == 0x1FFFA07A,
            "DM4310 current-controller helper moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_current_controller) <= 0x9E,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_current_controller) <= 0x9E,
            "DM4310 current-controller veneer crossed literal pool")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_helper_rls2) == 0x1FFFA160,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_helper_rls2) == 0x1FFFA160,
            "DM4310 RLS helper moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_rls2) <= 0xD4,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_rls2) <= 0xD4,
            "DM4310 RLS veneer crossed next helper")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_helper_flux_observer) == 0x1FFFA234,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_helper_flux_observer) == 0x1FFFA234,
            "DM4310 flux-observer helper moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_flux_observer) <= 0xD8,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_flux_observer) <= 0xD8,
            "DM4310 flux-observer veneer crossed next helper")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_helper_sincos) == 0x1FFFA30C,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_helper_sincos) == 0x1FFFA30C,
            "DM4310 sincos helper moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_sincos) <= 0x7E,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_sincos) <= 0x7E,
            "DM4310 sincos veneer crossed next helper")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_helper_clamp) == 0x1FFFA38A,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_helper_clamp) == 0x1FFFA38A,
            "DM4310 clamp helper moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_clamp) <= 0x20,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_clamp) <= 0x20,
            "DM4310 clamp veneer crossed next helper")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_helper_wrap) == 0x1FFFA3AA,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_helper_wrap) == 0x1FFFA3AA,
            "DM4310 wrap helper moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_wrap) == 0x6A,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_wrap) == 0x6A,
            "DM4310 wrap and angle-reduction bodies changed size")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_helper_limit_vector) == 0x1FFFA414,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_helper_limit_vector) == 0x1FFFA414,
            "DM4310 vector-limit helper moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_limit_vector) <= 0x56,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_limit_vector) <= 0x56,
            "DM4310 vector-limit veneer crossed conversion helper")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_helper_float_to_uint) == 0x1FFFA46A,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_helper_float_to_uint) == 0x1FFFA46A,
            "DM4310 float-to-uint helper moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_float_to_uint) <= 0x28,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_float_to_uint) <= 0x28,
            "DM4310 float-to-uint veneer crossed inverse conversion")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_helper_uint_to_float) == 0x1FFFA492,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_helper_uint_to_float) == 0x1FFFA492,
            "DM4310 uint-to-float helper moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_uint_to_float) <= 0x4A,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_uint_to_float) <= 0x4A,
            "DM4310 uint-to-float veneer crossed derive-control helper")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_helper_derive_control_parameters) == 0x1FFFA4DC,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_helper_derive_control_parameters) == 0x1FFFA4DC,
            "DM4310 derive-control veneer moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_derive_control_parameters) == 0xA,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_derive_control_parameters) == 0xA,
            "DM4310 derive-control veneer size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_helper_atan2) == 0x1FFFA4FA,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_helper_atan2) == 0x1FFFA4FA,
            "DM4310 atan2 veneer moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_atan2) == 0xA,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_atan2) == 0xA,
            "DM4310 atan2 veneer size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_helper_delay_ms) == 0x1FFFA4E6,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_helper_delay_ms) == 0x1FFFA4E6,
            "DM4310 delay-ms veneer moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_delay_ms) == 0xA,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_delay_ms) == 0xA,
            "DM4310 delay-ms veneer size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_helper_select_configuration_bank_b) == 0x1FFFA4F0,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_helper_select_configuration_bank_b) == 0x1FFFA4F0,
            "DM4310 bank-B veneer moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_select_configuration_bank_b) == 0xA,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_select_configuration_bank_b) == 0xA,
            "DM4310 bank-B veneer size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_helper_sqrt) == 0x1FFFA504,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_helper_sqrt) == 0x1FFFA504,
            "DM4310 sqrt veneer moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_helper_sqrt) == 0xC,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_helper_sqrt) == 0xC,
            "DM4310 sqrt veneer plus scatter tail size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_c_runtime_state) == 0x1FFFF490,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_c_runtime_state) == 0x1FFFF490,
            "DM4310 C runtime state moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_c_runtime_state) == 0x60,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_c_runtime_state) == 0x60,
            "DM4310 C runtime state size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_system_core_clock) == 0x1FFFF4F0,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_system_core_clock) == 0x1FFFF4F0,
            "DM4310 SystemCoreClock moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_system_core_clock) == 0x4,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_system_core_clock) == 0x4,
            "DM4310 SystemCoreClock size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_hrc_value) == 0x1FFFF4F4,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_hrc_value) == 0x1FFFF4F4,
            "DM4310 HRC_VALUE moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_hrc_value) == 0x4,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_hrc_value) == 0x4,
            "DM4310 HRC_VALUE size changed")
-    ASSERT(__dm8009_layout || __factory_bss_end__ == 0x1FFFF4F8,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || __factory_bss_end__ == 0x1FFFF4F8,
            "DM4310 factory BSS/heap boundary moved")
-    ASSERT(__dm8009_layout || __HeapBase == 0x1FFFF4F8,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || __HeapBase == 0x1FFFF4F8,
            "DM4310 heap base moved")
-    ASSERT(__dm8009_layout || __HeapLimit == 0x1FFFF8F8,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || __HeapLimit == 0x1FFFF8F8,
            "DM4310 heap limit moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_sine_table) == 0x2004,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_sine_table) == 0x2004,
            "DM4310 sine table size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_aes_sbox) == 0x1FFFC678,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_aes_sbox) == 0x1FFFC678,
            "DM4310 AES S-box moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_aes_sbox) == 0x100,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_aes_sbox) == 0x100,
            "DM4310 AES S-box size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_position_sensor_expected) == 0x1FFFA65C,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_position_sensor_expected) == 0x1FFFA65C,
            "DM4310 position-sensor expected register image moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_position_sensor_expected) == 0x0C,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_position_sensor_expected) == 0x0C,
            "DM4310 position-sensor shared storage size changed")
-    ASSERT(__dm8009_layout || position_dma_word == 0x1FFFA666,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || position_dma_word == 0x1FFFA666,
            "DM4310 position DMA destination moved")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_adc_raw) == 0x1FFFC778 &&
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_adc_raw) == 0x1FFFC778 &&
            SIZEOF(.dm4310_adc_raw) == 0x14,
            "DM4310 ADC raw sample layout mismatch")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_current_d) == 0x1FFFC78C,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_current_d) == 0x1FFFC78C,
            "DM4310 D current controller moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_current_d) == 0x4C,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_current_d) == 0x4C,
            "DM4310 D current controller size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_current_q) == 0x1FFFC7D8,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_current_q) == 0x1FFFC7D8,
            "DM4310 Q current controller moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_current_q) == 0x4C,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_current_q) == 0x4C,
            "DM4310 Q current controller size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_boot_record_staging) == 0x1FFFC824,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_boot_record_staging) == 0x1FFFC824,
            "DM4310 boot-record staging moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_boot_record_staging) == 0x14,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_boot_record_staging) == 0x14,
            "DM4310 boot-record staging size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_short_response_buffer) == 0x1FFFC838,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_short_response_buffer) == 0x1FFFC838,
            "DM4310 short response buffer moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_short_response_buffer) == 0x14,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_short_response_buffer) == 0x14,
            "DM4310 short response buffer size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_motor_correction) == 0x1FFFC84C,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_motor_correction) == 0x1FFFC84C,
            "DM4310 motor correction table moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_motor_correction) == 0x400,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_motor_correction) == 0x400,
            "DM4310 motor correction table size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_motor_record) == 0x1FFFCC6C,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_motor_record) == 0x1FFFCC6C,
            "DM4310 motor record moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_motor_record) == 0x40C,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_motor_record) == 0x40C,
            "DM4310 motor record size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_output_table) == 0x1FFFD078,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_output_table) == 0x1FFFD078,
            "DM4310 output table moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_output_table) == 0x2000,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_output_table) == 0x2000,
            "DM4310 output table size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_output_calibration) == 0x1FFFF078,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_output_calibration) == 0x1FFFF078,
            "DM4310 output calibration moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_output_calibration) == 0x10,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_output_calibration) == 0x10,
            "DM4310 output calibration size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_motor_runtime_state) == 0x1FFFF088,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_motor_runtime_state) == 0x1FFFF088,
            "DM4310 motor runtime state moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_motor_runtime_state) == 0x7C,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_motor_runtime_state) == 0x7C,
            "DM4310 motor runtime state size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_sample_runtime_state) == 0x1FFFF104,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_sample_runtime_state) == 0x1FFFF104,
            "DM4310 sample runtime state moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_sample_runtime_state) == 0xA4,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_sample_runtime_state) == 0xA4,
            "DM4310 sample runtime state size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_output_sensor_state) == 0x1FFFF1A8,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_output_sensor_state) == 0x1FFFF1A8,
            "DM4310 output sensor state moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_output_sensor_state) == 0x48,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_output_sensor_state) == 0x48,
            "DM4310 output sensor state slot changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_runtime_status) == 0x1FFFF1F0,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_runtime_status) == 0x1FFFF1F0,
            "DM4310 runtime status moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_runtime_status) == 0x4C,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_runtime_status) == 0x4C,
            "DM4310 runtime status size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_runtime_parameter_cache) == 0x1FFFF23C,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_runtime_parameter_cache) == 0x1FFFF23C,
            "DM4310 runtime parameter cache moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_runtime_parameter_cache) == 0x60,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_runtime_parameter_cache) == 0x60,
            "DM4310 runtime parameter cache size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_mcan_dispatch) == 0x1FFFF29C,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_mcan_dispatch) == 0x1FFFF29C,
            "DM4310 MCAN dispatch moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_mcan_dispatch) == 0xA4,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_mcan_dispatch) == 0xA4,
            "DM4310 MCAN runtime workspace size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_calibration_frame_scratch) == 0x1FFFF340,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_calibration_frame_scratch) == 0x1FFFF340,
            "DM4310 calibration frame scratch moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_calibration_frame_scratch) == 0x40,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_calibration_frame_scratch) == 0x40,
            "DM4310 calibration frame scratch size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_motion_observer) == 0x1FFFF380,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_motion_observer) == 0x1FFFF380,
            "DM4310 motion observer moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_motion_observer) == 0x3C,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_motion_observer) == 0x3C,
            "DM4310 motion observer size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_position_sensor_observed) == 0x1FFFF3BC,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_position_sensor_observed) == 0x1FFFF3BC,
            "DM4310 position-sensor observed register image moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_position_sensor_observed) == 0x0B,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_position_sensor_observed) == 0x0B,
            "DM4310 position-sensor observed register image size changed")
-    ASSERT(__dm8009_layout || ADDR(.dm4310_uart_rx_buffer) == 0x1FFFF3C7,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.dm4310_uart_rx_buffer) == 0x1FFFF3C7,
            "DM4310 UART RX buffer moved")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_uart_rx_buffer) == 0xC8,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_uart_rx_buffer) == 0xC8,
            "DM4310 UART RX buffer size changed")
-    ASSERT(__dm8009_layout || SIZEOF(.dm4310_app_state) == 0x320,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || SIZEOF(.dm4310_app_state) == 0x320,
            "DM4310 source app-state size changed")
-    ASSERT(__dm8009_layout || ADDR(.bss) >= __StackTop,
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || ADDR(.bss) >= __StackTop,
            "DM4310 source BSS overlaps the factory stack")
-    ASSERT(__dm8009_layout || __etext_ramb + SIZEOF(.ramb_data) <= ORIGIN(FLASH) + LENGTH(FLASH),
+    ASSERT((__dm8009_layout || __dm43_48v_layout) || __etext_ramb + SIZEOF(.ramb_data) <= ORIGIN(FLASH) + LENGTH(FLASH),
            "app FLASH overflow")
 }

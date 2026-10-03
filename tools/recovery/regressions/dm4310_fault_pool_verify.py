@@ -48,7 +48,7 @@ for case in range(512):
                 trace.append(event)
         for lo,hi in [(A(0x1fff83f8),A(0x1fff840b))]+[(a,a+len(b)-1) for a,b in initial.items()]:
             u.hook_add(UC_HOOK_MEM_READ|UC_HOOK_MEM_WRITE,hook,begin=lo,end=hi)
-        if original and model == 'dm8009':
+        if original and is_dm800x:
             u.hook_add(UC_HOOK_CODE, factory_unicorn_overvoltage_read,
                        begin=A(0x1fff80fc), end=A(0x1fff80fc))
             u.hook_add(UC_HOOK_CODE, factory_unicorn_overvoltage_read,

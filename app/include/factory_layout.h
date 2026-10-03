@@ -7,9 +7,17 @@
  * objects.  Keep both values at each low-level use site so disassembly audits
  * remain local and future family targets do not inherit an implicit offset.
  */
-#if defined(DAMIAO_DM8009_V3)
+#if defined(DAMIAO_LAYOUT_DM800X)
 #define FACTORY_SRAM_ADDRESS(dm43xx_address, dm8009_address) (dm8009_address)
 #define FACTORY_LAYOUT_SECTION(dm43xx_section, dm8009_section) dm8009_section
+#elif defined(DAMIAO_LAYOUT_DM43_48V)
+/* The 48 V image inserts one literal immediately before the canonical
+ * 0x1fff9878 callback-owner word.  That word and all later runtime objects
+ * consequently move by four bytes. */
+#define FACTORY_SRAM_ADDRESS(dm43xx_address, dm8009_address) \
+    ((dm43xx_address) + \
+     (((dm43xx_address) >= UINT32_C(0x1fff9878)) ? UINT32_C(4) : UINT32_C(0)))
+#define FACTORY_LAYOUT_SECTION(dm43xx_section, dm8009_section) dm43xx_section
 #else
 #define FACTORY_SRAM_ADDRESS(dm43xx_address, dm8009_address) (dm43xx_address)
 #define FACTORY_LAYOUT_SECTION(dm43xx_section, dm8009_section) dm43xx_section

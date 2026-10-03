@@ -11,12 +11,12 @@ exec(Path(__file__).with_name('dm4310_softfloat_verify.py').read_text().split(
 FACTORY_ENTRY = F(0x246f8)
 SOURCE_ENTRY = symbols['commissioning_run_output_sensor_calibration']
 FACTORY_CHILD = F(0x24448)
-SOURCE_CHILD = SOURCE_ENTRY + (0x1a0 if model == 'dm8009' else 0x1a8)
-SOURCE_AFTER_CHILD = SOURCE_ENTRY + (0x21e if model == 'dm8009' else 0x226)
+SOURCE_CHILD = SOURCE_ENTRY + (0x1a0 if is_dm800x else 0x1a8)
+SOURCE_AFTER_CHILD = SOURCE_ENTRY + (0x21e if is_dm800x else 0x226)
 FACTORY_SAMPLE = F(0x247a8)
 SOURCE_SAMPLE = SOURCE_ENTRY + 0x60
 FACTORY_COMPARE = F(0x248c2)
-SOURCE_COMPARE = SOURCE_ENTRY + (0x12a if model == 'dm8009' else 0x132)
+SOURCE_COMPARE = SOURCE_ENTRY + (0x12a if is_dm800x else 0x132)
 PWM = A(0x1fff9c40)
 FACTORY_UART = F(0x2379c)
 SOURCE_UART = symbols['platform_debug_write']

@@ -3,12 +3,24 @@
 
 import base64
 from collections import Counter, defaultdict
+import argparse
 import csv
 from difflib import SequenceMatcher
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+MODELS = (
+    "dm10010",
+    "dm3507",
+    "dm3507_48v",
+    "dm4310",
+    "dm4310_48v",
+    "dm4340",
+    "dm4340_48v",
+    "dm8006",
+    "dm8009",
+)
 
 
 def read_rows(path):
@@ -50,10 +62,20 @@ def is_runtime_sram(address):
 
 
 def main():
-    left = load_functions("dm4310")
-    right = load_functions("dm8009")
+    parser = argparse.ArgumentParser(
+        description="Infer DM4310-to-target SRAM addresses from matched code"
+    )
+    parser.add_argument("target", choices=tuple(
+        model for model in MODELS if model != "dm4310"
+    ))
+    args = parser.parse_args()
+
+    left_model = "dm4310"
+    right_model = args.target
+    left = load_functions(left_model)
+    right = load_functions(right_model)
     matches = read_rows(
-        ROOT / "recovered/dm8009/tables/dm4310_function_matches.tsv"
+        ROOT / f"recovered/{right_model}/tables/dm4310_function_matches.tsv"
     )
     mappings = defaultdict(Counter)
     evidence = defaultdict(list)
@@ -92,21 +114,23 @@ def main():
                     )
 
     output_path = (
-        ROOT / "recovered/dm8009/tables/dm4310_sram_address_map.tsv"
+        ROOT / f"recovered/{right_model}/tables/dm4310_sram_address_map.tsv"
     )
     with output_path.open("w", newline="", encoding="utf-8") as target:
         fieldnames = (
-            "dm4310_address", "dm8009_address", "evidence_count",
+            "canonical_address", "target_address", "evidence_count",
             "alternatives", "example",
         )
-        writer = csv.DictWriter(target, fieldnames=fieldnames, delimiter="\t")
+        writer = csv.DictWriter(
+            target, fieldnames=fieldnames, delimiter="\t", lineterminator="\n"
+        )
         writer.writeheader()
         for left_address in sorted(mappings):
             choices = mappings[left_address].most_common()
             right_address, count = choices[0]
             writer.writerow({
-                "dm4310_address": f"0x{left_address:08x}",
-                "dm8009_address": f"0x{right_address:08x}",
+                "canonical_address": f"0x{left_address:08x}",
+                "target_address": f"0x{right_address:08x}",
                 "evidence_count": count,
                 "alternatives": ",".join(
                     f"0x{address:08x}:{choice_count}"
@@ -116,7 +140,8 @@ def main():
             })
     ambiguous = sum(len(choices) > 1 for choices in mappings.values())
     print(
-        f"mapped {len(mappings)} DM4310 SRAM reference targets; "
+        f"mapped {len(mappings)} {left_model}-to-{right_model} SRAM "
+        f"reference targets; "
         f"{ambiguous} have lower-ranked alternatives"
     )
 

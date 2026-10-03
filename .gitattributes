@@ -1,0 +1,2 @@
+# Empty trailing TSV cells are part of the exported recovery table schema.
+recovered/**/tables/*.tsv whitespace=-blank-at-eol

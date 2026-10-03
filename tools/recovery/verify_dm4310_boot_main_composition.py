@@ -21,8 +21,14 @@ from regressions.dm4310_model_layout import F, FACTORY_STACK_TOP
 FACTORY, SYMBOLS, SEGMENTS = load_images()
 MODEL = os.environ.get("DAMIAO_RECOVERY_MODEL", "dm4310").lower()
 SOFTWARE_VERSION = {
+    "dm10010": 0x37313635,
+    "dm3507": 0x37313735,
+    "dm3507_48v": 0x37313536,
     "dm4310": 0x37313035,
+    "dm4310_48v": 0x37313036,
     "dm4340": 0x37313135,
+    "dm4340_48v": 0x37313136,
+    "dm8006": 0x37313336,
     "dm8009": 0x37313436,
 }[MODEL]
 FACTORY_RUNTIME_ENTRY = F(0x20368)

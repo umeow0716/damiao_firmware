@@ -265,24 +265,33 @@ function(damiao_add_profiled_firmware TARGET_NAME PROFILE_PATH)
         ${DAMIAO_TARGET_VECTOR_OFFSET})
 endfunction()
 
-damiao_add_profiled_firmware(dm4310
-    "${CMAKE_CURRENT_SOURCE_DIR}/config/targets/dm4310.cmake")
-damiao_add_profiled_firmware(dm4340
-    "${CMAKE_CURRENT_SOURCE_DIR}/config/targets/dm4340.cmake")
-damiao_add_profiled_firmware(dm8009
-    "${CMAKE_CURRENT_SOURCE_DIR}/config/targets/dm8009.cmake")
+set(DAMIAO_FIRMWARE_TARGETS
+    dm10010
+    dm3507
+    dm3507_48v
+    dm4310
+    dm4310_48v
+    dm4340
+    dm4340_48v
+    dm8006
+    dm8009
+)
+foreach(target IN LISTS DAMIAO_FIRMWARE_TARGETS)
+    damiao_add_profiled_firmware(${target}
+        "${CMAKE_CURRENT_SOURCE_DIR}/config/targets/${target}.cmake")
+endforeach()
 
-# The recovered DM43xx applications occupy a fixed 64 KiB APP partition and
+# The recovered V3 applications occupy a fixed 64 KiB APP partition and
 # share the recovered arithmetic/runtime implementation.  Per-model constants
 # and fixed SRAM placement remain selected by the target profile and linker.
-set(DAMIAO_DM43XX_RECOVERY_SOURCES
+set(DAMIAO_V3_RECOVERY_SOURCES
     app/src/dm4310_binary64_extended.c
     app/src/dm4310_extended_arithmetic.c
     app/src/dm4310_extended_core.S
     app/src/dm4310_decimal_power.c
     app/src/dm4310_fixed_scaled.c
 )
-foreach(target IN ITEMS dm4310 dm4340 dm8009)
+foreach(target IN LISTS DAMIAO_FIRMWARE_TARGETS)
     target_compile_options(${target} PRIVATE ${FIRMWARE_SIZE_OPTIMIZATION})
-    target_sources(${target} PRIVATE ${DAMIAO_DM43XX_RECOVERY_SOURCES})
+    target_sources(${target} PRIVATE ${DAMIAO_V3_RECOVERY_SOURCES})
 endforeach()

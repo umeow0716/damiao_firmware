@@ -6,27 +6,22 @@ from elftools.elf.elffile import ELFFile
 from unicorn import Uc, UC_ARCH_ARM, UC_MODE_THUMB
 import unicorn.arm_const as arm
 
-from dm4310_model_layout import A, F
+from dm4310_model_layout import A, F, FACTORY_PATHS
 
 root = Path(__file__).resolve().parents[3]
 model = os.environ.get('DAMIAO_RECOVERY_MODEL', 'dm4310').lower()
-factory_paths = {
-    'dm4310': root / 'reference/APP_DM4310_V3_V5017_04.decrypted.bin',
-    'dm4340': root / 'reference/APP_DM4340_V3_V5117_04_decrypted.bin',
-    'dm8009': root / 'reference/APP_DM8009_V3_V6417_04_decrypted.bin',
-}
-if model not in factory_paths:
+if model not in FACTORY_PATHS:
     raise ValueError(f'unsupported DAMIAO_RECOVERY_MODEL: {model}')
-factory = factory_paths[model].read_bytes()
+factory = FACTORY_PATHS[model].read_bytes()
 elf = ELFFile(BytesIO((root / f'build/{model}.elf').read_bytes()))
 symbols = {s.name: s['st_value'] & ~1 for s in elf.get_section_by_name('.symtab').iter_symbols()}
 segments = [(s['p_paddr'], s.data()) for s in elf.iter_segments() if s['p_type'] == 'PT_LOAD' and s['p_filesz']]
 rng = random.Random(957)
-mapping = [(0x270d8, '__wrap___aeabi_dadd', 0x150),
-           (0x27754, 'dm4310_softdouble_reverse_subtract_core', 0x16),
-           (0x27904, '__wrap___aeabi_dsub', 0x1d4),
-           (0x27558, '__wrap___aeabi_dmul', 0x154),
-           (0x27228, '__wrap___aeabi_ddiv', 0x228)]
+mapping = [(F(0x270d8), '__wrap___aeabi_dadd', 0x150),
+           (F(0x27754), 'dm4310_softdouble_reverse_subtract_core', 0x16),
+           (F(0x27904), '__wrap___aeabi_dsub', 0x1d4),
+           (F(0x27558), '__wrap___aeabi_dmul', 0x154),
+           (F(0x27228), '__wrap___aeabi_ddiv', 0x228)]
 def machine(original):
     u = Uc(UC_ARCH_ARM, UC_MODE_THUMB)
     u.mem_map(0x20000, 0x20000)

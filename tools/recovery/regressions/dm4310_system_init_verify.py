@@ -23,7 +23,7 @@ for case in range(256):
         for lo,hi in [(0x40010684,0x40010687),(0x40054000,0x40054fff),
                       (0xe000ed00,0xe000edff),(A(0x1ffff4f0),A(0x1ffff4f7))]:
             u.hook_add(UC_HOOK_MEM_READ|UC_HOOK_MEM_WRITE,memory,begin=lo,end=hi)
-        entry=0x23554 if original else symbols['SystemInit']
+        entry=F(0x23554) if original else symbols['SystemInit']
         u.emu_start(entry|1,0x30000,count=1000)
         assert u.reg_read(arm.UC_ARM_REG_PC)==0x30000
         results.append((trace,bytes(u.mem_read(A(0x1ffff4f0),8)),bytes(u.mem_read(0xe000ed88,4)),

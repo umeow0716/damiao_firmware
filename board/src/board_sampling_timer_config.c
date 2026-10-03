@@ -1,5 +1,7 @@
 #include "board_sampling_timer.h"
 
+#include "app_profile.h"
+
 #include <string.h>
 
 uint16_t board_sampling_timer_duty_to_compare(float duty, uint16_t period)
@@ -23,11 +25,8 @@ void board_sampling_timer_build_config(
     config->pwm_control = 0x0010U;
     config->dead_time_rising = 0x0050U;
     config->dead_time_falling = 0x0050U;
-#if defined(DAMIAO_DM8009_V3)
-    config->channel_output_enable_mask = 0x000002FFUL;
-#else
-    config->channel_output_enable_mask = 0x000000FFUL;
-#endif
+    config->channel_output_enable_mask =
+        APP_PROFILE_TMR4_CHANNEL_OUTPUT_ENABLE_MASK;
     config->main_output_enable_mask = 0x00000100UL;
     config->special_compare = 120U;
     config->special_status = 0x4000U;

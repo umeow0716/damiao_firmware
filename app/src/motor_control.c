@@ -628,8 +628,15 @@ void dm4310_motor_control_configure_runtime_motor(MotorController *controller,
     if ((mode - 1U) >= 4U) {
         mode = 1U;
         *((volatile uint32_t *)FACTORY_SRAM_ADDRESS(0x1FFFA5F0UL, 0x1FFFA580UL)) = mode;
+#if !APP_PROFILE_RELOAD_NORMALIZED_MODE
+        dm4310_sample_runtime_state.control_mode = mode;
+    } else {
+        dm4310_sample_runtime_state.control_mode = staging_words[10];
+#endif
     }
+#if APP_PROFILE_RELOAD_NORMALIZED_MODE
     dm4310_sample_runtime_state.control_mode = staging_words[10];
+#endif
     dm4310_motor_runtime_state.motor_temperature_filter_old =
         MOTOR_TEMPERATURE_FILTER_OLD;
     dm4310_motor_runtime_state.motor_temperature_filter_new =
@@ -1248,7 +1255,7 @@ static void motor_control_fast_transform(MotorController *controller,
     sample_state->current_alpha = current_u;
     float beta;
     const float two = 2.0f;
-#if defined(DAMIAO_DM8009_V3)
+#if defined(DAMIAO_LAYOUT_DM800X)
     (void)voltage_scale;
     const float phase_for_beta = sample_state->current_w;
     const float inverse_sqrt_three =
@@ -1451,7 +1458,7 @@ float dm4310_motor_control_fast_sample_prefix(MotorController *controller,
         (sample_state->current_offset_v - sample->phase_v) *
         current_scale;
     sample_state->current_v = current_v;
-#if defined(DAMIAO_DM8009_V3)
+#if defined(DAMIAO_LAYOUT_DM800X)
     sample->phase_w = (float)raw[2];
     const float current_w =
         (sample_state->current_offset_w - sample->phase_w) *
@@ -1462,7 +1469,7 @@ float dm4310_motor_control_fast_sample_prefix(MotorController *controller,
         current_u, -1.0f, 1.0f);
     sample_state->current_v = dm4310_clamp_helper(
         sample_state->current_v, -1.0f, 1.0f);
-#if defined(DAMIAO_DM8009_V3)
+#if defined(DAMIAO_LAYOUT_DM800X)
     sample_state->current_w = dm4310_clamp_helper(
         sample_state->current_w, -1.0f, 1.0f);
 #endif

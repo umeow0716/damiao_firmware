@@ -9,11 +9,11 @@ exec(Path(__file__).with_name('dm4310_softfloat_verify.py').read_text().split(
 
 FACTORY_ENTRY = F(0x24b20)
 SOURCE_FUNCTION = symbols['commissioning_run_direction_and_alignment']
-SOURCE_ENTRY = SOURCE_FUNCTION + (0x190 if model == 'dm8009' else 0x192)
+SOURCE_ENTRY = SOURCE_FUNCTION + (0x190 if is_dm800x else 0x192)
 ANGLE = A(0x1ffff198)
 FACTORY_AUTH = F(0x26eb8)
 SOURCE_AUTH = symbols['platform_require_device_authentication']
-FACTORY_PWM = {0x219b0}
+FACTORY_PWM = {F(0x219b0)}
 SOURCE_PWM = {
     symbol['st_value'] & ~1
     for symbol in elf.get_section_by_name('.symtab').iter_symbols()
@@ -26,9 +26,9 @@ FACTORY_UART = F(0x2379c)
 SOURCE_UART = symbols['platform_debug_write']
 factory_angle_sites = {F(0x24b9a): 0, F(0x24c38): 1, F(0x24d84): 2}
 source_angle_sites = {
-    SOURCE_FUNCTION + (0x1f0 if model == 'dm8009' else 0x1f4): 0,
-    SOURCE_FUNCTION + (0x25c if model == 'dm8009' else 0x260): 1,
-    SOURCE_FUNCTION + (0x34c if model == 'dm8009' else 0x354): 2,
+    SOURCE_FUNCTION + (0x1f0 if is_dm800x else 0x1f4): 0,
+    SOURCE_FUNCTION + (0x25c if is_dm800x else 0x260): 1,
+    SOURCE_FUNCTION + (0x34c if is_dm800x else 0x354): 2,
 }
 
 
@@ -89,7 +89,7 @@ def run(original, runtime, sine, peripherals, angle_values, fpscr):
             # report point in each direction instead of all 256.
             emu.reg_write(arm.UC_ARM_REG_R6, 1)
         elif not original and address == SOURCE_FUNCTION + (
-                0x1ca if model == 'dm8009' else 0x1ce):
+                0x1ca if is_dm800x else 0x1ce):
             emu.reg_write(arm.UC_ARM_REG_R9, 1)
         if address == (FACTORY_AUTH if original else SOURCE_AUTH):
             events.append(('auth',))

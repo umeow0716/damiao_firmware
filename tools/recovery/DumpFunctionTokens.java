@@ -58,18 +58,21 @@ public class DumpFunctionTokens extends GhidraScript {
         try (BufferedWriter output = new BufferedWriter(
                 new FileWriter(arguments[0]))) {
             output.write(
-                "entry\tname\tinstructions\ttokens_base64\trefs_base64\n");
+                "entry\tname\tinstructions\ttokens_base64\trefs_base64" +
+                "\taddresses_base64\n");
             FunctionIterator functions =
                 currentProgram.getFunctionManager().getFunctions(true);
             while (functions.hasNext() && !monitor.isCancelled()) {
                 Function function = functions.next();
                 List<String> tokens = new ArrayList<>();
                 List<String> references = new ArrayList<>();
+                List<String> addresses = new ArrayList<>();
                 InstructionIterator instructions = currentProgram.getListing()
                     .getInstructions(function.getBody(), true);
                 while (instructions.hasNext()) {
                     Instruction instruction = instructions.next();
                     tokens.add(token(instruction));
+                    addresses.add(instruction.getAddress().toString());
                     List<String> targets = new ArrayList<>();
                     for (Reference reference : instruction.getReferencesFrom()) {
                         targets.add(reference.getReferenceType().toString() + "=" +
@@ -88,6 +91,9 @@ public class DumpFunctionTokens extends GhidraScript {
                 output.write("\t" + tokens.size());
                 output.write("\t" + encoded);
                 output.write("\t" + encodedReferences);
+                String addressSequence = String.join("\n", addresses);
+                output.write("\t" + Base64.getEncoder().encodeToString(
+                    addressSequence.getBytes(StandardCharsets.UTF_8)));
                 output.newLine();
             }
         }

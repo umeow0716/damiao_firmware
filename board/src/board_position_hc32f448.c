@@ -13,7 +13,7 @@
 #define POSITION_DMA_TC_FLAG       (DMA_INTSTAT1_TC_0)
 #define POSITION_SWD_PIN_MASK      ((uint16_t)0x0003U)
 
-#if defined(DAMIAO_DM8009_V3)
+#if defined(DAMIAO_LAYOUT_DM800X)
 static uint8_t position_sensor_expected[BOARD_POSITION_SENSOR_REGISTER_COUNT]
     __attribute__((used, section(".dm4310_position_sensor_expected"), aligned(1)));
 static volatile uint16_t position_dma_storage
@@ -54,7 +54,7 @@ const uint8_t
     dm4310_position_sensor_expected_image[BOARD_POSITION_SENSOR_REGISTER_COUNT] = {
         0x00U, 0x00U, 0x00U, 0x00U, 0xC0U, 0xFFU,
         0x1CU, 0x00U, 0x77U, 0x9CU,
-#if defined(DAMIAO_DM8009_V3)
+#if defined(DAMIAO_LAYOUT_DM800X)
         0x00U,
 #else
         0x0EU,

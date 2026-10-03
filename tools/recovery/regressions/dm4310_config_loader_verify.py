@@ -12,6 +12,7 @@ import unicorn.arm_const as arm
 from dm4310_model_layout import (
     A,
     F,
+    FACTORY_PATHS,
     FACTORY_FIXED_SOURCE,
     FACTORY_FIXED_SIZE,
     FACTORY_STATE_BASE,
@@ -25,11 +26,6 @@ from dm4310_model_layout import (
 
 ROOT = Path(__file__).resolve().parents[3]
 MODEL = os.environ.get('DAMIAO_RECOVERY_MODEL', 'dm4310').lower()
-FACTORY_PATHS = {
-    'dm4310': ROOT / 'reference/APP_DM4310_V3_V5017_04.decrypted.bin',
-    'dm4340': ROOT / 'reference/APP_DM4340_V3_V5117_04_decrypted.bin',
-    'dm8009': ROOT / 'reference/APP_DM8009_V3_V6417_04_decrypted.bin',
-}
 if MODEL not in FACTORY_PATHS:
     raise ValueError(f'unsupported DAMIAO_RECOVERY_MODEL: {MODEL}')
 FACTORY = FACTORY_PATHS[MODEL].read_bytes()
@@ -150,7 +146,7 @@ def run(original, state, flash, rounding):
             trace.append(('w', address, size, value))
 
     def code(emu, address, size, _):
-        if original and address == 0x219a6:
+        if original and address == F(0x219a6):
             # Unicorn 2.1.4 incorrectly carries this routine's dynamic
             # ITTTT condition over the following unconditional argument
             # setup when word 14 is erased.  Execute the architecturally

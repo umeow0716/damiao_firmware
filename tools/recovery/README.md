@@ -1,9 +1,9 @@
-# DM4310 recovery verification
+# DM V3 recovery verification
 
 這個目錄保存不屬於一般韌體 build 的 factory/source 差分驗證器。腳本不會由 CMake 或 make
 自動執行，也不會把 factory binary 連結進產品映像。
 
-先完成目前的 DM4310 build，再於 repository root 執行。若分析環境不存在，可重建在任意
+先完成目前的 firmware build，再於 repository root 執行。若分析環境不存在，可重建在任意
 位置；套件版本保存在 `tools/recovery/requirements.txt`：
 
 ```sh
@@ -11,14 +11,15 @@ python -m venv .venv
 .venv/bin/python -m pip install -r tools/recovery/requirements.txt
 ```
 
-永久保存的 65 支全域差分驗證可一次執行：
+永久保存的 65 支全域差分驗證可依型號執行：
 
 ```sh
 .venv/bin/python tools/recovery/verify_dm4310_full_regressions.py --model dm4310
 ```
 
-DM4340/DM8009 完成各自復原後，使用相同 runner 的 `--model` 參數驗證；目前不能把舊移植
-結果當作完成證據。
+`--model` 支援 `dm10010`、`dm3507`、`dm3507_48v`、`dm4310`、`dm4310_48v`、
+`dm4340`、`dm4340_48v`、`dm8006` 與 `dm8009`。每個型號都必須對自己的 factory
+reference 執行，不能以跨型號 byte equality 代替驗證。
 
 較慢但使用整理後共用 loader 的核心流程驗證可另外執行：
 
@@ -76,5 +77,5 @@ IRQ002 outer-loop tick 及 IRQ004 命令發布後銜接 main 的組合矩陣：
 ```
 
 Python venv 可以重建；測試邏輯、factory 路徑與共用 Unicorn loader 均保存在本目錄，不依賴
-`/tmp`。三型號完成狀態與最終閘門記錄於 `docs/FIRMWARE_RECOVERY_PROGRESS.md`；
+`/tmp`。九型號完成狀態與最終閘門記錄於 `docs/FIRMWARE_RECOVERY_PROGRESS.md`；
 DM4310 的逐項證據另見 `docs/DM4310_RECOVERY_PROGRESS.md`。

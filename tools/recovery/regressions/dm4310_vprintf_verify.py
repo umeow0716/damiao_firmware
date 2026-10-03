@@ -17,7 +17,7 @@ for case in range(256):
         u.reg_write(arm.UC_ARM_REG_SP, 0x2000f000)
         u.reg_write(arm.UC_ARM_REG_LR, 0x30001)
         emitted = bytearray()
-        target = 0x24ea8 if original else symbols['platform_debug_write']
+        target = F(0x24ea8) if original else symbols['platform_debug_write']
         def callback(uc, address, size, data):
             if address != target: return
             if original: emitted.append(uc.reg_read(arm.UC_ARM_REG_R0) & 255)
@@ -28,7 +28,7 @@ for case in range(256):
                 uc.mem_write(0x2000400c, struct.pack('<I', flags ^ 128))
             uc.reg_write(arm.UC_ARM_REG_PC, uc.reg_read(arm.UC_ARM_REG_LR))
         u.hook_add(UC_HOOK_CODE, callback)
-        entry = 0x20de0 if original else symbols['factory_vprintf']
+        entry = F(0x20de0) if original else symbols['factory_vprintf']
         u.emu_start(entry | 1, 0x30000, count=100000)
         assert u.reg_read(arm.UC_ARM_REG_PC) == 0x30000
         results.append((bytes(emitted), u.reg_read(arm.UC_ARM_REG_R0),

@@ -40,12 +40,12 @@ FACTORY_COAST_END = F(0x2637c)
 SOURCE_LOCK_END = SOURCE_ENTRY + 0x3a
 SOURCE_ELECTRICAL_WAIT = SOURCE_ENTRY + 0x88
 SOURCE_ELECTRICAL_END = SOURCE_ENTRY + 0x178
-SOURCE_FLUX_WAIT = SOURCE_ENTRY + (0x250 if model == 'dm8009' else 0x252)
-SOURCE_FLUX_END = SOURCE_ENTRY + (0x33e if model == 'dm8009' else 0x346)
-SOURCE_MECHANICAL_WAIT = SOURCE_ENTRY + (0x47a if model == 'dm8009' else 0x486)
-SOURCE_MECHANICAL_END = SOURCE_ENTRY + (0x58e if model == 'dm8009' else 0x5e8)
-SOURCE_COAST_WAIT = SOURCE_ENTRY + (0x5e8 if model == 'dm8009' else 0x5f2)
-SOURCE_COAST_END = SOURCE_ENTRY + (0x652 if model == 'dm8009' else 0x65c)
+SOURCE_FLUX_WAIT = SOURCE_ENTRY + (0x250 if is_dm800x else 0x252)
+SOURCE_FLUX_END = SOURCE_ENTRY + (0x33e if is_dm800x else 0x346)
+SOURCE_MECHANICAL_WAIT = SOURCE_ENTRY + (0x47a if is_dm800x else 0x486)
+SOURCE_MECHANICAL_END = SOURCE_ENTRY + (0x58e if is_dm800x else 0x5e8)
+SOURCE_COAST_WAIT = SOURCE_ENTRY + (0x5e8 if is_dm800x else 0x5f2)
+SOURCE_COAST_END = SOURCE_ENTRY + (0x652 if is_dm800x else 0x65c)
 
 STATE_BASE = FACTORY_STATE_BASE
 STATE_END = A(0x1ffff500)
@@ -140,7 +140,7 @@ def run(original, state, peripheral, system, electrical_count, flux_count,
         if address == PWM:
             events.append(('pwm', emu.reg_read(arm.UC_ARM_REG_S0),
                            emu.reg_read(arm.UC_ARM_REG_S1)))
-            fit_return = (0x25ad4 if original else SOURCE_ENTRY + 0x19c)
+            fit_return = (F(0x25ad4) if original else SOURCE_ENTRY + 0x19c)
             if fit_override is not None and (
                     emu.reg_read(arm.UC_ARM_REG_LR) & ~1) == fit_return:
                 estimator = emu.reg_read(arm.UC_ARM_REG_SP) + (
@@ -195,17 +195,17 @@ def run(original, state, peripheral, system, electrical_count, flux_count,
                 emu.reg_write(arm.UC_ARM_REG_R4, 1)
             elif address == SOURCE_ELECTRICAL_WAIT:
                 visits['electrical'] += 1
-                emu.reg_write((arm.UC_ARM_REG_R5 if model == 'dm8009' else
+                emu.reg_write((arm.UC_ARM_REG_R5 if is_dm800x else
                                arm.UC_ARM_REG_R4), electrical_count)
             elif address == SOURCE_ELECTRICAL_END:
-                emu.reg_write((arm.UC_ARM_REG_R5 if model == 'dm8009' else
+                emu.reg_write((arm.UC_ARM_REG_R5 if is_dm800x else
                                arm.UC_ARM_REG_R4), 60000)
             elif address == SOURCE_FLUX_WAIT:
                 visits['flux'] += 1
-                emu.reg_write((arm.UC_ARM_REG_R5 if model == 'dm8009' else
+                emu.reg_write((arm.UC_ARM_REG_R5 if is_dm800x else
                                arm.UC_ARM_REG_R4), flux_count)
             elif address == SOURCE_FLUX_END:
-                emu.reg_write((arm.UC_ARM_REG_R5 if model == 'dm8009' else
+                emu.reg_write((arm.UC_ARM_REG_R5 if is_dm800x else
                                arm.UC_ARM_REG_R4), 40000)
             elif address == SOURCE_MECHANICAL_WAIT:
                 visits['mechanical'] += 1

@@ -10,15 +10,4 @@ set(DAMIAO_TARGET_COMPILE_DEFINITIONS
     DAMIAO_DM4340=1
 )
 
-set(DAMIAO_TARGET_LINK_OPTIONS
-    -Wl,--wrap=__aeabi_dadd
-    -Wl,--wrap=__aeabi_dsub
-    -Wl,--wrap=__aeabi_dmul
-    -Wl,--wrap=__aeabi_ddiv
-    -Wl,--wrap=__aeabi_f2d
-    -Wl,--wrap=__aeabi_ui2d
-    -Wl,--wrap=__aeabi_d2uiz)
-
-# DM4310 V5017 and DM4340 V5117 use the same fixed SRAM ABI and vector table.
-set(DAMIAO_TARGET_LINKER_SCRIPT
-    "${CMAKE_CURRENT_SOURCE_DIR}/linker/hc32f448_dm4310_app.ld")
+include("${CMAKE_CURRENT_LIST_DIR}/dm_v3_common.cmake")

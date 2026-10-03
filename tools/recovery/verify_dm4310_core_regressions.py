@@ -9,6 +9,10 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[2]
+MODELS = (
+    "dm10010", "dm3507", "dm3507_48v", "dm4310", "dm4310_48v",
+    "dm4340", "dm4340_48v", "dm8006", "dm8009",
+)
 SCRIPTS = (
     "verify_dm4310_peripheral_init.py",
     "regressions/dm4310_uart_irq_verify.py",
@@ -30,7 +34,7 @@ SCRIPTS = (
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument("--model", choices=("dm4310", "dm4340", "dm8009"),
+    parser.add_argument("--model", choices=MODELS,
                         default="dm4310")
     args = parser.parse_args()
     environment = os.environ.copy()

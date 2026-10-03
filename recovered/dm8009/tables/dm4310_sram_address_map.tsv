@@ -1,4 +1,4 @@
-dm4310_address	dm8009_address	evidence_count	alternatives	example
+canonical_address	target_address	evidence_count	alternatives	example
 0x1fff883e	0x1fff81fe	1		0x1fff8770:58->0x1fff8130:58
 0x1fff8852	0x1fff8212	1		0x1fff8770:66->0x1fff8130:66
 0x1fff8884	0x1fff8244	1		0x1fff8770:7->0x1fff8130:7

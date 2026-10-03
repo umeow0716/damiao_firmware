@@ -8,6 +8,17 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+MODELS = (
+    "dm10010",
+    "dm3507",
+    "dm3507_48v",
+    "dm4310",
+    "dm4310_48v",
+    "dm4340",
+    "dm4340_48v",
+    "dm8006",
+    "dm8009",
+)
 
 
 def read_table(path):
@@ -55,11 +66,20 @@ def same_entry_matches(left_rows, right_rows, fields, excluded_left,
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("left", choices=("dm4310", "dm8009"), default="dm4310",
+    parser.add_argument("left", choices=MODELS, default="dm4310",
                         nargs="?")
-    parser.add_argument("right", choices=("dm4310", "dm8009"), default="dm8009",
+    parser.add_argument("right", choices=MODELS, default="dm8009",
                         nargs="?")
     parser.add_argument("--output", type=Path)
+    parser.add_argument(
+        "--complete-by-order",
+        action="store_true",
+        help=(
+            "complete unmatched rows by function order, but only when both "
+            "inventories have equal length and every automatic match has the "
+            "same ordinal"
+        ),
+    )
     args = parser.parse_args()
 
     tables = {}
@@ -103,6 +123,36 @@ def main():
             used_right.add(right["entry"])
             matches.append((method, left, right))
 
+    if args.complete_by_order:
+        left_order = sorted(left_rows, key=lambda row: int(row["entry"], 16))
+        right_order = sorted(right_rows, key=lambda row: int(row["entry"], 16))
+        if len(left_order) != len(right_order):
+            parser.error(
+                "--complete-by-order requires equal function counts: "
+                f"{len(left_order)} != {len(right_order)}"
+            )
+        left_indices = {row["entry"]: index
+                        for index, row in enumerate(left_order)}
+        right_indices = {row["entry"]: index
+                         for index, row in enumerate(right_order)}
+        displaced = [
+            (left["entry"], right["entry"])
+            for _method, left, right in matches
+            if left_indices[left["entry"]] != right_indices[right["entry"]]
+        ]
+        if displaced:
+            parser.error(
+                "automatic matches do not preserve function order; first "
+                f"displaced pair is {displaced[0][0]} -> {displaced[0][1]}"
+            )
+        for left, right in zip(left_order, right_order):
+            if (left["entry"] in used_left or
+                    right["entry"] in used_right):
+                continue
+            used_left.add(left["entry"])
+            used_right.add(right["entry"])
+            matches.append(("ordinal_between_anchors", left, right))
+
     output_rows = []
     for method, left, right in sorted(
             matches, key=lambda item: int(item[1]["entry"], 16)):
@@ -120,12 +170,14 @@ def main():
         args.output.parent.mkdir(parents=True, exist_ok=True)
         with args.output.open("w", newline="", encoding="utf-8") as target:
             writer = csv.DictWriter(
-                target, fieldnames=output_rows[0].keys(), delimiter="\t"
+                target, fieldnames=output_rows[0].keys(), delimiter="\t",
+                lineterminator="\n",
             )
             writer.writeheader()
             writer.writerows(output_rows)
 
     counts = {method: 0 for method, _matching, _fields in stages}
+    counts["ordinal_between_anchors"] = 0
     for method, _left, _right in matches:
         counts[method] += 1
     print(
@@ -138,6 +190,8 @@ def main():
             f"{method}={counts[method]}"
             for method, _matching, _fields in stages
         )
+        + (f", ordinal_between_anchors={counts['ordinal_between_anchors']}"
+           if args.complete_by_order else "")
         + f", total={len(matches)}"
     )
     print(

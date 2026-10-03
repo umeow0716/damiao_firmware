@@ -23,7 +23,7 @@ void app_config_initialize_scatter_defaults(void)
     static const uint32_t defaults[APP_CONFIG_WORD_COUNT] = {
         [0x00] = 0x41700000U, [0x02] = 0x42C80000U,
         [0x03] = 0x3F4CCCCDU, [0x04] = 0x40000000U,
-        [0x05] = 0xC0000000U, [0x06] = 0x44160000U,
+        [0x05] = 0xC0000000U, [0x06] = APP_PROFILE_SPEED_LIMIT_BITS,
         [0x08] = 1U, [0x0A] = 1U,
         [0x0C] = APP_PROFILE_ROTOR_INERTIA_BITS,
         [0x0D] = 0x56303033U, [0x0F] = 0x54303035U,
@@ -32,7 +32,7 @@ void app_config_initialize_scatter_defaults(void)
         [0x12] = APP_PROFILE_PHASE_INDUCTANCE_BITS,
         [0x13] = APP_PROFILE_FLUX_LINKAGE_BITS,
         [0x14] = APP_PROFILE_GEAR_RATIO_BITS,
-        [0x15] = 0x41480000U,
+        [0x15] = APP_PROFILE_POSITION_MAX_BITS,
         [0x16] = APP_PROFILE_VELOCITY_MAX_BITS,
         [0x17] = APP_PROFILE_TORQUE_MAX_BITS, [0x18] = 0x447A0000U,
         [0x19] = APP_PROFILE_SPEED_KP_BITS, [0x1A] = 0x3B03126FU,
@@ -40,7 +40,8 @@ void app_config_initialize_scatter_defaults(void)
         [0x1D] = APP_PROFILE_BUS_OVERVOLTAGE_BITS,
         [0x1E] = 0x3F800000U, [0x1F] = 0x40800000U,
         [0x20] = 0x42200000U, [0x21] = 0x451C4000U,
-        [0x22] = 0x42C80000U, [0x23] = 4U, [0x24] = 0x30303031U,
+        [0x22] = APP_PROFILE_VELOCITY_ENHANCEMENT_BITS,
+        [0x23] = 4U, [0x24] = 0x30303031U,
     };
     volatile uint32_t *const destination = config_staging_record;
     for (unsigned int word = 0U; word < APP_CONFIG_WORD_COUNT; ++word) {
@@ -66,8 +67,8 @@ static float bits_float(uint32_t bits)
 void app_config_load_defaults(MotorConfig *config)
 {
     *config = (MotorConfig) {
-        .position_min = -12.5f,
-        .position_max = 12.5f,
+        .position_min = -APP_PROFILE_POSITION_MAX,
+        .position_max = APP_PROFILE_POSITION_MAX,
         .velocity_min = -APP_PROFILE_VELOCITY_MAX,
         .velocity_max = APP_PROFILE_VELOCITY_MAX,
         .torque_min = -APP_PROFILE_TORQUE_MAX,
@@ -81,7 +82,7 @@ void app_config_load_defaults(MotorConfig *config)
         .torque_constant = 0.0f,
         .acceleration_limit = 2.0f,
         .deceleration_limit = -2.0f,
-        .speed_limit = 600.0f,
+        .speed_limit = APP_PROFILE_SPEED_LIMIT,
         .current_limit = 0.8f,
         .mos_temperature_limit = 120.0f,
         .motor_temperature_limit = 100.0f,
@@ -100,7 +101,7 @@ void app_config_load_defaults(MotorConfig *config)
         .speed_loop_damping = 4.0f,
         .velocity_filter_bandwidth = 40.0f,
         .current_loop_enhancement = 2500.0f,
-        .velocity_loop_enhancement = 100.0f,
+        .velocity_loop_enhancement = APP_PROFILE_VELOCITY_ENHANCEMENT,
         /* The recovered calibration record uses 1=inverted, 2=normal. */
         .direction = 2.0f,
         .maximum_phase_current = APP_PROFILE_MAXIMUM_PHASE_CURRENT,
@@ -299,7 +300,7 @@ void app_config_dm4310_stage_and_decode(
 
     uint32_t velocity_bw_bits = staging[0x20];
     if (official_float_is_nan(velocity_bw_bits)) {
-        velocity_bw_bits = UINT32_C(0x42480000);
+        velocity_bw_bits = APP_PROFILE_VELOCITY_FILTER_DEFAULT_BITS;
         staging[0x20] = velocity_bw_bits;
     }
     velocity_bw_bits = staging[0x20];

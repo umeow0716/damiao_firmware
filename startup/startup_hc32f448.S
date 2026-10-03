@@ -168,8 +168,14 @@ Reset_Handler:
 .Lcopy_flash_erase_only_done:
     ldr r1, =__dm4310_helper_clear_runtime_loop_states_load__
     ldr r2, =__dm4310_helper_clear_runtime_loop_states_start__
-    ldmia r1!, {r0, r3, r4}
-    stmia r2!, {r0, r3, r4}
+    ldr r3, =__dm4310_helper_clear_runtime_loop_states_end__
+.Lcopy_clear_runtime_loop_states:
+    cmp r2, r3
+    bcs .Lcopy_clear_runtime_loop_states_done
+    ldr r0, [r1], #4
+    str r0, [r2], #4
+    b .Lcopy_clear_runtime_loop_states
+.Lcopy_clear_runtime_loop_states_done:
     ldr r1, =__dm4310_flash_writer_load__
     ldr r2, =__dm4310_flash_writer_start__
     ldr r3, =__dm4310_flash_writer_end__
@@ -193,27 +199,55 @@ Reset_Handler:
 .Lcopy_output_sensor_helper_done:
     ldr r1, =__dm4310_helper_mcan_send_classic_load__
     ldr r2, =__dm4310_helper_mcan_send_classic_start__
-    ldmia r1!, {r0, r3, r4}
-    stmia r2!, {r0, r3, r4}
+    ldr r3, =__dm4310_helper_mcan_send_classic_end__
+.Lcopy_mcan_send_classic:
+    cmp r2, r3
+    bcs .Lcopy_mcan_send_classic_done
+    ldr r0, [r1], #4
+    str r0, [r2], #4
+    b .Lcopy_mcan_send_classic
+.Lcopy_mcan_send_classic_done:
     ldr r1, =__dm4310_helper_mcan_send_fd_load__
     ldr r2, =__dm4310_helper_mcan_send_fd_start__
-    ldmia r1!, {r0, r3, r4, r5}
-    stmia r2!, {r0, r3, r4, r5}
+    ldr r3, =__dm4310_helper_mcan_send_fd_end__
+.Lcopy_mcan_send_fd:
+    cmp r2, r3
+    bcs .Lcopy_mcan_send_fd_done
+    ldr r0, [r1], #4
+    str r0, [r2], #4
+    b .Lcopy_mcan_send_fd
+.Lcopy_mcan_send_fd_done:
     ldr r1, =__dm4310_helper_mcan_send_variable_fd_load__
     ldr r2, =__dm4310_helper_mcan_send_variable_fd_start__
-    ldmia r1!, {r0, r3, r4}
+    ldr r3, =__dm4310_helper_mcan_send_variable_fd_end__
+.Lcopy_mcan_send_variable_fd:
+    cmp r2, r3
+    bcs .Lcopy_mcan_send_variable_fd_done
+    ldr r0, [r1], #4
     /* The runtime entry is only halfword aligned: STM cannot be used. */
     str r0, [r2], #4
-    str r3, [r2], #4
-    str r4, [r2], #4
+    b .Lcopy_mcan_send_variable_fd
+.Lcopy_mcan_send_variable_fd_done:
     ldr r1, =__dm4310_helper_svpwm_load__
     ldr r2, =__dm4310_helper_svpwm_start__
-    ldmia r1!, {r0, r3, r4, r5}
-    stmia r2!, {r0, r3, r4, r5}
+    ldr r3, =__dm4310_helper_svpwm_end__
+.Lcopy_svpwm:
+    cmp r2, r3
+    bcs .Lcopy_svpwm_done
+    ldr r0, [r1], #4
+    str r0, [r2], #4
+    b .Lcopy_svpwm
+.Lcopy_svpwm_done:
     ldr r1, =__dm4310_helper_reset_control_state_load__
     ldr r2, =__dm4310_helper_reset_control_state_start__
-    ldmia r1!, {r0, r3, r4, r5}
-    stmia r2!, {r0, r3, r4, r5}
+    ldr r3, =__dm4310_helper_reset_control_state_end__
+.Lcopy_reset_control_state:
+    cmp r2, r3
+    bcs .Lcopy_reset_control_state_done
+    ldr r0, [r1], #4
+    str r0, [r2], #4
+    b .Lcopy_reset_control_state
+.Lcopy_reset_control_state_done:
     ldr r1, =__dm4310_motion_literal_load__
     ldr r2, =__dm4310_motion_literal_start__
     ldr r0, [r1]
@@ -254,10 +288,14 @@ Reset_Handler:
 31:
     ldr r1, =__dm4310_helper_derive_runtime_controller_states_load__
     ldr r2, =__dm4310_helper_derive_runtime_controller_states_start__
-    ldmia r1!, {r0, r3, r4}
+    ldr r3, =__dm4310_helper_derive_runtime_controller_states_end__
+.Lcopy_derive_runtime_controller_states:
+    cmp r2, r3
+    bcs .Lcopy_derive_runtime_controller_states_done
+    ldr r0, [r1], #4
     str r0, [r2], #4
-    str r3, [r2], #4
-    str r4, [r2], #4
+    b .Lcopy_derive_runtime_controller_states
+.Lcopy_derive_runtime_controller_states_done:
     ldr r1, =__dm4310_rls_literals_load__
     ldr r2, =__dm4310_rls_literals_start__
     ldr r0, [r1], #4

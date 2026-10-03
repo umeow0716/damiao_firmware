@@ -13,7 +13,7 @@ ANGLE = A(0x1ffff198)
 CORRECTION = A(0x1fffc84c)
 FACTORY_AUTH = F(0x26eb8)
 SOURCE_AUTH = symbols['platform_require_device_authentication']
-FACTORY_PWM = {0x219b0}
+FACTORY_PWM = {F(0x219b0)}
 SOURCE_PWM = {
     symbol['st_value'] & ~1
     for symbol in elf.get_section_by_name('.symtab').iter_symbols()
@@ -25,7 +25,7 @@ SOURCE_DELAY = symbols['platform_commissioning_delay_us']
 FACTORY_UART = F(0x2379c)
 SOURCE_UART = symbols['platform_debug_write']
 SOURCE_POSITION_SET = symbols['position_sensor_set_inverted']
-SOURCE_DIRECTION_DONE = SOURCE_ENTRY + (0x190 if model == 'dm8009' else 0x192)
+SOURCE_DIRECTION_DONE = SOURCE_ENTRY + (0x190 if is_dm800x else 0x192)
 
 factory_angle_sites = {
     F(0x26510): 0,
@@ -33,9 +33,9 @@ factory_angle_sites = {
     F(0x26632): 2,
 }
 source_angle_sites = {
-    SOURCE_ENTRY + (0x64 if model == 'dm8009' else 0x66): 0,
-    SOURCE_ENTRY + (0x92 if model == 'dm8009' else 0x94): 1,
-    SOURCE_ENTRY + (0x118 if model == 'dm8009' else 0x11a): 2,
+    SOURCE_ENTRY + (0x64 if is_dm800x else 0x66): 0,
+    SOURCE_ENTRY + (0x92 if is_dm800x else 0x94): 1,
+    SOURCE_ENTRY + (0x118 if is_dm800x else 0x11a): 2,
 }
 
 

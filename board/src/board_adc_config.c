@@ -8,7 +8,7 @@ void board_adc_build_config(BoardAdcRegisterImage *config)
 {
     memset(config, 0, sizeof(*config));
     config->channel_select = 0x00000007UL;
-#if defined(DAMIAO_DM8009_V3)
+#if APP_PROFILE_ADC_PA1_PA3_LAYOUT
     config->adc1_channel_mux = 0x0213U;
     config->adc2_channel_mux = 0x3015U;
     config->adc3_channel_mux = 0x3B76U;

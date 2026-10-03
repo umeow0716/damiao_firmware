@@ -8,10 +8,10 @@ exec(Path(__file__).with_name('dm4310_softfloat_verify.py').read_text().split(
 
 FACTORY_ENTRY = F(0x24448)
 SOURCE_FUNCTION = symbols['commissioning_run_output_sensor_calibration']
-SOURCE_ENTRY = SOURCE_FUNCTION + (0x1a0 if model == 'dm8009' else 0x1a8)
+SOURCE_ENTRY = SOURCE_FUNCTION + (0x1a0 if is_dm800x else 0x1a8)
 SOURCE_BOUND_SITE = SOURCE_FUNCTION + 0x1e4
 SOURCE_STOP = SOURCE_FUNCTION + 0x234
-FACTORY_PWM = {0x219b0}
+FACTORY_PWM = {F(0x219b0)}
 SOURCE_PWM = {
     symbol['st_value'] & ~1
     for symbol in elf.get_section_by_name('.symtab').iter_symbols()
@@ -76,7 +76,7 @@ def run(original, fixed, sine, peripheral, fpscr):
 
     def code(emu, address, size, _):
         nonlocal stopped
-        if original and address == 0x2448e:
+        if original and address == F(0x2448e):
             # Retain the factory-derived electrical step but execute one
             # complete report iteration after the full 20,000-step lock.
             emu.reg_write(arm.UC_ARM_REG_R7, 1)

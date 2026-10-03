@@ -11,6 +11,10 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 REGRESSION_DIR = Path(__file__).with_name("regressions")
+MODELS = (
+    "dm10010", "dm3507", "dm3507_48v", "dm4310", "dm4310_48v",
+    "dm4340", "dm4340_48v", "dm8006", "dm8009",
+)
 
 
 def run_script(script, model):
@@ -31,7 +35,7 @@ def main():
     parser = ArgumentParser()
     parser.add_argument(
         "--model",
-        choices=("dm4310", "dm4340", "dm8009"),
+        choices=MODELS,
         default="dm4310",
         help="factory/source target to verify (default: %(default)s)",
     )
@@ -41,6 +45,11 @@ def main():
         type=int,
         default=min(8, os.cpu_count() or 1),
         help="maximum number of concurrent verifier processes (default: %(default)s)",
+    )
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="report pass/fail names without replaying failed verifier output",
     )
     args = parser.parse_args()
     if args.jobs < 1:
@@ -65,8 +74,9 @@ def main():
         f"RESULT {args.model}: "
         f"{len(scripts) - len(failures)}/{len(scripts)} passed"
     )
-    for name, output in failures:
-        print(f"\n--- {name} ---\n{output}", end="")
+    if not args.quiet:
+        for name, output in failures:
+            print(f"\n--- {name} ---\n{output}", end="")
     return bool(failures)
 
 

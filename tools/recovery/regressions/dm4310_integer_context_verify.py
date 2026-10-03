@@ -16,8 +16,8 @@ for fmt in formats:
                 u.reg_write(arm.UC_ARM_REG_SP, 0x2000f000)
                 u.reg_write(arm.UC_ARM_REG_LR, 0x30001)
                 trace, emitted = [], bytearray()
-                reader = 0x20edc if original else symbols['factory_stream_read']
-                writer = 0x24ea8 if original else symbols['platform_debug_write']
+                reader = F(0x20edc) if original else symbols['factory_stream_read']
+                writer = F(0x24ea8) if original else symbols['platform_debug_write']
                 def hook(uc, address, size, data):
                     if address == reader:
                         ptr = uc.reg_read(arm.UC_ARM_REG_R0)
@@ -30,7 +30,7 @@ for fmt in formats:
                                                       uc.reg_read(arm.UC_ARM_REG_R1)))
                         uc.reg_write(arm.UC_ARM_REG_PC, uc.reg_read(arm.UC_ARM_REG_LR))
                 u.hook_add(UC_HOOK_CODE, hook)
-                u.emu_start((0x20474 if original else symbols['debug_console_printf']) | 1,
+                u.emu_start((F(0x20474) if original else symbols['debug_console_printf']) | 1,
                             0x30000, count=100000)
                 assert u.reg_read(arm.UC_ARM_REG_PC) == 0x30000
                 results.append((trace, bytes(emitted), u.reg_read(arm.UC_ARM_REG_R0)))

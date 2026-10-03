@@ -11,8 +11,8 @@ def f32(u, address, value):
 startup = machine(True)
 startup.mem_write(0x20000, factory)
 startup.reg_write(arm.UC_ARM_REG_SP, 0x2000f000)
-startup.emu_start(0x20259, 0x20368, count=1000000)
-assert startup.reg_read(arm.UC_ARM_REG_PC) == 0x20368
+startup.emu_start(F(0x20259), F(0x20368), count=1000000)
+assert startup.reg_read(arm.UC_ARM_REG_PC) == F(0x20368)
 factory_sbox = bytes(startup.mem_read(A(0x1fffc678), 0x100))
 source_sbox = elf.get_section_by_name('.dm4310_aes_sbox').data()
 assert factory_sbox == source_sbox
@@ -226,9 +226,9 @@ for case in range(len(scenarios) * 2):
             u.hook_add(UC_HOOK_CODE, write_pc,
                        begin=A(0x1fff921e), end=A(0x1fff968c))
             u.hook_add(UC_HOOK_CODE, factory_rng_ready,
-                       begin=0x21f46, end=0x21f46)
+                       begin=F(0x21f46), end=F(0x21f46))
             u.hook_add(UC_HOOK_CODE, factory_token,
-                       begin=0x26f70, end=0x26f70)
+                       begin=F(0x26f70), end=F(0x26f70))
         try:
             u.emu_start(A(0x1fff88b9), 0x30000, count=3000000)
         except Exception:

@@ -7,8 +7,8 @@ For every model this proves that:
 - AES-256-CTR decryption reproduces the plaintext byte-for-byte
 - the package manifest hashes and sizes describe the emitted artifacts
 
-It does not compare DM4310 and DM8009 against each other.  During development the
-models may legitimately diverge.
+It does not compare models against each other.  Model-specific profiles may
+legitimately produce different images.
 """
 
 from __future__ import annotations
@@ -23,7 +23,17 @@ from pathlib import Path
 from pack_update import (APP_BASE, APP_END, aes256_ctr_transform,
                          load_update_profile, validate_plain_app)
 
-MODELS = ("dm4310", "dm4340", "dm8009")
+MODELS = (
+    "dm10010",
+    "dm3507",
+    "dm3507_48v",
+    "dm4310",
+    "dm4310_48v",
+    "dm4340",
+    "dm4340_48v",
+    "dm8006",
+    "dm8009",
+)
 
 
 def sha256_short(data: bytes) -> str:
@@ -138,7 +148,7 @@ def main() -> int:
         "--dist",
         type=Path,
         default=Path("dist/development"),
-        help="directory containing dm4310_* and dm8009_* firmware outputs",
+        help="directory containing per-model plain and encrypted firmware outputs",
     )
     parser.add_argument(
         "--build-dir",

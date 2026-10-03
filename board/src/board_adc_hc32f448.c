@@ -1,5 +1,6 @@
 #include "board_adc.h"
 
+#include "app_profile.h"
 #include "factory_layout.h"
 
 #include <stddef.h>
@@ -20,7 +21,7 @@ static void configure_analog_pins(const BoardAdcRegisterImage *config)
      * must not be copied into a configuration write.  ADC3 channel 2 is
      * multiplexed from PB10; the original intentionally leaves PB10 alone. */
     CM_GPIO->PWPR = 0xA501U;
-#if defined(DAMIAO_DM8009_V3)
+#if APP_PROFILE_ADC_PA1_PA3_LAYOUT
     CM_GPIO->PCRA1 = config->analog_pin_control;
     CM_GPIO->PCRA2 = config->analog_pin_control;
     CM_GPIO->PCRA3 = config->analog_pin_control;

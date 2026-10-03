@@ -17,7 +17,17 @@ RAM_END = 0x20008000
 RAMB_START = 0x200F0000
 RAMB_END = 0x200F1000
 
-MODELS = ("dm4310", "dm4340", "dm8009")
+MODELS = (
+    "dm10010",
+    "dm3507",
+    "dm3507_48v",
+    "dm4310",
+    "dm4310_48v",
+    "dm4340",
+    "dm4340_48v",
+    "dm8006",
+    "dm8009",
+)
 
 FIXED_SECTION_ADDRESSES = {
     "dm4310": {
@@ -90,6 +100,17 @@ FIXED_SECTION_ADDRESSES = {
     },
 }
 FIXED_SECTION_ADDRESSES["dm4340"] = FIXED_SECTION_ADDRESSES["dm4310"]
+FIXED_SECTION_ADDRESSES["dm3507"] = FIXED_SECTION_ADDRESSES["dm4310"]
+
+# The 48 V DM43-family image adds one 32-bit startup-threshold literal at
+# 0x1fff9830.  Every fixed object at or above the former output helper moves by
+# exactly four bytes; objects below that point keep the standard layout.
+FIXED_SECTION_ADDRESSES["dm43_48v"] = {
+    name: address + (4 if address >= 0x1FFF987C else 0)
+    for name, address in FIXED_SECTION_ADDRESSES["dm4310"].items()
+}
+for _model in ("dm10010", "dm3507_48v", "dm4310_48v", "dm4340_48v"):
+    FIXED_SECTION_ADDRESSES[_model] = FIXED_SECTION_ADDRESSES["dm43_48v"]
 
 STATE_LAYOUTS = {
     "dm4310": {
@@ -174,6 +195,20 @@ STATE_LAYOUTS = {
     },
 }
 STATE_LAYOUTS["dm4340"] = STATE_LAYOUTS["dm4310"]
+STATE_LAYOUTS["dm3507"] = STATE_LAYOUTS["dm4310"]
+STATE_LAYOUTS["dm43_48v"] = {
+    "state_base": STATE_LAYOUTS["dm4310"]["state_base"] + 4,
+    "stack_top": STATE_LAYOUTS["dm4310"]["stack_top"] + 8,
+    "sections": {
+        name: (address + 4, size)
+        for name, (address, size) in
+        STATE_LAYOUTS["dm4310"]["sections"].items()
+    },
+}
+for _model in ("dm10010", "dm3507_48v", "dm4310_48v", "dm4340_48v"):
+    STATE_LAYOUTS[_model] = STATE_LAYOUTS["dm43_48v"]
+FIXED_SECTION_ADDRESSES["dm8006"] = FIXED_SECTION_ADDRESSES["dm8009"]
+STATE_LAYOUTS["dm8006"] = STATE_LAYOUTS["dm8009"]
 
 
 def inside(start, end, region_start, region_end):
@@ -312,7 +347,12 @@ def audit(elf_path, binary_path, model):
         assert section["sh_size"] == expected_size, (
             name, hex(section["sh_size"]), hex(expected_size))
 
-    expected_dma_word = 0x1FFFA6A0 if model == "dm8009" else 0x1FFFA666
+    if model in ("dm8006", "dm8009"):
+        expected_dma_word = 0x1FFFA6A0
+    elif model in ("dm10010", "dm3507_48v", "dm4310_48v", "dm4340_48v"):
+        expected_dma_word = 0x1FFFA66A
+    else:
+        expected_dma_word = 0x1FFFA666
     assert symbols["position_dma_word"] == expected_dma_word
     assert symbols["__StackTop"] == layout["stack_top"]
     assert require_section(elf, ".dm4310_app_state")["sh_type"] == "SHT_NOBITS"

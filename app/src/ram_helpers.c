@@ -23,106 +23,111 @@ extern float motor_sine_table[2049];
 
 /* Shared factory SRAM literal pools, decoded as data words (not code). */
 __attribute__((used, section(".dm4310_literals_1fff83f8")))
-#if defined(DAMIAO_DM8009_V3)
-static const uint32_t dm4310_literals_1fff83f8[27] = {
+static const uint32_t dm4310_literals_1fff83f8[
+#if defined(DAMIAO_LAYOUT_DM800X)
+    27
 #else
-static const uint32_t dm4310_literals_1fff83f8[26] = {
+    26
 #endif
-#if defined(DAMIAO_DM8009_V3)
-    UINT32_C(0x1ffff17c), UINT32_C(0x1fffa558), UINT32_C(0x1ffff090), UINT32_C(0x1ffff014),
-    UINT32_C(0x42f00000), UINT32_C(0x40040000), UINT32_C(0x1ffff348), UINT32_C(0x40040450),
+] = {
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff1f0), UINT32_C(0x1ffff17c)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffa5c8), UINT32_C(0x1fffa558)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff104), UINT32_C(0x1ffff090)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff088), UINT32_C(0x1ffff014)),
+    UINT32_C(0x42f00000), UINT32_C(0x40040000),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffc778), UINT32_C(0x1ffff348)),
+    UINT32_C(0x40040450),
     UINT32_C(0x40040850), UINT32_C(0x40040452), UINT32_C(0x40040852), UINT32_C(0x40040454),
-    UINT32_C(0x40040854), UINT32_C(0x1fffa648),
+    UINT32_C(0x40040854),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffa560), UINT32_C(0x1fffa648)),
     (uintptr_t)temperature_celsius_table, APP_PROFILE_RUNTIME_CACHE_0_BITS,
-    UINT32_C(0x3f13cd3a), UINT32_C(0x3a000000), UINT32_C(0x1ffff134), UINT32_C(0x1ffff11c),
-    UINT32_C(0x40c90fdb), UINT32_C(0x40490fdb), UINT32_C(0xc0490fdb), UINT32_C(0xbf13cd3a),
-    UINT32_C(0x1fffa650), UINT32_C(0x00000000), UINT32_C(0x447a0000)
-#else
-    UINT32_C(0x1ffff1f0), UINT32_C(0x1fffa5c8), UINT32_C(0x1ffff104), UINT32_C(0x1ffff088),
-    UINT32_C(0x42f00000), UINT32_C(0x40040000), UINT32_C(0x1fffc778), UINT32_C(0x40040450),
-    UINT32_C(0x40040850), UINT32_C(0x40040452), UINT32_C(0x40040852), UINT32_C(0x40040454),
-    UINT32_C(0x40040854), UINT32_C(0x1fffa560),
-    (uintptr_t)temperature_celsius_table, APP_PROFILE_RUNTIME_CACHE_0_BITS,
-    UINT32_C(0x3f13cd3a), UINT32_C(0x3a000000), UINT32_C(0x1ffff1a8), UINT32_C(0x1ffff190),
-    UINT32_C(0x40c90fdb), UINT32_C(0x40490fdb), UINT32_C(0xc0490fdb), UINT32_C(0x1fffa568),
+    UINT32_C(0x3f13cd3a), UINT32_C(0x3a000000),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff1a8), UINT32_C(0x1ffff134)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff190), UINT32_C(0x1ffff11c)),
+    UINT32_C(0x40c90fdb), UINT32_C(0x40490fdb), UINT32_C(0xc0490fdb),
+#if defined(DAMIAO_LAYOUT_DM800X)
+    UINT32_C(0xbf13cd3a),
+#endif
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffa568), UINT32_C(0x1fffa650)),
     UINT32_C(0x00000000), UINT32_C(0x447a0000)
-#endif
 };
 __attribute__((used, section(".dm4310_literals_1fff8630")))
 static const uint32_t dm4310_literals_1fff8630[4] = {
-#if defined(DAMIAO_DM8009_V3)
-    UINT32_C(0x1ffff30c), UINT32_C(0x1ffff35c),
-#else
-    UINT32_C(0x1ffff380), UINT32_C(0x1fffc78c), UINT32_C(0x3f7ae148), UINT32_C(0x40040000)
-#endif
-#if defined(DAMIAO_DM8009_V3)
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff380), UINT32_C(0x1ffff30c)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffc78c), UINT32_C(0x1ffff35c)),
     UINT32_C(0x3f7ae148), UINT32_C(0x40040000)
-#endif
 };
 __attribute__((used, section(".dm4310_literals_1fff8724")))
 static const uint32_t dm4310_literals_1fff8724[8] = {
     UINT32_C(0x40010400), UINT32_C(0x01234567), UINT32_C(0x40010418), UINT32_C(0x40010424),
     UINT32_C(0x4001041c), UINT32_C(0x40010590), UINT32_C(0x0001e000),
-#if defined(DAMIAO_DM8009_V3)
-    UINT32_C(0x1fffc7b0)
-#else
-    UINT32_C(0x1fffc824)
-#endif
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffc824), UINT32_C(0x1fffc7b0))
 };
 __attribute__((used, section(".dm4310_literals_1fff9830")))
-#if defined(DAMIAO_DM8009_V3)
-static const uint32_t dm4310_literals_1fff9830[20] = {
+static const uint32_t dm4310_literals_1fff9830[
+#if defined(DAMIAO_LAYOUT_DM800X) || defined(DAMIAO_LAYOUT_DM43_48V)
+    20
 #else
-static const uint32_t dm4310_literals_1fff9830[19] = {
+    19
 #endif
-#if defined(DAMIAO_DM8009_V3)
-    UINT32_C(0x03544000), UINT32_C(0x1ffff1c8), UINT32_C(0x1fffa650), UINT32_C(0x1fffa678),
+] = {
+    UINT32_C(0x03544000),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff23c), UINT32_C(0x1ffff1c8)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffa568), UINT32_C(0x1fffa650)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffa590), UINT32_C(0x1fffa678)),
+#if defined(DAMIAO_LAYOUT_DM800X) || defined(DAMIAO_LAYOUT_DM43_48V)
     UINT32_C(0x42820000), UINT32_C(0x43fa0000), UINT32_C(0x447a0000), UINT32_C(0x461c4000),
-    (uintptr_t)board_mcan_init_classic,
-    (uintptr_t)board_mcan_init_fd,
-    UINT32_C(0x1fff9b05), UINT32_C(0x1fff9bd9),
-    UINT32_C(0x1fffcbd8), UINT32_C(0xaa000055), UINT32_C(0x880000ff), UINT32_C(0x4002b000),
-    UINT32_C(0xaa020155), UINT32_C(0xe000ed0c), UINT32_C(0x05fa0004),
-    UINT32_C(0x1ffff228)
 #else
-    UINT32_C(0x03544000), UINT32_C(0x1ffff23c), UINT32_C(0x1fffa568), UINT32_C(0x1fffa590),
     UINT32_C(0x43fa0000), UINT32_C(0x447a0000), UINT32_C(0x461c4000),
+#endif
     (uintptr_t)board_mcan_init_classic,
     (uintptr_t)board_mcan_init_fd,
-    UINT32_C(0x1fff9acd), UINT32_C(0x1fff9ba1), UINT32_C(0x1fffcc4c),
-    UINT32_C(0xaa000055), UINT32_C(0x880000ff), UINT32_C(0x4002b000), UINT32_C(0xaa020155),
-    UINT32_C(0xe000ed0c), UINT32_C(0x05fa0004), UINT32_C(0x1ffff29c)
-#endif
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fff9acd), UINT32_C(0x1fff9b05)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fff9ba1), UINT32_C(0x1fff9bd9)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffcc4c), UINT32_C(0x1fffcbd8)),
+    UINT32_C(0xaa000055), UINT32_C(0x880000ff), UINT32_C(0x4002b000),
+    UINT32_C(0xaa020155), UINT32_C(0xe000ed0c), UINT32_C(0x05fa0004),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff29c), UINT32_C(0x1ffff228))
 };
 __attribute__((used, section(".dm4310_literals_1fff8b40")))
 static const uint32_t dm4310_literals_1fff8b40[27] = {
     UINT32_C(0x40038000), UINT32_C(0x40020000), UINT32_C(0x00000000), UINT32_C(0x40053408),
-    UINT32_C(0x1ffff088), UINT32_C(0x1fffa666), UINT32_C(0x1ffff190), UINT32_C(0x1fffc84c),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff088), UINT32_C(0x1ffff014)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffa666), UINT32_C(0x1fffa6a0)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff190), UINT32_C(0x1ffff11c)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffc84c), UINT32_C(0x1fffc7d8)),
     UINT32_C(0x3c800000), UINT32_C(0x39c90fdb), UINT32_C(0x40c90fdb), UINT32_C(0x40b00000),
     UINT32_C(0xc0b00000), UINT32_C(0x40053448), UINT32_C(0x4005341c), UINT32_C(0x40053418),
-    UINT32_C(0x40029000), UINT32_C(0x1fffa5c8), UINT32_C(0x1ffff1f0), UINT32_C(0x1ffff29c),
-    UINT32_C(0x1fffcc4c), UINT32_C(0x1ffff104), UINT32_C(0x1ffff1a8), UINT32_C(0x1fffa5c0),
+    UINT32_C(0x40029000),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffa5c8), UINT32_C(0x1fffa558)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff1f0), UINT32_C(0x1ffff17c)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff29c), UINT32_C(0x1ffff228)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffcc4c), UINT32_C(0x1fffcbd8)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff104), UINT32_C(0x1ffff090)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff1a8), UINT32_C(0x1ffff134)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffa5c0), UINT32_C(0x1fffa550)),
     UINT32_C(0x00036000), UINT32_C(0x40040000), UINT32_C(0x40040446)
 };
 __attribute__((used, section(".dm4310_literals_1fff8f8c")))
 static const uint32_t dm4310_literals_1fff8f8c[5] = {
-    UINT32_C(0x43fa0000), UINT32_C(0x1ffff29c), UINT32_C(0x3c23d70a), UINT32_C(0x38d1b717),
-    UINT32_C(0x1fffcc4c)
+    UINT32_C(0x43fa0000),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff29c), UINT32_C(0x1ffff228)),
+    UINT32_C(0x3c23d70a), UINT32_C(0x38d1b717),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffcc4c), UINT32_C(0x1fffcbd8))
 };
 __attribute__((used, section(".dm4310_literals_1fff93c8")))
 static const uint32_t dm4310_literals_1fff93c8[9] = {
-    UINT32_C(0xc61c4000), UINT32_C(0x461c4000), UINT32_C(0x1ffff078), UINT32_C(0x1fffa5c0),
-    UINT32_C(0x1ffff1a8), UINT32_C(0x41200000), APP_PROFILE_CURRENT_FULL_SCALE_BITS, UINT32_C(0x880000ff),
+    UINT32_C(0xc61c4000), UINT32_C(0x461c4000),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff078), UINT32_C(0x1ffff004)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffa5c0), UINT32_C(0x1fffa550)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff1a8), UINT32_C(0x1ffff134)),
+    UINT32_C(0x41200000), APP_PROFILE_CURRENT_FULL_SCALE_BITS, UINT32_C(0x880000ff),
     UINT32_C(0x4002b000)
 };
 __attribute__((used, section(".dm4310_literals_1fff9934")))
 static const uint32_t dm4310_literals_1fff9934[7] = {
     UINT32_C(0x4422f983), UINT32_C(0x45000000),
-#if defined(DAMIAO_DM8009_V3)
-    UINT32_C(0x1fffd004),
-#else
-    UINT32_C(0x1fffd078),
-#endif
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffd078), UINT32_C(0x1fffd004)),
     UINT32_C(0x3ac90fdb),
     UINT32_C(0x40b00000), UINT32_C(0xc0b00000), UINT32_C(0x40c90fdb)
 };
@@ -140,28 +145,22 @@ static const uint32_t dm4310_literals_1fff9d4c[4] = {
 };
 __attribute__((used, section(".dm4310_literals_1fffa118")))
 static const uint32_t dm4310_literals_1fffa118[8] = {
-#if defined(DAMIAO_DM8009_V3)
-    UINT32_C(0x00000000), UINT32_C(0x1ffff090), UINT32_C(0x1fffa5f8), UINT32_C(0x1fffa620),
-    UINT32_C(0x1fffa650), UINT32_C(0x1fffa678), UINT32_C(0x1ffff35c), UINT32_C(0x1ffff3a8)
-#else
-    UINT32_C(0x00000000), UINT32_C(0x1ffff104), UINT32_C(0x1fffa510), UINT32_C(0x1fffa538),
-    UINT32_C(0x1fffa568), UINT32_C(0x1fffa590), UINT32_C(0x1fffc78c), UINT32_C(0x1fffc7d8)
-#endif
+    UINT32_C(0x00000000),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff104), UINT32_C(0x1ffff090)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffa510), UINT32_C(0x1fffa5f8)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffa538), UINT32_C(0x1fffa620)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffa568), UINT32_C(0x1fffa650)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffa590), UINT32_C(0x1fffa678)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffc78c), UINT32_C(0x1ffff35c)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffc7d8), UINT32_C(0x1ffff3a8))
 };
 __attribute__((used, section(".dm4310_literals_1fffa13c")))
 static const uint32_t dm4310_literals_1fffa13c[8] = {
-#if defined(DAMIAO_DM8009_V3)
-    UINT32_C(0x1fffa558), UINT32_C(0x1ffff1c8),
-#else
-    UINT32_C(0x1fffa5c8), UINT32_C(0x1ffff23c),
-#endif
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1fffa5c8), UINT32_C(0x1fffa558)),
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff23c), UINT32_C(0x1ffff1c8)),
     UINT32_C(0x3fddb3d7), UINT32_C(0x3f13cd3a), UINT32_C(0x44fa0000), UINT32_C(0x457a0000),
     UINT32_C(0x4a742400),
-#if defined(DAMIAO_DM8009_V3)
-    UINT32_C(0x1ffff014)
-#else
-    UINT32_C(0x1ffff088)
-#endif
+    FACTORY_SRAM_ADDRESS(UINT32_C(0x1ffff088), UINT32_C(0x1ffff014))
 };
 
 extern const uint32_t __dm4310_literal_copies_start__[];
@@ -171,16 +170,16 @@ void dm4310_initialize_shared_literals(void)
 {
     /* Factory scatter also copies these zero alignment halfwords. The
      * a4ba/a50e padding is already owned by the conversion/sqrt sections. */
-#if defined(DAMIAO_DM8009_V3)
+#if defined(DAMIAO_LAYOUT_DM800X)
     *(volatile uint16_t *)0x1FFF91EEUL = 0U;
     *(volatile uint16_t *)0x1FFF92F6UL = 0U;
     *(volatile uint16_t *)0x1FFF9C6AUL = 0U;
     *(volatile uint16_t *)0x1FFFA336UL = 0U;
 #else
     *(volatile uint16_t *)0x1FFF982EUL = 0U;
-    *(volatile uint16_t *)0x1FFF9932UL = 0U;
-    *(volatile uint16_t *)0x1FFF9C32UL = 0U;
-    *(volatile uint16_t *)0x1FFFA2FEUL = 0U;
+    *(volatile uint16_t *)FACTORY_SRAM_ADDRESS(0x1FFF9932UL, 0UL) = 0U;
+    *(volatile uint16_t *)FACTORY_SRAM_ADDRESS(0x1FFF9C32UL, 0UL) = 0U;
+    *(volatile uint16_t *)FACTORY_SRAM_ADDRESS(0x1FFFA2FEUL, 0UL) = 0U;
 #endif
     const uint32_t *descriptor = __dm4310_literal_copies_start__;
     while (descriptor != __dm4310_literal_copies_end__) {
@@ -206,8 +205,10 @@ uint32_t *dm4310_runtime_context_helper(void)
     __asm volatile (
         "ldr.n r0, [pc, #0]\n"
         "bx lr\n"
-#if defined(DAMIAO_DM8009_V3)
+#if defined(DAMIAO_LAYOUT_DM800X)
         ".word 0x1ffff4c8");
+#elif defined(DAMIAO_LAYOUT_DM43_48V)
+        ".word 0x1ffff494");
 #else
         ".word 0x1ffff490");
 #endif

@@ -18,7 +18,7 @@ for case in range(256):
             trace.append((access, address, size, value))
         u.hook_add(UC_HOOK_MEM_READ | UC_HOOK_MEM_WRITE, memory,
                    begin=0x20001000, end=0x20002001)
-        entry = 0x20edc if original else symbols['factory_stream_read']
+        entry = F(0x20edc) if original else symbols['factory_stream_read']
         u.emu_start(entry | 1, 0x30000, count=1000)
         results.append((u.reg_read(arm.UC_ARM_REG_R0), trace,
                         bytes(u.mem_read(0x20001010, 4))))

@@ -9,6 +9,7 @@ from unicorn import Uc, UC_ARCH_ARM, UC_MODE_THUMB
 
 from regressions.dm4310_model_layout import (
     A,
+    FACTORY_PATHS,
     FACTORY_FIXED_SOURCE,
     FACTORY_STATE_BASE,
     FACTORY_STATE_SOURCE,
@@ -19,11 +20,6 @@ from regressions.dm4310_model_layout import (
 
 ROOT = Path(__file__).resolve().parents[2]
 MODEL = os.environ.get("DAMIAO_RECOVERY_MODEL", "dm4310").lower()
-FACTORY_PATHS = {
-    "dm4310": ROOT / "reference/APP_DM4310_V3_V5017_04.decrypted.bin",
-    "dm4340": ROOT / "reference/APP_DM4340_V3_V5117_04_decrypted.bin",
-    "dm8009": ROOT / "reference/APP_DM8009_V3_V6417_04_decrypted.bin",
-}
 if MODEL not in FACTORY_PATHS:
     raise ValueError(f"unsupported DAMIAO_RECOVERY_MODEL: {MODEL}")
 FACTORY_PATH = FACTORY_PATHS[MODEL]
