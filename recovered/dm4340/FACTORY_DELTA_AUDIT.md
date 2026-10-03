@@ -2,8 +2,8 @@
 
 Authoritative references:
 
-- `reference/APP_DM4310_V3_V5017_04.decrypted.bin`
-- `reference/APP_DM4340_V3_V5117_04_decrypted.bin`
+- `reference/V3/APP_DM4310(V3)_V5017_04.decrypted.bin`
+- `reference/V3/APP_DM4340(V3)_V5117_04.decrypted.bin`
 
 Both images are 51,284 bytes and use the same vector table, fixed SRAM ABI,
 entry points, peripheral access logic and runtime helpers.  The direct scan of

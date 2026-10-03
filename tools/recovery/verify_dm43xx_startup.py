@@ -16,39 +16,50 @@ DM43XX_LITERALS = (
     (0x1FFF9D4C, 16), (0x1FFFA118, 72), (0x1FFFA300, 12),
     (0x1FFFA4BC, 32),
 )
+DM43XX_LITERAL_RELOCATIONS = {
+    0x1FFF984C: "board_mcan_init_classic",
+    0x1FFF9850: "board_mcan_init_fd",
+}
 DM8009_LITERALS = (
     (0x1FFF80E4, 32), (0x1FFF91F0, 76), (0x1FFF92F8, 28),
     (0x1FFF9978, 16), (0x1FFF9AF8, 12), (0x1FFF9C6C, 12),
     (0x1FFF9D84, 16), (0x1FFFA150, 72), (0x1FFFA338, 12),
     (0x1FFFA4F4, 32),
 )
+DM8009_LITERAL_RELOCATIONS = {
+    0x1FFF9210: "board_mcan_init_classic",
+    0x1FFF9214: "board_mcan_init_fd",
+}
 MODELS = {
     "dm4310": {
-        "factory": ROOT / "reference/APP_DM4310_V3_V5017_04.decrypted.bin",
+        "factory": ROOT / "reference/V3/APP_DM4310(V3)_V5017_04.decrypted.bin",
         "main": 0x000252F4, "state": 0x1FFFA510,
         "config": 0x1FFFA5C8, "context": 0x1FFFF490,
         "heap": 0x1FFFF4F8, "sp": 0x200004F8,
         "literals": DM43XX_LITERALS,
         "alignment": (0x1FFF982E, 0x1FFF9932, 0x1FFF9C32,
                       0x1FFFA2FE, 0x1FFFA4BA, 0x1FFFA50E),
+        "literal_relocations": DM43XX_LITERAL_RELOCATIONS,
     },
     "dm4340": {
-        "factory": ROOT / "reference/APP_DM4340_V3_V5117_04_decrypted.bin",
+        "factory": ROOT / "reference/V3/APP_DM4340(V3)_V5117_04.decrypted.bin",
         "main": 0x000252F4, "state": 0x1FFFA510,
         "config": 0x1FFFA5C8, "context": 0x1FFFF490,
         "heap": 0x1FFFF4F8, "sp": 0x200004F8,
         "literals": DM43XX_LITERALS,
         "alignment": (0x1FFF982E, 0x1FFF9932, 0x1FFF9C32,
                       0x1FFFA2FE, 0x1FFFA4BA, 0x1FFFA50E),
+        "literal_relocations": DM43XX_LITERAL_RELOCATIONS,
     },
     "dm8009": {
-        "factory": ROOT / "reference/APP_DM8009_V3_V6417_04_decrypted.bin",
+        "factory": ROOT / "reference/V3/APP_DM8009(V3)_V6417_04.decrypted.bin",
         "main": 0x000252F0, "state": 0x1FFFA548,
         "config": 0x1FFFA558, "context": 0x1FFFF4C8,
         "heap": 0x1FFFF530, "sp": 0x20000530,
         "literals": DM8009_LITERALS,
         "alignment": (0x1FFF91EE, 0x1FFF92F6, 0x1FFF9C6A,
                       0x1FFFA336, 0x1FFFA4F2, 0x1FFFA546),
+        "literal_relocations": DM8009_LITERAL_RELOCATIONS,
     },
 }
 FLASH_BASE = 0x00020000
@@ -141,6 +152,23 @@ def assert_range_equal(factory_machine, source_machine, address, size, label):
     )
 
 
+def assert_runtime_context_equal(factory_machine, source_machine, address, symbols):
+    factory_data = bytearray(factory_machine.mem_read(address, 0x60))
+    source_data = bytes(source_machine.mem_read(address, 0x60))
+    relocations = {
+        # These pointers follow the rebuilt image's linker layout. All other
+        # runtime-context bytes remain byte-exact against the factory state.
+        0x2C: symbols["c_locale"],
+        0x5C: (symbols["runtime_main_entry"] + 4) | 1,
+    }
+    for offset, value in relocations.items():
+        factory_data[offset:offset + 4] = value.to_bytes(4, "little")
+    assert bytes(factory_data) == source_data, (
+        "runtime context",
+        first_differences(factory_data, source_data, address),
+    )
+
+
 def verify_model(model, profile):
     factory = profile["factory"].read_bytes()
     symbols, segments = load_elf(ROOT / f"build/{model}.elf")
@@ -165,7 +193,21 @@ def verify_model(model, profile):
     for address, size in profile["literals"]:
         offset = 0x8680 + address - 0x1FFF8000
         source_data = bytes(source_machine.mem_read(address, size))
-        assert source_data == factory[offset : offset + size], hex(address)
+        expected_data = bytearray(factory[offset : offset + size])
+        # Preserve strict literal-pool parity while allowing normal linker
+        # movement: pointer fields must resolve to the equivalent source
+        # symbol, rather than retain the factory function's Flash address.
+        for pointer_address, symbol_name in profile["literal_relocations"].items():
+            if address <= pointer_address < address + size:
+                pointer_offset = pointer_address - address
+                pointer = symbols[symbol_name] | 1
+                expected_data[pointer_offset:pointer_offset + 4] = pointer.to_bytes(
+                    4, "little"
+                )
+        assert source_data == expected_data, (
+            hex(address),
+            first_differences(expected_data, source_data, address),
+        )
     for address in profile["alignment"]:
         assert bytes(source_machine.mem_read(address, 2)) == bytes(2), hex(address)
 
@@ -179,12 +221,8 @@ def verify_model(model, profile):
     )
     assert factory_machine.reg_read(arm.UC_ARM_REG_PC) == profile["main"]
     assert source_machine.reg_read(arm.UC_ARM_REG_PC) == symbols["main"]
-    assert_range_equal(
-        factory_machine,
-        source_machine,
-        profile["context"],
-        0x60,
-        "runtime context",
+    assert_runtime_context_equal(
+        factory_machine, source_machine, profile["context"], symbols
     )
     assert_range_equal(
         factory_machine,

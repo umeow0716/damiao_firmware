@@ -76,6 +76,8 @@ Thumbs.db
 !/docs/DEVELOPMENT.md
 !/docs/PORTING_CHECKLIST.md
 !/docs/UPDATE_FORMAT.md
+!/docs/REFERENCE_FIRMWARES.md
+!/docs/FIRMWARE_VERSION_ANALYSIS.md
 !/docs/book/
 !/docs/book/**
 /analysis/

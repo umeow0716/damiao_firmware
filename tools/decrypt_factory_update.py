@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Decrypt an official DM4310 APP update with the audited installed loader.
+"""Decrypt an official Damiao APP update with an audited loader profile.
 
 The vendor update file is a flat AES-256-CTR ciphertext.  This tool extracts
-the key and initial counter from the hash-pinned bootloader image, validates
-the decrypted vector table, re-encrypts it, and only then writes the plaintext
-reference image.
+the key and initial counter from either the hash-pinned bootloader image or a
+source-owned update profile, validates the decrypted vector table, re-encrypts
+it, and only then writes the plaintext reference image.
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ from pathlib import Path
 from pack_update import (
     aes256_ctr_transform,
     extract_bootloader_material,
+    load_update_profile,
     validate_plain_app,
 )
 
@@ -68,6 +69,14 @@ def arm_scatter_decode(data: bytes, output_length: int) -> bytes:
 
 
 def extract_factory_config(plaintext: bytes) -> bytes:
+    expected_digest = (
+        "65aab219268e9159b196d4578d3cd530e6fa90a731a82670a0d3d3be609b59d4"
+    )
+    if digest(plaintext) != expected_digest:
+        raise ValueError(
+            "factory configuration extraction currently supports only "
+            "DM4310 V3 V5017.04"
+        )
     app_base = 0x00020000
     packed_start = 0x0002AB90 - app_base
     packed_end = 0x0002C84C - app_base
@@ -91,13 +100,18 @@ def extract_factory_config(plaintext: bytes) -> bytes:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--encrypted", type=Path, required=True)
-    parser.add_argument("--bootloader", type=Path, required=True)
+    key_source = parser.add_mutually_exclusive_group(required=True)
+    key_source.add_argument("--bootloader", type=Path)
+    key_source.add_argument("--profile", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--factory-config-output", type=Path)
     args = parser.parse_args()
 
     ciphertext = args.encrypted.read_bytes()
-    key, counter = extract_bootloader_material(args.bootloader.read_bytes())
+    if args.bootloader is not None:
+        key, counter = extract_bootloader_material(args.bootloader.read_bytes())
+    else:
+        key, counter, _ = load_update_profile(args.profile)
     plaintext = aes256_ctr_transform(ciphertext, key, counter)
     stack, reset = validate_plain_app(plaintext)
     if aes256_ctr_transform(plaintext, key, counter) != ciphertext:

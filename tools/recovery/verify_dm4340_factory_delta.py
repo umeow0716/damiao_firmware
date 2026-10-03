@@ -8,8 +8,8 @@ from compare_factory_startup import run_startup
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DM4310_PATH = ROOT / "reference/APP_DM4310_V3_V5017_04.decrypted.bin"
-DM4340_PATH = ROOT / "reference/APP_DM4340_V3_V5117_04_decrypted.bin"
+DM4310_PATH = ROOT / "reference/V3/APP_DM4310(V3)_V5017_04.decrypted.bin"
+DM4340_PATH = ROOT / "reference/V3/APP_DM4340(V3)_V5117_04.decrypted.bin"
 INVENTORY_PATH = (
     ROOT / "recovered/dm4310/tables/factory_function_inventory.tsv"
 )

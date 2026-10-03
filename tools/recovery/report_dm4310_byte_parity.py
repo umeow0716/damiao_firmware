@@ -55,7 +55,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--factory",
         type=Path,
-        default=ROOT / "reference/APP_DM4310_V3_V5017_04.decrypted.bin",
+        default=ROOT / "reference/V3/APP_DM4310(V3)_V5017_04.decrypted.bin",
     )
     parser.add_argument(
         "--elf", type=Path, default=ROOT / "build/dm4310.elf"

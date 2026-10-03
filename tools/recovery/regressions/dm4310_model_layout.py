@@ -24,15 +24,15 @@ ROOT = Path(__file__).resolve().parents[3]
 MODEL = os.environ.get("DAMIAO_RECOVERY_MODEL", "dm4310").lower()
 
 FACTORY_PATHS = {
-    "dm10010": ROOT / "reference/APP_DM10010(V3)_V5617_04.decrypted.bin",
-    "dm3507": ROOT / "reference/APP_DM3507(V3)_V5717_04.decrypted.bin",
-    "dm3507_48v": ROOT / "reference/APP_DM3507(V3_48V)_V6517_04.decrypted.bin",
-    "dm4310": ROOT / "reference/APP_DM4310_V3_V5017_04.decrypted.bin",
-    "dm4310_48v": ROOT / "reference/APP_DM4310(48V)_V6017_04.decrypted.bin",
-    "dm4340": ROOT / "reference/APP_DM4340_V3_V5117_04_decrypted.bin",
-    "dm4340_48v": ROOT / "reference/APP_DM4340(48V)_V6117_04.decrypted.bin",
-    "dm8006": ROOT / "reference/APP_DM8006(V3)_V6317_04.decrypted.bin",
-    "dm8009": ROOT / "reference/APP_DM8009_V3_V6417_04_decrypted.bin",
+    "dm10010": ROOT / "reference/V3/APP_DM10010(V3)_V5617_04.decrypted.bin",
+    "dm3507": ROOT / "reference/V3/APP_DM3507(V3)_V5717_04.decrypted.bin",
+    "dm3507_48v": ROOT / "reference/V3/APP_DM3507(V3_48V)_V6517_04.decrypted.bin",
+    "dm4310": ROOT / "reference/V3/APP_DM4310(V3)_V5017_04.decrypted.bin",
+    "dm4310_48v": ROOT / "reference/V3/APP_DM4310(48V)_V6017_04.decrypted.bin",
+    "dm4340": ROOT / "reference/V3/APP_DM4340(V3)_V5117_04.decrypted.bin",
+    "dm4340_48v": ROOT / "reference/V3/APP_DM4340(48V)_V6117_04.decrypted.bin",
+    "dm8006": ROOT / "reference/V3/APP_DM8006(V3)_V6317_04.decrypted.bin",
+    "dm8009": ROOT / "reference/V3/APP_DM8009(V3)_V6417_04.decrypted.bin",
 }
 
 DM43_48V_MODELS = frozenset(

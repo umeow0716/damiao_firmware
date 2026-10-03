@@ -17,6 +17,7 @@ source、target profile、linker 與本套手冊為準；舊報告只代表當�
 | 改控制器、FOC 或 PWM | [馬達控制](book/05-motor-control.md) |
 | 改 linker、SRAM 物件或 IRQ | [startup 與記憶體](book/02-startup-memory.md) |
 | 刷機或理解 `.enc.bin` | [更新格式](UPDATE_FORMAT.md) |
+| 查官方版本編碼、V3/V4 差異 | [參考韌體目錄](REFERENCE_FIRMWARES.md) → [V3/V4 實作分析](FIRMWARE_VERSION_ANALYSIS.md) |
 | 第一次上板 | [上板驗收清單](PORTING_CHECKLIST.md) |
 | 查 source 與 factory 的復原證據 | [復原狀態](FIRMWARE_RECOVERY_PROGRESS.md) |
 
@@ -25,6 +26,8 @@ source、target profile、linker 與本套手冊為準；舊報告只代表當�
 - [原始碼地圖](SOURCE_MAP.md)：逐層、逐檔案說明責任與主要函式。
 - [開發與建置](DEVELOPMENT.md)：toolchain、命令、產物、大小與提交 gate。
 - [更新格式](UPDATE_FORMAT.md)：APP partition、AES-CTR payload 與傳輸注意事項。
+- [參考韌體目錄](REFERENCE_FIRMWARES.md)：`reference/V3`、`reference/V4` 的檔案、雜湊與解密方法。
+- [V3/V4 實作分析](FIRMWARE_VERSION_ANALYSIS.md)：版本編碼、校正、馬達辨識與即時控制差異。
 - [上板驗收清單](PORTING_CHECKLIST.md)：硬體 bring-up 的安全順序。
 - [完整韌體手冊](book/README.md)：以下 12 章的完整導覽。
 

@@ -53,8 +53,8 @@ def main() -> None:
     parser.add_argument("--capture", type=Path,
                         default=ROOT / "bins/app_runtime_config.bin")
     parser.add_argument("--firmware", type=Path,
-                        default=ROOT / "reference" / "official" /
-                        "APP_DM4310_V3_V5017_04.decrypted.bin")
+                        default=ROOT / "reference" / "V3" /
+                        "APP_DM4310(V3)_V5017_04.decrypted.bin")
     parser.add_argument(
         "--fixture-header", type=Path,
         default=ROOT / "tests/generated/captured_calibration.h",

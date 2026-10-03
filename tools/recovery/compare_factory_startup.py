@@ -10,8 +10,8 @@ import unicorn.arm_const as arm
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_LEFT = ROOT / "reference/APP_DM4310_V3_V5017_04.decrypted.bin"
-DEFAULT_RIGHT = ROOT / "reference/APP_DM4340_V3_V5117_04_decrypted.bin"
+DEFAULT_LEFT = ROOT / "reference/V3/APP_DM4310(V3)_V5017_04.decrypted.bin"
+DEFAULT_RIGHT = ROOT / "reference/V3/APP_DM4340(V3)_V5117_04.decrypted.bin"
 FLASH_BASE = 0x00020000
 FLASH_SIZE = 0x00020000
 SRAM_A_BASE = 0x1FFF0000

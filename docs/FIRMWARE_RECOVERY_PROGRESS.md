@@ -3,8 +3,10 @@
 最後更新：2026-10-03
 
 本表是目前權威的 source/behavior recovery 狀態。DM4310 factory byte-exact 目標已停止，
-歷史分析保存在 `docs/DM4310_BYTE_EXACT_PROGRESS.md`。正式範圍是 `reference/` 內具備
-original/decrypted 配對的九款 V3 sub-version 04 韌體；DM1h10L 與 DM6006 不在目標內。
+歷史分析保存在 `docs/DM4310_BYTE_EXACT_PROGRESS.md`。正式 source-recovery 範圍是
+`reference/V3/` 內具備 original/decrypted 配對的九款 V3 sub-version 04 韌體；DM1h10L
+與 DM6006 不在目標內。`reference/V4/` 另保存三份用於版本與算法研究的 V4 配對，目前不代表
+V4 已納入 source-recovery 交付範圍；差異見 `docs/FIRMWARE_VERSION_ANALYSIS.md`。
 所有產品映像均由可維護的 C 與必要 ASM 重建，沒有連結或嵌入 factory image。
 工作區架構、功能地圖、修改方法與實機限制請由 `docs/README.md` 進入。
 
