@@ -31,8 +31,26 @@ special command 是 binary payload，不是 ASCII。節點 ID 與 CAN rate 可�
 ## Feedback
 
 feedback 由 `can_protocol_encode_feedback*()` 從固定 runtime state 量化，包含 position、velocity、
-current/temperature/fault 等 protocol 欄位。方向、gear ratio、量化上下限與 fault 位元會影響封包；
-新增欄位不能直接延長既有 8-byte frame，否則舊 master 會誤解。
+torque、temperature 與 fault 等 protocol 欄位。方向、gear ratio、量化上下限與 fault 位元會影響
+封包；新增欄位不能直接延長既有 8-byte frame，否則舊 master 會誤解。
+
+建置系統提供兩種保持相同 CAN ID、DLC、byte layout 與單位的行為版本：
+
+| 欄位 | `factory` | `raw` |
+|---|---|---|
+| position | 校正、unwrap、扣除 zero 並換算至 output side；本來就沒有時間低通 | 相同 |
+| velocity | 1 kHz encoder 微分經一階低通，再除 gear ratio | 未低通 rotor velocity 除 gear ratio |
+| torque | q 軸電流經一階低通，再乘 output torque constant | 當下 q 軸電流直接乘 output torque constant |
+| MOS／motor temperature、fault | 原廠路徑 | 相同 |
+
+因此 raw 不是 encoder count、ADC count 或 motor-side 值，host 不必更換解碼公式；它只是繞過速度
+與 torque reporting filter。控制器本身仍使用原本的狀態與 observer，切換 raw 不會改變 FOC 或
+安全判斷。代價是回饋雜訊與量化跳動會明顯增加，master 若用回饋做外部微分或閉迴路應自行設定
+適合的濾波與取樣頻寬。
+
+同一選擇也套用在 `0x7FF` LIVE：selector 0 沿用標準 feedback encoder，selector 2/3 分別回傳
+對應 variant 的 float velocity/torque，selector 4 的 velocity 亦切換；selector 1 的 position 不變，
+selector 4 的 q-current 原本就是未低通值，因此兩版都不再做額外處理。
 
 若要新增 telemetry，優先設計新 CAN ID／版本化 frame，而不是改動既有 feedback 的 byte 定義。
 

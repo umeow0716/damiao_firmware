@@ -12,8 +12,8 @@ loader 可接受的加密 payload。這個邊界不能與 APP source recovery �
 | `app_update.frames.jsonl` | 已含 chunk header/CRC 的 SocketCAN frame 清單 | 由 sender 傳送 |
 | `manifest.json` | hash、大小、vector、chunk、profile provenance | 不刷入 |
 
-`dist/development/` 只保留每個 target 的 plain/encrypted 最終映像；完整 package metadata 與 frames
-位於 `build/package/<model>/`。
+`dist/development/factory/` 與 `dist/development/raw/` 分別保留兩種行為版本的 plain/encrypted 最終
+映像；完整 package metadata 與 frames 位於 `build/package/<variant>/<model>/`。
 
 ## APP partition 與 vector validation
 
@@ -51,13 +51,18 @@ C/ASM → dm4310.elf
       → objcopy dm4310.app.bin
       → validate vectors / partition
       → AES-CTR + chunk + CRC + frames + manifest
-      → dist/development/dm4310_plain.bin
-      → dist/development/dm4310_enc.bin
+      → dist/development/factory/dm4310_plain.bin
+      → dist/development/factory/dm4310_enc.bin
+
+C/ASM + raw feedback define → dm4310_raw.elf
+      → 同一套 validate／封裝流程
+      → dist/development/raw/dm4310_plain.bin
+      → dist/development/raw/dm4310_enc.bin
 ```
 
-`make firmwares` 完成九個 target 後，`tools/verify_firmware_outputs.py` 會核對：ELF objcopy 與 plain
-逐 byte 相同、plain/enc 大小、manifest hash、AES round-trip 與 source identity。它不要求九型號
-互相 byte-equal。
+`make firmwares` 完成九型號的 factory/raw target 後，`tools/verify_firmware_outputs.py` 會分別核對：
+ELF objcopy 與 plain 逐 byte 相同、plain/enc 大小、variant manifest、AES round-trip 與 source
+identity。它不要求不同型號或不同 variant 互相 byte-equal。
 
 ## APP 端 loader handoff
 

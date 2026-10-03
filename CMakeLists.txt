@@ -260,6 +260,7 @@ function(damiao_add_profiled_firmware TARGET_NAME PROFILE_PATH)
     set(DAMIAO_TARGET_LINKER_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/linker/hc32f448_app.ld")
     set(DAMIAO_TARGET_VECTOR_OFFSET 0x00000000UL)
     include("${PROFILE_PATH}")
+    list(APPEND DAMIAO_TARGET_COMPILE_DEFINITIONS ${ARGN})
     damiao_firmware(${TARGET_NAME}
         "${DAMIAO_TARGET_LINKER_SCRIPT}"
         ${DAMIAO_TARGET_VECTOR_OFFSET})
@@ -276,9 +277,16 @@ set(DAMIAO_FIRMWARE_TARGETS
     dm8006
     dm8009
 )
+set(DAMIAO_ALL_FIRMWARE_TARGETS)
 foreach(target IN LISTS DAMIAO_FIRMWARE_TARGETS)
+    # Feedback behavior is orthogonal to the hardware/model profile.  Keep one
+    # profile per product and derive both runtime variants from it.
     damiao_add_profiled_firmware(${target}
         "${CMAKE_CURRENT_SOURCE_DIR}/config/targets/${target}.cmake")
+    damiao_add_profiled_firmware(${target}_raw
+        "${CMAKE_CURRENT_SOURCE_DIR}/config/targets/${target}.cmake"
+        DAMIAO_FEEDBACK_VARIANT_RAW=1)
+    list(APPEND DAMIAO_ALL_FIRMWARE_TARGETS ${target} ${target}_raw)
 endforeach()
 
 # The V3 applications occupy a fixed 64 KiB APP partition and share the same
@@ -291,7 +299,7 @@ set(DAMIAO_V3_RUNTIME_SOURCES
     app/src/decimal_power.c
     app/src/fixed_decimal.c
 )
-foreach(target IN LISTS DAMIAO_FIRMWARE_TARGETS)
+foreach(target IN LISTS DAMIAO_ALL_FIRMWARE_TARGETS)
     target_compile_options(${target} PRIVATE ${FIRMWARE_SIZE_OPTIMIZATION})
     target_sources(${target} PRIVATE ${DAMIAO_V3_RUNTIME_SOURCES})
 endforeach()

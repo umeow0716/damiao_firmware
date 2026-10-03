@@ -10,6 +10,7 @@
 #include "app_state.h"
 #include "app_profile.h"
 #include "calibration_upload.h"
+#include "firmware_variant.h"
 #include "formatter_arithmetic.h"
 #include "platform.h"
 #include "runtime_compat.h"
@@ -834,7 +835,7 @@ void debug_console_print_status(void)
     const float data_rate_kbps = platform_read_mcan_data_rate_kbps();
     int32_t data_rate_bits;
     memcpy(&data_rate_bits, &data_rate_kbps, sizeof(data_rate_bits));
-    write_status_text("DMBOT Motor Driver");
+    write_status_text(FIRMWARE_STATUS_BANNER);
     switch (platform_read_hardware_variant())
     {
     case 0U:

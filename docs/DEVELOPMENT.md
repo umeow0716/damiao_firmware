@@ -23,9 +23,9 @@ make dm4310
 
 輸出：
 
-- `build/dm4310.elf`、`.map`、`.hex`、`.app.bin`；
-- `build/package/dm4310/` 的 plain、encrypted、frames、manifest；
-- `dist/development/dm4310_plain.bin` 與 `dm4310_enc.bin`。
+- `build/dm4310.elf` 與 `build/dm4310_raw.elf`（以及各自的 `.map`、`.hex`、`.app.bin`）；
+- `build/package/factory/dm4310/` 與 `build/package/raw/dm4310/` 的完整 package；
+- `dist/development/factory/` 與 `dist/development/raw/` 下的 plain／encrypted 映像。
 
 全部 target：
 
@@ -33,17 +33,19 @@ make dm4310
 make firmwares
 ```
 
-這會建置九個 target、封裝 18 份最終 bin，並驗證 plain/ELF identity、manifest、AES round-trip 與
-target 對應。正常 Makefile 不執行 recovery tests，也不把 test code 連進 firmware。
+這會建置九型號各兩個行為 target、封裝 36 份最終 bin，並分別驗證 plain/ELF identity、variant
+manifest、AES round-trip 與 target 對應。正常 Makefile 不執行 recovery tests，也不把 test code
+連進 firmware。
 
 ## 常用命令
 
 ```sh
 make help
-make build                         # 只建 ELF/app.bin
-make dm8009                        # 單 target + package
+make build                         # 只建 18 個 ELF/app.bin
+make dm8009                        # 單一型號的 factory/raw package
 make verify-firmware-outputs       # 重驗目前 dist/package
-make send CAN_IF=can0              # 重建並傳送 DM4310 package frames
+make send CAN_IF=can0              # 重建並傳送 factory DM4310
+make send-raw CAN_IF=can0          # 重建並傳送 raw-feedback DM4310
 make provision-calibration         # 產生 calibration provisioning 資料
 make clean                         # 刪除 build/ 與 dist/
 ```
@@ -53,8 +55,11 @@ make clean                         # 刪除 build/ 與 dist/
 
 ```sh
 python3 tools/send_update.py --interface can0 \
-  --frames build/package/dm8009/app_update.frames.jsonl --yes
+  --frames build/package/factory/dm8009/app_update.frames.jsonl --yes
 ```
+
+若要送 raw 版，把路徑中的 `factory` 換成 `raw`。兩個 package 的檔名相同，但 manifest 的
+`firmware_variant` 分別為 `factory` 與 `raw`，不要只憑複製後的檔名判斷版本。
 
 ## 修改流程
 
@@ -87,6 +92,7 @@ python3 tools/send_update.py --interface can0 \
 | 普通非即時 C | 受影響 target build | 對應 unit/differential |
 | profile | 九 target build、source architecture | 該 target差分、persistent default行為 |
 | CAN/UART/parser | build + protocol regressions | 實機 trace、malformed/timeout |
+| factory/raw feedback | 兩版 build + `verify_feedback_variants.py` | CAN capture、raw noise/bandwidth |
 | control/math | full regressions | 長序列、IRQ timing、低壓限流 |
 | board register | image layout + regressions | 無功率 logic/scope |
 | linker/fixed SRAM/startup | 九 target layout + startup copies + full regressions | warm/cold boot、HardFault診斷 |
@@ -105,6 +111,8 @@ for model in dm10010 dm3507 dm3507_48v dm4310 dm4310_48v \
     python3 tools/recovery/verify_dm4310_image_layout.py --model "$model" || exit
     python3 tools/recovery/verify_dm4310_full_regressions.py --model "$model" || exit
 done
+
+.venv/bin/python tools/recovery/verify_feedback_variants.py --model dm4310
 ```
 
 Recovery 工具依賴本機 reference／Python packages 時，缺少依賴應明確記錄為「未執行」，不可只跑

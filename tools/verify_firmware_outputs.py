@@ -74,7 +74,7 @@ def check_plain_image(model: str, path: Path, data: bytes) -> None:
 
 
 def check_manifest(package_root: Path, model: str, plain: bytes,
-                   encrypted: bytes) -> None:
+                   encrypted: bytes, expected_variant: str) -> None:
     path = package_root / model / "manifest.json"
     try:
         manifest = json.loads(path.read_text(encoding="utf-8"))
@@ -85,6 +85,7 @@ def check_manifest(package_root: Path, model: str, plain: bytes,
 
     expected = {
         "format": "damiao-can-update-v1",
+        "firmware_variant": expected_variant,
         "plaintext_size": len(plain),
         "plaintext_sha256": hashlib.sha256(plain).hexdigest(),
         "ciphertext_sha256": hashlib.sha256(encrypted).hexdigest(),
@@ -98,10 +99,11 @@ def check_manifest(package_root: Path, model: str, plain: bytes,
 
 
 def check_model(dist: Path, build_dir: Path, package_root: Path, model: str,
-                key: bytes, counter: bytes) -> None:
+                key: bytes, counter: bytes, build_suffix: str,
+                expected_variant: str) -> None:
     plain_path = dist / f"{model}_plain.bin"
     enc_path = dist / f"{model}_enc.bin"
-    build_path = build_dir / f"{model}.app.bin"
+    build_path = build_dir / f"{model}{build_suffix}.app.bin"
 
     plain = read_file(plain_path)
     enc = read_file(enc_path)
@@ -133,7 +135,7 @@ def check_model(dist: Path, build_dir: Path, package_root: Path, model: str,
             f"{model}: AES-256-CTR decrypt does not reproduce plaintext"
         )
 
-    check_manifest(package_root, model, plain, enc)
+    check_manifest(package_root, model, plain, enc, expected_variant)
     print(
         f"{model}: encrypted round-trip and manifest ok, {len(enc)} bytes, "
         f"sha256={sha256_short(enc)}…"
@@ -147,7 +149,7 @@ def main() -> int:
     parser.add_argument(
         "--dist",
         type=Path,
-        default=Path("dist/development"),
+        default=Path("dist/development/factory"),
         help="directory containing per-model plain and encrypted firmware outputs",
     )
     parser.add_argument(
@@ -157,9 +159,14 @@ def main() -> int:
         help="directory containing source-built MODEL.app.bin images",
     )
     parser.add_argument(
+        "--build-suffix",
+        default="",
+        help="suffix appended to the model when locating source-built APP images",
+    )
+    parser.add_argument(
         "--package-root",
         type=Path,
-        default=Path("build/package"),
+        default=Path("build/package/factory"),
         help="directory containing per-model package manifests",
     )
     parser.add_argument(
@@ -167,6 +174,12 @@ def main() -> int:
         type=Path,
         default=Path("config/update_profile.json"),
         help="audited update profile used to decrypt the encrypted outputs",
+    )
+    parser.add_argument(
+        "--expected-variant",
+        choices=("factory", "raw"),
+        default="factory",
+        help="firmware variant expected in every package manifest",
     )
     args = parser.parse_args()
 
@@ -177,9 +190,12 @@ def main() -> int:
 
     for model in MODELS:
         check_model(args.dist, args.build_dir, args.package_root, model,
-                    key, counter)
+                    key, counter, args.build_suffix, args.expected_variant)
 
-    print("firmware outputs verified: source, size, AES round-trip and manifests passed")
+    print(
+        f"{args.expected_variant} firmware outputs verified: source, size, "
+        "AES round-trip and manifests passed"
+    )
     return 0
 
 

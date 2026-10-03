@@ -97,7 +97,7 @@ source build，不要求 Flash 函式位址或 whole-file SHA 相同。
       V3/V6417 的差異改由 target profile、固定 SRAM layout 與少量 model 分支表達。
 - [x] 全量 build、65/65 全域差分、15/15 核心組合、736/736 formatter、factory/fixed-SRAM
       contract、image layout 與 `git diff --check` 全部通過。
-- [x] 已產出 `dist/development/dm4310_plain.bin` 與 `dm4310_enc.bin`，並驗證 plain 等於
+- [x] 已產出 `dist/development/factory/dm4310_plain.bin` 與 `dm4310_enc.bin`，並驗證 plain 等於
       ELF objcopy、AES-256-CTR round-trip、manifest hash、向量及長度。
 
 固定 SRAM code/literal 只存在於 `sram_runtime.c` 與專用 linker compatibility layer；其位址是

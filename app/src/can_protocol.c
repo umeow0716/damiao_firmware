@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "feedback_measurements.h"
 #include "motor_math.h"
 
 #include "board_mcan.h"
@@ -358,12 +359,12 @@ static void encode_feedback(const MotorFeedback *feedback, const MotorConfig *co
         apply_feedback_direction(position, direction_inverted), -position_max, position_max, 16U);
     scratch->packed[1] = (uint16_t)p;
     const float velocity_max = config_floats[0x58U / 4U];
-    const float velocity = motor[0x1CU / 4U];
+    const float velocity = feedback_measurement_velocity(motor);
     const uint32_t v = protocol_float_to_uint(
         apply_feedback_direction(velocity, direction_inverted), -velocity_max, velocity_max, 12U);
     scratch->packed[2] = (uint16_t)v;
     const float torque_max = config_floats[0x5CU / 4U];
-    const float output_torque = motor[0x30U / 4U];
+    const float output_torque = feedback_measurement_torque(motor, sample);
     const uint32_t torque = protocol_float_to_uint(
         apply_feedback_direction(output_torque, direction_inverted), -torque_max, torque_max, 12U);
     scratch->packed[3] = (uint16_t)torque;

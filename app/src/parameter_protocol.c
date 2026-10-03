@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "app_config.h"
+#include "feedback_measurements.h"
 #include "motor_math.h"
 #include "safety.h"
 #include "platform.h"
@@ -196,8 +197,28 @@ static void prepare_live_response(uint8_t selector, const MotorConfig *config,
         const float motor_temperature = ((const volatile float *)motor)[0x40U / 4U];
         publish_response_byte(result, 3U, live_temperature_byte(motor_temperature));
         const uint32_t direction_bits = motor[0x34U / 4U];
+        uint32_t bits;
+#if FIRMWARE_USES_RAW_CAN_FEEDBACK
+        if (selector == 1U)
+        {
+            bits = read_directed_parameter_word(&motor[0x18U / 4U], direction_bits);
+        }
+        else
+        {
+            const volatile float *const motor_floats = (const volatile float *)motor;
+            const float measurement =
+                selector == 2U ? feedback_measurement_velocity(motor_floats)
+                               : feedback_measurement_torque(motor_floats, sample);
+            bits = float_bits(measurement);
+            if (direction_bits != UINT32_C(0x3f800000))
+            {
+                bits ^= UINT32_C(0x80000000);
+            }
+        }
+#else
         const uint32_t offset = selector == 1U ? 0x18U : selector == 2U ? 0x1CU : 0x30U;
-        const uint32_t bits = read_directed_parameter_word(&motor[offset / 4U], direction_bits);
+        bits = read_directed_parameter_word(&motor[offset / 4U], direction_bits);
+#endif
         publish_response_byte(result, 4U, (uint8_t)bits);
         publish_response_byte(result, 5U, (uint8_t)(bits >> 8U));
         publish_response_byte(result, 6U, (uint8_t)(bits >> 16U));
@@ -230,7 +251,7 @@ static void prepare_live_response(uint8_t selector, const MotorConfig *config,
             __asm__ volatile("vneg.f32 %0, %0" : "+t"(position));
             position_bits = float_bits(position);
         }
-        float velocity = ((volatile float *)motor)[0x1CU / 4U];
+        float velocity = feedback_measurement_velocity((const volatile float *)motor);
         if (direction_bits != UINT32_C(0x3f800000))
         {
             __asm__ volatile("vneg.f32 %0, %0" : "+t"(velocity));

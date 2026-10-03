@@ -20,9 +20,9 @@ text 增加約 4 KiB。可用 CMake cache 做實驗 build，但切換 `-Oz/-O2/-
 ## 日常命令
 
 ```sh
-make                    # 九個 target + plain/enc + output verification
-make dm4310             # 單一 target + package
-make build              # 只建九個 ELF/app.bin，不複製 dist package
+make                    # 九型號 × factory/raw + plain/enc + output verification
+make dm4310             # 單一型號的兩種 variant package
+make build              # 只建 18 個 ELF/app.bin，不複製 dist package
 make verify-firmware-outputs
 make help
 ```
@@ -33,11 +33,11 @@ make help
 ## 產物位置
 
 ```text
-build/<model>.elf              symbol、DWARF、真實 VMA/LMA
-build/<model>.map              section、symbol、cross-reference
-build/<model>.app.bin          ELF objcopy 的 APP image
-build/package/<model>/         plain、enc、frames、cansend、manifest
-dist/development/              九型號最終 plain/enc
+build/<model>.elf              factory symbol、DWARF、真實 VMA/LMA
+build/<model>_raw.elf          raw-feedback variant
+build/<model>{,_raw}.app.bin   各 ELF objcopy 的 APP image
+build/package/<variant>/<model>/  plain、enc、frames、cansend、manifest
+dist/development/<variant>/    九型號最終 plain/enc；variant 為 factory/raw
 ```
 
 目前 plain 約 54,112–54,140 bytes，不能把這個範圍硬寫成 build gate；真正 gate 是 64 KiB partition、
@@ -85,7 +85,12 @@ done
 ### 4. Package identity
 
 `make firmwares` 最後自動執行 `verify_firmware_outputs.py`，核對每個 plain 是對應 ELF 的 objcopy、
-encrypted 可 round-trip、manifest/hash/大小一致，而且各 target 沒有錯配。
+encrypted 可 round-trip、manifest/hash/大小/variant 一致，而且各 target 沒有錯配。raw feedback 的
+資料來源另以獨立工具驗證，不加入正常 Make 流程：
+
+```sh
+.venv/bin/python tools/recovery/verify_feedback_variants.py --model dm4310
+```
 
 ## 看大小與記憶體
 

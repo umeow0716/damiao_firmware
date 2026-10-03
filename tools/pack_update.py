@@ -252,7 +252,10 @@ def write_package(app_path: Path, output_dir: Path, purpose: str = "development"
                   profile_path: Path | None = None,
                   bootloader_path: Path | None = None,
                   plain_name: str = "app_plain.bin",
-                  encrypted_name: str = "app_update.enc.bin") -> None:
+                  encrypted_name: str = "app_update.enc.bin",
+                  firmware_variant: str = "factory") -> None:
+    if firmware_variant not in ("factory", "raw"):
+        raise ValueError(f"unsupported firmware variant: {firmware_variant}")
     plaintext = app_path.read_bytes()
     stack, reset = validate_plain_app(plaintext)
     profile: dict[str, object] | None = None
@@ -302,6 +305,7 @@ def write_package(app_path: Path, output_dir: Path, purpose: str = "development"
     manifest = {
         "format": "damiao-can-update-v1",
         "artifact_purpose": purpose,
+        "firmware_variant": firmware_variant,
         "source": str(app_path),
         "app_base": f"0x{APP_BASE:08x}",
         "plaintext_size": len(plaintext),
@@ -353,6 +357,9 @@ def main() -> None:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--purpose", choices=("development", "historical-reference"),
                         default="development")
+    parser.add_argument("--firmware-variant", choices=("factory", "raw"),
+                        default="factory",
+                        help="runtime behavior variant recorded in the manifest")
     parser.add_argument("--plain-name", default="app_plain.bin",
                         help="plaintext output filename inside --output-dir")
     parser.add_argument("--encrypted-name", default="app_update.enc.bin",
@@ -360,7 +367,8 @@ def main() -> None:
     args = parser.parse_args()
     write_package(args.app, args.output_dir, args.purpose,
                   profile_path=args.profile, bootloader_path=args.bootloader,
-                  plain_name=args.plain_name, encrypted_name=args.encrypted_name)
+                  plain_name=args.plain_name, encrypted_name=args.encrypted_name,
+                  firmware_variant=args.firmware_variant)
 
 
 if __name__ == "__main__":
