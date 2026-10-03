@@ -34,7 +34,8 @@ feedback 由 `can_protocol_encode_feedback*()` 從固定 runtime state 量化，
 torque、temperature 與 fault 等 protocol 欄位。方向、gear ratio、量化上下限與 fault 位元會影響
 封包；新增欄位不能直接延長既有 8-byte frame，否則舊 master 會誤解。
 
-建置系統提供兩種保持相同 CAN ID、DLC、byte layout 與單位的行為版本：
+建置系統將「量測來源」與「控制命令是否回覆」做成兩個正交能力。量測來源保持相同 CAN ID、
+DLC、byte layout 與單位：
 
 | 欄位 | `factory` | `raw` |
 |---|---|---|
@@ -51,6 +52,21 @@ torque、temperature 與 fault 等 protocol 欄位。方向、gear ratio、量�
 同一選擇也套用在 `0x7FF` LIVE：selector 0 沿用標準 feedback encoder，selector 2/3 分別回傳
 對應 variant 的 float velocity/torque，selector 4 的 velocity 亦切換；selector 1 的 position 不變，
 selector 4 的 q-current 原本就是未低通值，因此兩版都不再做額外處理。
+
+控制命令回覆則形成另外兩種組合：
+
+| Variant | 量測來源 | MIT／節點控制命令後自動 feedback |
+|---|---|---|
+| `factory` | 原廠 filtered | 有 |
+| `raw` | raw | 有 |
+| `no_response` | 原廠 filtered | 無 |
+| `raw_no_response` | raw | 無 |
+
+no-response 只略過 `mcan1_receive_irq()` command branch 尾端的 feedback encode/send。命令仍會更新
+通訊 age、setpoint、enable/disable、set-zero 或 clear-fault 狀態，IRQ 尾端也照常 ACK peripheral。
+`0x7FF` READ/WRITE/LIVE/STORE、discovery、bootloader request 與其必要回覆全部保留，否則裝置將無法
+設定、查詢或更新。這個模式適合 master 先連續廣播／輪送多軸 MIT 命令，再用明確的 `0x7FF` LIVE
+查詢安排回讀時槽。
 
 若要新增 telemetry，優先設計新 CAN ID／版本化 frame，而不是改動既有 feedback 的 byte 定義。
 

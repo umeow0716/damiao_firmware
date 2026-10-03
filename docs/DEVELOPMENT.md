@@ -23,9 +23,9 @@ make dm4310
 
 輸出：
 
-- `build/dm4310.elf` 與 `build/dm4310_raw.elf`（以及各自的 `.map`、`.hex`、`.app.bin`）；
-- `build/package/factory/dm4310/` 與 `build/package/raw/dm4310/` 的完整 package；
-- `dist/development/factory/` 與 `dist/development/raw/` 下的 plain／encrypted 映像。
+- `build/dm4310{,_raw,_no_response,_raw_no_response}.elf`（以及各自的 `.map`、`.hex`、`.app.bin`）；
+- `build/package/<variant>/dm4310/` 的四份完整 package；
+- `dist/development/<variant>/` 下的 plain／encrypted 映像。
 
 全部 target：
 
@@ -33,7 +33,7 @@ make dm4310
 make firmwares
 ```
 
-這會建置九型號各兩個行為 target、封裝 36 份最終 bin，並分別驗證 plain/ELF identity、variant
+這會建置九型號各四個行為 target、封裝 72 份最終 bin，並分別驗證 plain/ELF identity、variant
 manifest、AES round-trip 與 target 對應。正常 Makefile 不執行 recovery tests，也不把 test code
 連進 firmware。
 
@@ -41,11 +41,13 @@ manifest、AES round-trip 與 target 對應。正常 Makefile 不執行 recovery
 
 ```sh
 make help
-make build                         # 只建 18 個 ELF/app.bin
-make dm8009                        # 單一型號的 factory/raw package
+make build                         # 只建 36 個 ELF/app.bin
+make dm8009                        # 單一型號的四種 variant package
 make verify-firmware-outputs       # 重驗目前 dist/package
 make send CAN_IF=can0              # 重建並傳送 factory DM4310
 make send-raw CAN_IF=can0          # 重建並傳送 raw-feedback DM4310
+make send-no-response CAN_IF=can0  # 重建並傳送 filtered/no-response DM4310
+make send-raw-no-response CAN_IF=can0 # 重建並傳送 raw/no-response DM4310
 make provision-calibration         # 產生 calibration provisioning 資料
 make clean                         # 刪除 build/ 與 dist/
 ```
@@ -58,8 +60,8 @@ python3 tools/send_update.py --interface can0 \
   --frames build/package/factory/dm8009/app_update.frames.jsonl --yes
 ```
 
-若要送 raw 版，把路徑中的 `factory` 換成 `raw`。兩個 package 的檔名相同，但 manifest 的
-`firmware_variant` 分別為 `factory` 與 `raw`，不要只憑複製後的檔名判斷版本。
+`<variant>` 可為 `factory`、`raw`、`no_response` 或 `raw_no_response`。四個 package 的檔名相同，
+但 manifest 的 `firmware_variant` 會明確記錄版本；不要只憑複製後的檔名判斷。
 
 ## 修改流程
 
@@ -92,7 +94,7 @@ python3 tools/send_update.py --interface can0 \
 | 普通非即時 C | 受影響 target build | 對應 unit/differential |
 | profile | 九 target build、source architecture | 該 target差分、persistent default行為 |
 | CAN/UART/parser | build + protocol regressions | 實機 trace、malformed/timeout |
-| factory/raw feedback | 兩版 build + `verify_feedback_variants.py` | CAN capture、raw noise/bandwidth |
+| feedback/response variant | 四版 build + `verify_feedback_variants.py` | CAN capture、raw noise/bandwidth |
 | control/math | full regressions | 長序列、IRQ timing、低壓限流 |
 | board register | image layout + regressions | 無功率 logic/scope |
 | linker/fixed SRAM/startup | 九 target layout + startup copies + full regressions | warm/cold boot、HardFault診斷 |

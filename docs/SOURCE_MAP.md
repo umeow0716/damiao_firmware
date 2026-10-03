@@ -77,7 +77,7 @@ wrapper 與語意 handler 在 `app/src/interrupts.c`；周邊 acknowledge、DMA�
 | `main.c` | 開機順序、主迴圈、deferred event 消費者 |
 | `app_state.c/.h` | `g_app` 的可擴充應用狀態；一般新功能優先放這一層 |
 | `app_profile.h` | 九型號 identity、電氣、機械與控制預設值；唯一可出現 `DAMIAO_MODEL_*` 的共用 header |
-| `firmware_variant.h` | factory／raw feedback 能力、manifest 對應名稱與 UART 狀態 banner |
+| `firmware_variant.h` | raw measurement／command response 能力與 UART 狀態 banner |
 | `feedback_measurements.h` | 速度／扭矩 reporting source；供 motor feedback 與 0x7FF LIVE 共用 |
 | `memory_layout.h` | standard／shifted／relocated SRAM 位址選擇與 ABI assertion |
 | `app_config.c` | 37-word persistent 設定的 defaults、encode、decode、staging |
@@ -144,7 +144,7 @@ wrapper 與語意 handler 在 `app/src/interrupts.c`；周邊 acknowledge、DMA�
 | 新增 target | `config/targets/` | `app_profile.h`、CMake、Makefile、layout verifier |
 | 控制模式或 gain | `motor_control.c` | `motor_types.h`、`app_config.c`、`parameter_protocol.c` |
 | CAN 命令／feedback | `can_protocol.c` | `interrupts.c`、`app_commands.c` |
-| factory／raw 回饋版本 | `firmware_variant.h`、CMake | `can_protocol.c`、`debug_console.c`、Makefile |
+| measurement／command response 版本 | `firmware_variant.h`、CMake | `can_protocol.c`、`interrupts.c`、Makefile |
 | 0x7FF 參數 | `parameter_protocol.c` | `app_config.c`、`platform.c` |
 | fault 門檻／debounce | `safety.c` | `motor_types.h`、`app_config.c`、`app_commands.c` |
 | PWM 頻率／dead time | `board_sampling_timer_*` | ADC trigger、控制器 `sample_period`、實機驗收 |

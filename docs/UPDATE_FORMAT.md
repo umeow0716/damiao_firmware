@@ -3,7 +3,7 @@
 現行契約由 `config/update_profile.json` 與 `tools/pack_update.py` 共同定義。來源 bootloader不在本
 工作區；profile帶有其 provenance hash，不能在不改格式版本的情況下更換 key、counter或 framing。
 
-## 兩種檔案格式、兩種行為版本
+## 兩種檔案格式、四種行為版本
 
 - `<model>_plain.bin`：APP明文，直接以 programmer/debugger寫到 `0x00020000`。
 - `<model>_enc.bin`：AES-256-CTR ciphertext，只供既有 loader更新流程。
@@ -11,8 +11,9 @@
 loader最後寫入 Flash的仍是明文 Cortex-M vector與程式。`_enc.bin` 直接寫入 `0x20000` 必然無法
 正常啟動。
 
-每個型號都有 `factory` 與 `raw` 行為版本；兩者都各自提供上述 plain／encrypted 格式。raw 只改
-CAN feedback 的速度與扭矩資料來源，不改 loader framing 或 encryption。package manifest 的
+每個型號都有 `factory`、`raw`、`no_response` 與 `raw_no_response`；四者都各自提供上述
+plain／encrypted 格式。raw 維度只改 CAN feedback 的速度與扭矩資料來源，no-response 維度只取消
+控制命令後的自動 motor feedback；兩者都不改 loader framing 或 encryption。package manifest 的
 `firmware_variant` 是權威辨識欄位。
 
 ## Partition 與 validation
@@ -70,7 +71,7 @@ build/package/<variant>/<model>/
 
 manifest記錄 plain/encrypted SHA-256、大小、MSP、Reset Handler、chunk count、transport、profile與
 provenance。`dist/development/<variant>/` 僅複製最後的 plain/enc；實際 CAN sender要讀 package中的
-frames。`<variant>` 為 `factory` 或 `raw`。
+frames。`<variant>` 為 `factory`、`raw`、`no_response` 或 `raw_no_response`。
 
 ## 發送
 
@@ -88,7 +89,8 @@ python3 tools/send_update.py --interface can0 \
   --frames build/package/factory/dm8009/app_update.frames.jsonl --yes
 ```
 
-raw DM4310 可使用 `make send-raw CAN_IF=can0`；其他型號則把 package 路徑的 `factory` 換成 `raw`。
+DM4310 另有 `make send-raw`、`make send-no-response` 與 `make send-raw-no-response`；其他型號可直接
+選擇對應 package 路徑。
 
 裝置必須已等待在 loader。sender逐 chunk等 `0x7FE` ACK；`CRCERROR`/`TimERROR`可重送目前 chunk，
 `EFMERROR`/`APPERROR`立即停止，最後一包還需收到 `complete`。

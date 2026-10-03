@@ -20,9 +20,9 @@ text 增加約 4 KiB。可用 CMake cache 做實驗 build，但切換 `-Oz/-O2/-
 ## 日常命令
 
 ```sh
-make                    # 九型號 × factory/raw + plain/enc + output verification
-make dm4310             # 單一型號的兩種 variant package
-make build              # 只建 18 個 ELF/app.bin，不複製 dist package
+make                    # 九型號 × 四種 variant + plain/enc + output verification
+make dm4310             # 單一型號的四種 variant package
+make build              # 只建 36 個 ELF/app.bin，不複製 dist package
 make verify-firmware-outputs
 make help
 ```
@@ -35,13 +35,15 @@ make help
 ```text
 build/<model>.elf              factory symbol、DWARF、真實 VMA/LMA
 build/<model>_raw.elf          raw-feedback variant
-build/<model>{,_raw}.app.bin   各 ELF objcopy 的 APP image
+build/<model>_no_response.elf  filtered/no-response variant
+build/<model>_raw_no_response.elf  raw/no-response variant
+build/<model><suffix>.app.bin  各 ELF objcopy 的 APP image
 build/package/<variant>/<model>/  plain、enc、frames、cansend、manifest
-dist/development/<variant>/    九型號最終 plain/enc；variant 為 factory/raw
+dist/development/<variant>/    九型號最終 plain/enc；共四種 variant
 ```
 
-目前 plain 約 54,112–54,140 bytes，不能把這個範圍硬寫成 build gate；真正 gate 是 64 KiB partition、
-linker ASSERT 與每次輸出的實際 free symbol。
+目前四種 variant 的 plain 為 54,096–54,220 bytes，不能把這個範圍硬寫成 build gate；真正 gate 是
+64 KiB partition、linker ASSERT 與每次輸出的實際 free symbol。
 
 ## 離線驗收層級
 

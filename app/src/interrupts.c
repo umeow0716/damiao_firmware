@@ -2,6 +2,7 @@
 #include "app_commands.h"
 #include "can_protocol.h"
 #include "debug_console.h"
+#include "firmware_variant.h"
 #include "interrupts.h"
 
 #include "memory_layout.h"
@@ -141,9 +142,11 @@ void mcan1_receive_irq(void)
             if (kind != CAN_COMMAND_NONE)
             {
                 app_apply_can_command_irq(kind, &command, &references);
+#if FIRMWARE_SENDS_COMMAND_FEEDBACK
                 CanFrame response;
                 can_protocol_encode_feedback_irq(&references, &response);
                 platform_mcan_send_prebuilt_irq((uint16_t)response.id, 8U, &references);
+#endif
             }
         }
     }

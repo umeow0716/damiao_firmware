@@ -177,7 +177,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--expected-variant",
-        choices=("factory", "raw"),
+        choices=("factory", "raw", "no_response", "raw_no_response"),
         default="factory",
         help="firmware variant expected in every package manifest",
     )

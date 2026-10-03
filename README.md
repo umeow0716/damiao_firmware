@@ -28,19 +28,23 @@ make
 make dm4310
 ```
 
-產物依行為分在 `dist/development/factory/` 與 `dist/development/raw/`：
+產物依行為分在四個目錄：
 
 ```text
-factory/<model>_plain.bin   原廠 feedback 行為，直接寫入 0x00020000
-factory/<model>_enc.bin     原廠 feedback 行為，供既有 bootloader 更新
-raw/<model>_plain.bin       未濾波速度／扭矩 feedback，直接寫入 0x00020000
-raw/<model>_enc.bin         未濾波速度／扭矩 feedback，供既有 bootloader 更新
+dist/development/
+├── factory/          原廠量測、控制命令後自動回覆
+├── raw/              raw 量測、控制命令後自動回覆
+├── no_response/      原廠量測、控制命令不回覆
+└── raw_no_response/  raw 量測、控制命令不回覆
 ```
 
-兩版的控制迴路、命令、保護、位置、溫度、fault 與 CAN 封包格式相同。`raw` 只讓標準 feedback
+每個目錄都有九型號各自的 `<model>_plain.bin` 與 `<model>_enc.bin`。`raw` 只讓標準 feedback
 與 `0x7FF` LIVE 中的速度改用未低通的 encoder 微分、扭矩改用當下 q 軸電流；兩者仍換算成原有
-output-side 單位並套用方向與量化範圍。raw 版 UART 狀態 banner 為
-`DMBOT Motor Driver(with raw result)`，可用來辨識目前刷入的版本。
+output-side 單位並套用方向與量化範圍。`no_response` 仍會解析、執行 MIT／其他節點控制命令，但
+不再自動送出其 8-byte motor feedback；`0x7FF` 參數、STORE、bootloader 與必要 ACK 不受影響。
+
+UART 狀態 banner 可辨識四版：原版無後綴，其餘依序為 `(with raw result)`、`(no response)` 與
+`(with raw result and no response)`。
 
 請勿把 `_enc.bin` 直接寫進 APP Flash，也不要把某一型號的映像刷到另一型號。
 
@@ -76,7 +80,7 @@ HC32F448 + inverter + sensors
 
 - `common/`：控制數學、CRC、AES、boot record 等共用元件。
 - `config/targets/`：九個 target profile；不要在共用程式散落型號判斷。
-- `app/include/firmware_variant.h`：factory／raw 行為名稱、banner 與回饋能力選擇。
+- `app/include/firmware_variant.h`：raw measurement／command response 兩個能力與 banner 選擇。
 - `startup/`、`linker/`：vector、copy-down、固定 SRAM ABI 與 64 KiB APP 邊界。
 - `tools/`：封裝、傳輸、校正 provisioning 與開發工具。
 - `reference/`、`recovered/`、`tools/recovery/`：復原證據與獨立差分工具，**不會連結進產品映像**。

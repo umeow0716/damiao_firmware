@@ -280,13 +280,24 @@ set(DAMIAO_FIRMWARE_TARGETS
 set(DAMIAO_ALL_FIRMWARE_TARGETS)
 foreach(target IN LISTS DAMIAO_FIRMWARE_TARGETS)
     # Feedback behavior is orthogonal to the hardware/model profile.  Keep one
-    # profile per product and derive both runtime variants from it.
+    # profile per product and derive the runtime variant matrix from it.
     damiao_add_profiled_firmware(${target}
         "${CMAKE_CURRENT_SOURCE_DIR}/config/targets/${target}.cmake")
     damiao_add_profiled_firmware(${target}_raw
         "${CMAKE_CURRENT_SOURCE_DIR}/config/targets/${target}.cmake"
         DAMIAO_FEEDBACK_VARIANT_RAW=1)
-    list(APPEND DAMIAO_ALL_FIRMWARE_TARGETS ${target} ${target}_raw)
+    damiao_add_profiled_firmware(${target}_no_response
+        "${CMAKE_CURRENT_SOURCE_DIR}/config/targets/${target}.cmake"
+        DAMIAO_COMMAND_FEEDBACK_DISABLED=1)
+    damiao_add_profiled_firmware(${target}_raw_no_response
+        "${CMAKE_CURRENT_SOURCE_DIR}/config/targets/${target}.cmake"
+        DAMIAO_FEEDBACK_VARIANT_RAW=1
+        DAMIAO_COMMAND_FEEDBACK_DISABLED=1)
+    list(APPEND DAMIAO_ALL_FIRMWARE_TARGETS
+        ${target}
+        ${target}_raw
+        ${target}_no_response
+        ${target}_raw_no_response)
 endforeach()
 
 # The V3 applications occupy a fixed 64 KiB APP partition and share the same

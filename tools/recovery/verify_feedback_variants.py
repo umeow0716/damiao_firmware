@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""Verify factory and raw CAN feedback data sources in source-built ELFs.
+"""Verify the CAN feedback/response variant matrix in source-built ELFs.
 
 This recovery/development check is intentionally not part of the normal Make
 workflow.  It executes the encoder from each ELF with deliberately different
 filtered and unfiltered measurements, then checks the emitted eight-byte CAN
-payload and the related 0x7FF LIVE selectors.
+payload, related 0x7FF LIVE selectors, command-response policy and banner.
 """
 
 from __future__ import annotations
 
 import argparse
 import struct
+import subprocess
 from io import BytesIO
 from pathlib import Path
 
@@ -34,6 +35,7 @@ SCRATCH_ADDRESS = 0x20003000
 DISPATCH_ADDRESS = 0x20004000
 REQUEST_ADDRESS = 0x20005000
 RESULT_ADDRESS = 0x20006000
+DEFAULT_OBJDUMP = ROOT / "tools/arm-gnu-toolchain/bin/arm-none-eabi-objdump"
 
 
 def f32(machine: Uc, address: int, value: float) -> None:
@@ -222,64 +224,88 @@ def expected_live_combined(velocity: float) -> bytes:
             struct.pack("<H", packed_current))
 
 
+def verify_command_response_policy(path: Path, sends_response: bool,
+                                   objdump: Path) -> None:
+    completed = subprocess.run(
+        [str(objdump), "-d", "--disassemble=mcan1_receive_irq", str(path)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    disassembly = completed.stdout
+    has_feedback_encoder = "<can_protocol_encode_feedback_irq>" in disassembly
+    if has_feedback_encoder != sends_response:
+        raise SystemExit(
+            f"{path}: command feedback call policy mismatch; "
+            f"expected sends_response={sends_response}"
+        )
+    for required in ("<can_protocol_decode_command_irq>",
+                     "<app_apply_can_command_irq>"):
+        if required not in disassembly:
+            raise SystemExit(f"{path}: missing retained command path {required}")
+    # Parameter replies must remain available in every variant.
+    for required in ("<parameter_protocol_process_irq>",
+                     "<platform_mcan_send_prebuilt_irq>"):
+        if required not in disassembly:
+            raise SystemExit(f"{path}: missing retained parameter path {required}")
+
+
+def verify_banner(path: Path, expected: str, all_banners: tuple[str, ...]) -> None:
+    image = path.read_bytes()
+    expected_bytes = expected.encode("ascii") + b"\0"
+    if expected_bytes not in image:
+        raise SystemExit(f"{path}: missing expected banner {expected!r}")
+    for banner in all_banners:
+        if banner != expected and banner.encode("ascii") + b"\0" in image:
+            raise SystemExit(f"{path}: unexpected banner {banner!r}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default="dm4310")
     parser.add_argument("--build-dir", type=Path, default=ROOT / "build")
+    parser.add_argument("--objdump", type=Path, default=DEFAULT_OBJDUMP)
     args = parser.parse_args()
 
-    factory_payload, factory_id, factory_length = run_encoder(
-        args.build_dir / f"{args.model}.elf"
+    variants = (
+        ("factory", "", False, True, "DMBOT Motor Driver"),
+        ("raw", "_raw", True, True,
+         "DMBOT Motor Driver(with raw result)"),
+        ("no_response", "_no_response", False, False,
+         "DMBOT Motor Driver(no response)"),
+        ("raw_no_response", "_raw_no_response", True, False,
+         "DMBOT Motor Driver(with raw result and no response)"),
     )
-    raw_payload, raw_id, raw_length = run_encoder(
-        args.build_dir / f"{args.model}_raw.elf"
-    )
-
-    expected_factory = expected_payload(3.0, 2.0)
-    expected_raw = expected_payload(7.0, -8.0)
-    if factory_payload != expected_factory:
-        raise SystemExit(
-            f"factory payload mismatch: {factory_payload.hex()} != "
-            f"{expected_factory.hex()}"
-        )
-    if raw_payload != expected_raw:
-        raise SystemExit(
-            f"raw payload mismatch: {raw_payload.hex()} != {expected_raw.hex()}"
-        )
-    if (factory_id, factory_length) != (0x456, 8):
-        raise SystemExit("factory frame ID/length changed")
-    if (raw_id, raw_length) != (0x456, 8):
-        raise SystemExit("raw frame ID/length changed")
-
-    live_expectations = {
-        1: (expected_live_measurement(1.25), expected_live_measurement(1.25)),
-        2: (expected_live_measurement(3.0), expected_live_measurement(7.0)),
-        3: (expected_live_measurement(2.0), expected_live_measurement(-8.0)),
-        4: (expected_live_combined(3.0), expected_live_combined(7.0)),
-    }
-    for selector, (factory_expected, raw_expected) in live_expectations.items():
-        factory_live = run_live_selector(
-            args.build_dir / f"{args.model}.elf", selector
-        )
-        raw_live = run_live_selector(
-            args.build_dir / f"{args.model}_raw.elf", selector
-        )
-        if factory_live != factory_expected:
+    banners = tuple(variant[4] for variant in variants)
+    for name, suffix, uses_raw, sends_response, banner in variants:
+        path = args.build_dir / f"{args.model}{suffix}.elf"
+        payload, frame_id, frame_length = run_encoder(path)
+        expected = (expected_payload(7.0, -8.0) if uses_raw else
+                    expected_payload(3.0, 2.0))
+        if payload != expected:
             raise SystemExit(
-                f"factory LIVE selector {selector} mismatch: "
-                f"{factory_live.hex()} != {factory_expected.hex()}"
+                f"{name} payload mismatch: {payload.hex()} != {expected.hex()}"
             )
-        if raw_live != raw_expected:
-            raise SystemExit(
-                f"raw LIVE selector {selector} mismatch: "
-                f"{raw_live.hex()} != {raw_expected.hex()}"
-            )
+        if (frame_id, frame_length) != (0x456, 8):
+            raise SystemExit(f"{name} frame ID/length changed")
 
-    print(
-        f"PASS: {args.model} factory={factory_payload.hex()} uses filtered "
-        f"velocity/torque; raw={raw_payload.hex()} uses unfiltered values; "
-        "LIVE selectors 1-4 agree"
-    )
+        live_expectations = {
+            1: expected_live_measurement(1.25),
+            2: expected_live_measurement(7.0 if uses_raw else 3.0),
+            3: expected_live_measurement(-8.0 if uses_raw else 2.0),
+            4: expected_live_combined(7.0 if uses_raw else 3.0),
+        }
+        for selector, live_expected in live_expectations.items():
+            live = run_live_selector(path, selector)
+            if live != live_expected:
+                raise SystemExit(
+                    f"{name} LIVE selector {selector} mismatch: "
+                    f"{live.hex()} != {live_expected.hex()}"
+                )
+        verify_command_response_policy(path, sends_response, args.objdump)
+        verify_banner(path, banner, banners)
+
+    print(f"PASS: {args.model} four-variant feedback/response matrix and banners")
     return 0
 
 
