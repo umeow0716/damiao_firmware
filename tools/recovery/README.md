@@ -3,6 +3,12 @@
 這個目錄保存不屬於一般韌體 build 的 factory/source 差分驗證器。腳本不會由 CMake 或 make
 自動執行，也不會把 factory binary 連結進產品映像。
 
+型號 profile、共用 V3 source 與 recovery-only 工具的隔離規則可獨立檢查：
+
+```sh
+python3 tools/recovery/verify_source_architecture.py
+```
+
 先完成目前的 firmware build，再於 repository root 執行。若分析環境不存在，可重建在任意
 位置；套件版本保存在 `tools/recovery/requirements.txt`：
 

@@ -12,7 +12,7 @@
 #include "debug_console.h"
 
 AppState g_app;
-Dm4310RuntimeStatus dm4310_runtime_status;
+FactoryRuntimeStatus dm4310_runtime_status;
 
 static uint32_t console_mode;
 static unsigned transport_selects;

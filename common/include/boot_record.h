@@ -9,7 +9,8 @@
 #define APP_UPDATE_JOURNAL_VERSION 1UL
 #define APP_UPDATE_JOURNAL_IN_PROGRESS 0x52504749UL
 
-typedef struct {
+typedef struct
+{
     uint32_t boot_request;
     uint32_t application_confirmed;
     uint32_t device_id;
@@ -17,17 +18,19 @@ typedef struct {
     uint32_t swd_disabled;
 } BootPersistentRecord;
 
-/* Source-loader extension stored immediately after the five historical
- * words.  The original loader/application ignore this area, so the first
+/* Loader extension stored immediately after the five legacy words.  Existing
+ * loader/application code ignores this area, so the first
  * 20-byte ABI remains unchanged. */
-typedef struct {
+typedef struct
+{
     uint32_t magic;
     uint32_t version;
     uint32_t state;
     uint32_t state_inverse;
 } BootUpdateJournal;
 
-typedef struct {
+typedef struct
+{
     BootPersistentRecord record;
     BootUpdateJournal update;
 } BootRecordSectorPrefix;

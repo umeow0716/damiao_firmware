@@ -1,0 +1,4 @@
+*.S
+*.ld
+app/generated/**
+common/generated/**

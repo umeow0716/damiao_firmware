@@ -2,13 +2,13 @@
 .cpu cortex-m4
 .thumb
 
-/* Factory rounding arithmetic and float-to-int caller, source instructions. */
-.section .text.dm4310_factory_round_even,"ax",%progbits
+/* Soft-float rounding, conversion, and extended arithmetic primitives. */
+.section .text.softfloat_round_even,"ax",%progbits
 .balign 4
-.global dm4310_round_even_core
-.type dm4310_round_even_core, %function
+.global round_even_core
+.type round_even_core, %function
 .thumb_func
-dm4310_round_even_core:
+round_even_core:
 .Lround_27c3c:
     movs.w ip, r0, lsl #1
 .Lround_27c40:
@@ -66,21 +66,21 @@ dm4310_round_even_core:
 .Lround_27c92:
     push {r4, lr}
 .Lround_27c94:
-    bl dm4310_softfloat_exception_core
+    bl softfloat_exception_core
 .balign 4
 .Lround_27c98:
     .word 0xbeb6db40
-    /* Factory selector action-0 continuation at 0x27c9c. */
+    /* Selector action zero continues in the round-to-even formatter. */
     .hword 0xf7f8, 0xbf53
 /* Exponent 255 alone enters selector: actions 5 (infinity) or 6 (NaN).
- * The factory action-0 formatter continuation is unreachable here. */
-.size dm4310_round_even_core, .-dm4310_round_even_core
-.section .text.dm4310_factory_runtime_round_to_int,"ax",%progbits
+ * The action-zero formatter continuation is unreachable here. */
+.size round_even_core, .-round_even_core
+.section .text.softfloat_runtime_round_to_int,"ax",%progbits
 .balign 2
-.global dm4310_runtime_round_to_int
-.type dm4310_runtime_round_to_int, %function
+.global runtime_round_to_int
+.type runtime_round_to_int, %function
 .thumb_func
-dm4310_runtime_round_to_int:
+runtime_round_to_int:
 .Lround_23e94:
     push {r4, lr}
 .Lround_23e96:
@@ -90,7 +90,7 @@ dm4310_runtime_round_to_int:
 .Lround_23e9e:
     vmov r0, s17
 .Lround_23ea2:
-    bl dm4310_round_even_core
+    bl round_even_core
 .Lround_23ea6:
     vmov s16, r0
 .Lround_23eaa:
@@ -186,7 +186,7 @@ dm4310_runtime_round_to_int:
 .Lround_23f40:
     movs r0, #1
 .Lround_23f42:
-    bl dm4310_runtime_errno_set_helper
+    bl runtime_errno_set_helper
 .Lround_23f46:
     vmov r0, s16
 .Lround_23f4a:
@@ -194,14 +194,14 @@ dm4310_runtime_round_to_int:
 .Lround_23f4e:
     ldmia.w sp!, {r4, lr}
 .Lround_23f52:
-    b.w dm4310_float_to_int_core
-.size dm4310_runtime_round_to_int, .-dm4310_runtime_round_to_int
-.section .text.dm4310_factory_float_to_int,"ax",%progbits
+    b.w float_to_int_core
+.size runtime_round_to_int, .-runtime_round_to_int
+.section .text.softfloat_float_to_int,"ax",%progbits
 .balign 2
-.global dm4310_float_to_int_core
-.type dm4310_float_to_int_core, %function
+.global float_to_int_core
+.type float_to_int_core, %function
 .thumb_func
-dm4310_float_to_int_core:
+float_to_int_core:
 .Lround_27b2e:
     vmov s0, r0
 .Lround_27b32:
@@ -210,20 +210,20 @@ dm4310_float_to_int_core:
     vmov r0, s2
 .Lround_27b3a:
     bx lr
-.size dm4310_float_to_int_core, .-dm4310_float_to_int_core
+.size float_to_int_core, .-float_to_int_core
 
-/* Factory uint64-to-float entry/core, 0x27b3c and 0x27b56. */
-.section .text.dm4310_factory_uint64_to_float_entry,"ax",%progbits
+/* Unsigned 64-bit to binary32 entry point and conversion core. */
+.section .text.softfloat_uint64_to_float_entry,"ax",%progbits
 .balign 4
-.global dm4310_runtime_uint64_to_float
-.type dm4310_runtime_uint64_to_float, %function
+.global runtime_uint64_to_float
+.type runtime_uint64_to_float, %function
 .thumb_func
-dm4310_runtime_uint64_to_float:
+runtime_uint64_to_float:
     mov.w r2, #0x3f800000
     .hword 0xe009
-.size dm4310_runtime_uint64_to_float, .-dm4310_runtime_uint64_to_float
+.size runtime_uint64_to_float, .-runtime_uint64_to_float
 
-.section .text.dm4310_factory_uint64_to_float_core,"ax",%progbits
+.section .text.softfloat_uint64_to_float_core,"ax",%progbits
 .balign 2
     movs r3, r1
     add.w r2, r2, #0x0f000000
@@ -247,13 +247,13 @@ dm4310_runtime_uint64_to_float:
     biccs.w r0, r0, #1
     bx lr
 
-/* Factory float exception selector and float-to-double conversion. */
-.section .text.dm4310_factory_softfloat_exception,"ax",%progbits
+/* Binary32 exception selection and binary32-to-binary64 conversion. */
+.section .text.softfloat_softfloat_exception,"ax",%progbits
 .balign 4
-.global dm4310_softfloat_exception_core
-.type dm4310_softfloat_exception_core, %function
+.global softfloat_exception_core
+.type softfloat_exception_core, %function
 .thumb_func
-dm4310_softfloat_exception_core:
+softfloat_exception_core:
 .Lsoft_float_27b9c:
     add.w lr, lr, #2
 .Lsoft_float_27ba0:
@@ -340,7 +340,7 @@ dm4310_softfloat_exception_core:
     andhi.w r0, r0, #2147483648
 .Lsoft_float_27c26:
     pop {r4, pc}
-.section .text.dm4310_factory_f2d,"ax",%progbits
+.section .text.softfloat_f2d,"ax",%progbits
 .balign 4
 .global __wrap___aeabi_f2d
 .type __wrap___aeabi_f2d, %function
@@ -383,7 +383,7 @@ __wrap___aeabi_f2d:
 .Lsoft_float_27b0a:
     orr.w r0, r0, ip, lsl #3
 .Lsoft_float_27b0e:
-    bl dm4310_softfloat_exception_core
+    bl softfloat_exception_core
 .Lsoft_float_27b12:
     nop
 .balign 4
@@ -392,8 +392,8 @@ __wrap___aeabi_f2d:
 .Lsoft_float_27b18:
     mov.w r1, r0
 .Lsoft_float_27b1c:
-    b.w dm4310_softdouble_saturate_core
-.section .text.dm4310_factory_f2d_exception_result,"ax",%progbits
+    b.w softdouble_saturate_core
+.section .text.softfloat_f2d_exception_result,"ax",%progbits
 .balign 2
 .Lsoft_float_27b20:
     mov.w r1, #0x80000000
@@ -401,8 +401,8 @@ __wrap___aeabi_f2d:
     sub.w r1, r1, #0x80000
     bx lr
 
-/* Factory softdouble divide. Seeds retain the fixed Flash address 0x27450. */
-.section .text.dm4310_factory_ddiv,"ax",%progbits
+/* Software binary64 division with a PC-relative reciprocal seed table. */
+.section .text.softfloat_ddiv,"ax",%progbits
 .balign 4
 .global __wrap___aeabi_ddiv
 .type __wrap___aeabi_ddiv, %function
@@ -413,7 +413,7 @@ __wrap___aeabi_ddiv:
 .Lsoft_divide_2722c:
     push {r4, r5}
 .Lsoft_divide_2722e:
-    /* Factory literal is after the 128-byte reciprocal table at 0x274d0. */
+    /* The literal follows the 128-byte reciprocal table. */
     .hword 0xf8df, 0xc2a0
 .Lsoft_divide_27232:
     bics.w r4, ip, r1, lsr #4
@@ -466,7 +466,7 @@ __wrap___aeabi_ddiv:
 .Lsoft_divide_27288:
     mov.w r5, r3, lsr #24
 .Lsoft_divide_2728c:
-    /* Original fixed-address PC-relative base; r5 contributes 0x80..0xff. */
+    /* Fixed-address PC-relative base; r5 contributes 0x80..0xff. */
     addw r6, pc, #320
 .Lsoft_divide_27290:
     ldrb r6, [r6, r5]
@@ -595,7 +595,7 @@ __wrap___aeabi_ddiv:
 .Lsoft_divide_27366:
     ldmia.w sp!, {r8, lr}
 .Lsoft_divide_2736a:
-    b.w dm4310_softdouble_saturate_core
+    b.w softdouble_saturate_core
 .Lsoft_divide_2736e:
     mov.w r2, r2, lsr #11
 .Lsoft_divide_27372:
@@ -691,7 +691,7 @@ __wrap___aeabi_ddiv:
 .Lsoft_divide_27410:
     eor.w r1, r1, r3
 .Lsoft_divide_27414:
-    b.w dm4310_softdouble_saturate_core
+    b.w softdouble_saturate_core
 .Lsoft_divide_27418:
     pop {r4, r5, r6, r7}
 .Lsoft_divide_2741a:
@@ -699,7 +699,7 @@ __wrap___aeabi_ddiv:
 .Lsoft_divide_2741e:
     push {r4, r5, r6, lr}
 .Lsoft_divide_27420:
-    bl dm4310_softdouble_exception_core
+    bl softdouble_exception_core
 .balign 4
 .Lsoft_divide_27424:
     .word 0x3efc7e09
@@ -716,7 +716,7 @@ __wrap___aeabi_ddiv:
 .Lsoft_divide_2743a:
     eor.w r1, r1, r3
 .Lsoft_divide_2743e:
-    b.w dm4310_softdouble_saturate_core
+    b.w softdouble_saturate_core
 .Lsoft_divide_27442:
     pop {r4, r5, r6, r7}
 .Lsoft_divide_27444:
@@ -724,26 +724,26 @@ __wrap___aeabi_ddiv:
 .Lsoft_divide_27448:
     mov.w r0, #0
 .Lsoft_divide_2744c:
-    /* Factory literal is 0x84 bytes beyond the aligned PC at 0x27450. */
+    /* Keep the saturation literal 0x84 bytes beyond the aligned PC. */
     .hword 0x4921
 .Lsoft_divide_2744e:
     bx lr
-.section .rodata.dm4310_factory_ddiv_literals,"a",%progbits
+.section .rodata.softfloat_ddiv_literals,"a",%progbits
 .balign 4
 .Lsoft_divide_exponent_mask:
     .word 0x07ff0000
 .Lsoft_divide_nan:
     .word 0x7ff80000
 
-/* Factory double-to-uint32 conversion, 0x274d8..0x2752f. */
-.section .text.dm4310_factory_d2uiz,"ax",%progbits
+/* Binary64-to-uint32 conversion with saturating exceptional cases. */
+.section .text.softfloat_d2uiz,"ax",%progbits
 .balign 4
-.global dm4310_runtime_double_to_uint
+.global runtime_double_to_uint
 .global __wrap___aeabi_d2uiz
-.type dm4310_runtime_double_to_uint, %function
+.type runtime_double_to_uint, %function
 .type __wrap___aeabi_d2uiz, %function
 .thumb_func
-dm4310_runtime_double_to_uint:
+runtime_double_to_uint:
 __wrap___aeabi_d2uiz:
     mov.w r3, r1, lsr #20
     sub.w r3, r3, #1024
@@ -774,20 +774,20 @@ __wrap___aeabi_d2uiz:
     bx lr
 .Ld2uiz_exception:
     push {r4, r5, r6, lr}
-    bl dm4310_softdouble_exception_core
+    bl softdouble_exception_core
     nop
     .word 0x80249249
     movs r0, #0
     bx lr
-.size dm4310_runtime_double_to_uint, .-dm4310_runtime_double_to_uint
+.size runtime_double_to_uint, .-runtime_double_to_uint
 .size __wrap___aeabi_d2uiz, .-__wrap___aeabi_d2uiz
 
-.section .text.dm4310_factory_d2uiz_saturate,"ax",%progbits
+.section .text.softfloat_d2uiz_saturate,"ax",%progbits
 .balign 2
     b.n .Ld2uiz_saturate
 
-/* Factory uint32-to-double conversion, 0x27532..0x27557. */
-.section .text.dm4310_factory_ui2d,"ax",%progbits
+/* Unsigned uint32-to-binary64 conversion. */
+.section .text.softfloat_ui2d,"ax",%progbits
 .balign 2
 .global __wrap___aeabi_ui2d
 .type __wrap___aeabi_ui2d, %function
@@ -807,8 +807,8 @@ __wrap___aeabi_ui2d:
     bx lr
 .size __wrap___aeabi_ui2d, .-__wrap___aeabi_ui2d
 
-/* Factory softdouble multiply, 0x27558..0x276aa. */
-.section .text.dm4310_factory_dmul,"ax",%progbits
+/* Software binary64 multiplication. */
+.section .text.softfloat_dmul,"ax",%progbits
 .balign 4
 .global __wrap___aeabi_dmul
 .type __wrap___aeabi_dmul, %function
@@ -953,7 +953,7 @@ __wrap___aeabi_dmul:
 .Lsoft_multiply_2763c:
     ldmia.w sp!, {r4, r5, r6, lr}
 .Lsoft_multiply_27640:
-    bge.w dm4310_softdouble_saturate_core
+    bge.w softdouble_saturate_core
 .Lsoft_multiply_27644:
     mov.w r0, #0
 .Lsoft_multiply_27648:
@@ -981,7 +981,7 @@ __wrap___aeabi_dmul:
 .Lsoft_multiply_2766e:
     pop {r4, r5, r6, pc}
 .Lsoft_multiply_27670:
-    bl dm4310_softdouble_exception_core
+    bl softdouble_exception_core
 .balign 4
 .Lsoft_multiply_27674:
     .word 0x3e010089
@@ -998,7 +998,7 @@ __wrap___aeabi_dmul:
 .Lsoft_multiply_2768a:
     eor.w r1, r1, r3
 .Lsoft_multiply_2768e:
-    b.w dm4310_softdouble_saturate_core
+    b.w softdouble_saturate_core
 .Lsoft_multiply_27692:
     mov.w ip, r1, lsl #1
 .Lsoft_multiply_27696:
@@ -1018,8 +1018,8 @@ __wrap___aeabi_dmul:
 .Lsoft_multiply_276a8:
     .word 0x7ff80000
 
-/* Factory double-to-float conversion, 0x27074 plus shared 0x27c32 tail. */
-.section .text.dm4310_factory_d2f,"ax",%progbits
+/* Binary64-to-binary32 conversion with a shared rounding tail. */
+.section .text.softfloat_d2f,"ax",%progbits
 .balign 4
 .global __aeabi_d2f
 .type __aeabi_d2f, %function
@@ -1053,18 +1053,18 @@ __aeabi_d2f:
     b.w .Ld2f_pack
 .Ld2f_exception:
     push {r4, r5, r6, lr}
-    bl dm4310_softdouble_exception_core
+    bl softdouble_exception_core
     .word 0x89000000
     b.w .Ld2f_special
 .size __aeabi_d2f, .-__aeabi_d2f
 
-.section .text.dm4310_factory_d2f_exception_result,"ax",%progbits
+.section .text.softfloat_d2f_exception_result,"ax",%progbits
 .balign 2
     mov.w r0, #0x80000000
     sub.w r0, r0, #0x00400000
     bx lr
 
-.section .text.dm4310_factory_d2f_pack,"ax",%progbits
+.section .text.softfloat_d2f_pack,"ax",%progbits
 .balign 2
 .Ld2f_pack:
     movs r1, #255
@@ -1072,8 +1072,8 @@ __aeabi_d2f:
     lsls r0, r0, #23
     bx lr
 
-/* Softdouble add/subtract and reverse subtract, factory shared entries. */
-.section .text.dm4310_factory_dadd,"ax",%progbits
+/* Shared software binary64 add, subtract, and reverse-subtract entries. */
+.section .text.softfloat_dadd,"ax",%progbits
 .balign 4
 .global __wrap___aeabi_dadd
 .type __wrap___aeabi_dadd, %function
@@ -1188,7 +1188,7 @@ __wrap___aeabi_dadd:
 .Lsoft_arithmetic_27184:
     sub.w r1, r1, #1610612736
 .Lsoft_arithmetic_27188:
-    b.w dm4310_softdouble_saturate_core
+    b.w softdouble_saturate_core
 .Lsoft_arithmetic_2718c:
     cmp r2, #1
 .Lsoft_arithmetic_2718e:
@@ -1258,7 +1258,7 @@ __wrap___aeabi_dadd:
 .Lsoft_arithmetic_271f4:
     sub.w r1, r1, #1610612736
 .Lsoft_arithmetic_271f8:
-    b.w dm4310_softdouble_saturate_core
+    b.w softdouble_saturate_core
 .Lsoft_arithmetic_271fc:
     teq lr, r4, lsl #21
 .Lsoft_arithmetic_27200:
@@ -1280,7 +1280,7 @@ __wrap___aeabi_dadd:
 .Lsoft_arithmetic_27218:
     push {r4, r5, r6, lr}
 .Lsoft_arithmetic_2721a:
-    bl dm4310_softdouble_exception_core
+    bl softdouble_exception_core
 .Lsoft_arithmetic_2721e:
     nop
 .balign 4
@@ -1290,11 +1290,11 @@ __wrap___aeabi_dadd:
 .Lsoft_arithmetic_27224:
     .word 0xffe00000
 .balign 4
-.section .text.dm4310_factory_reverse_subtract,"ax",%progbits
-.global dm4310_softdouble_reverse_subtract_core
-.type dm4310_softdouble_reverse_subtract_core, %function
+.section .text.softfloat_reverse_subtract,"ax",%progbits
+.global softdouble_reverse_subtract_core
+.type softdouble_reverse_subtract_core, %function
 .thumb_func
-dm4310_softdouble_reverse_subtract_core:
+softdouble_reverse_subtract_core:
 .Lsoft_arithmetic_27754:
     teq r1, r3
 .Lsoft_arithmetic_27758:
@@ -1307,7 +1307,7 @@ dm4310_softdouble_reverse_subtract_core:
     eor.w r3, r3, #2147483648
 .Lsoft_arithmetic_27766:
     b.w .Lsoft_arithmetic_27914
-.section .text.dm4310_factory_dsub,"ax",%progbits
+.section .text.softfloat_dsub,"ax",%progbits
 .balign 4
 .global __wrap___aeabi_dsub
 .type __wrap___aeabi_dsub, %function
@@ -1604,7 +1604,7 @@ __wrap___aeabi_dsub:
 .Lsoft_arithmetic_27ac0:
     push {r4, r5, r6, lr}
 .Lsoft_arithmetic_27ac2:
-    bl dm4310_softdouble_exception_core
+    bl softdouble_exception_core
 .Lsoft_arithmetic_27ac6:
     nop
 .balign 4
@@ -1620,16 +1620,16 @@ __wrap___aeabi_dsub:
 .Lsoft_arithmetic_27ad4:
     .word 0xffe00000
 
-/* Shared softdouble exception selector, factory 0x276ac..0x27746.
+/* Shared software binary64 exception selector.
  * LR locates a typed selector word and four caller continuation slots.
  * Caller has saved r4/r5/r6/LR; this helper consumes that frame.
  */
-.section .text.dm4310_factory_softdouble_exception,"ax",%progbits
+.section .text.softfloat_softdouble_exception,"ax",%progbits
 .balign 4
-.global dm4310_softdouble_exception_core
-.type dm4310_softdouble_exception_core, %function
+.global softdouble_exception_core
+.type softdouble_exception_core, %function
 .thumb_func
-dm4310_softdouble_exception_core:
+softdouble_exception_core:
 .Lsoft_exception_276ac:
     add.w lr, lr, #2
 .Lsoft_exception_276b0:
@@ -1728,11 +1728,11 @@ dm4310_softdouble_exception_core:
     andhi.w r1, r1, #2147483648
 .Lsoft_exception_27746:
     pop {r4, r5, r6, pc}
-.size dm4310_softdouble_exception_core, .-dm4310_softdouble_exception_core
-.global dm4310_softdouble_saturate_core
-.type dm4310_softdouble_saturate_core, %function
+.size softdouble_exception_core, .-softdouble_exception_core
+.global softdouble_saturate_core
+.type softdouble_saturate_core, %function
 .thumb_func
-dm4310_softdouble_saturate_core:
+softdouble_saturate_core:
 .Lsoft_exception_27748:
     lsrs r0, r1, #32
 .Lsoft_exception_2774a:
@@ -1741,15 +1741,15 @@ dm4310_softdouble_saturate_core:
     mov.w r1, r1, rrx
 .Lsoft_exception_27752:
     bx lr
-.size dm4310_softdouble_saturate_core, .-dm4310_softdouble_saturate_core
+.size softdouble_saturate_core, .-softdouble_saturate_core
 
-/* Factory pointer-input arithmetic wrappers, 0x21704 and 0x2172e. */
-.section .text.dm4310_factory_extended_divide_entry,"ax",%progbits
+/* Pointer-input wrappers for the extended arithmetic cores. */
+.section .text.softfloat_extended_divide_entry,"ax",%progbits
 .balign 2
-.global dm4310_extended_divide_entry
-.type dm4310_extended_divide_entry, %function
+.global extended_divide_entry
+.type extended_divide_entry, %function
 .thumb_func
-dm4310_extended_divide_entry:
+extended_divide_entry:
     stmdb sp!, {r7, r10, r11, lr}
     mov r10, r3
     mov r11, r2
@@ -1760,18 +1760,18 @@ dm4310_extended_divide_entry:
     it mi
     bicsmi.w ip, r4, r3, lsl #1
     bpl .Ldivide_entry_return
-    bl dm4310_extended_divide_core
-    bl dm4310_extended_round_core
+    bl extended_divide_core
+    bl extended_round_core
 .Ldivide_entry_return:
     pop {r4, r5, r6, r7}
     ldmia.w sp!, {r10, r11, pc}
-.size dm4310_extended_divide_entry, .-dm4310_extended_divide_entry
+.size extended_divide_entry, .-extended_divide_entry
 
-.section .text.dm4310_factory_extended_multiply_entry,"ax",%progbits
-.global dm4310_extended_multiply_entry
-.type dm4310_extended_multiply_entry, %function
+.section .text.softfloat_extended_multiply_entry,"ax",%progbits
+.global extended_multiply_entry
+.type extended_multiply_entry, %function
 .thumb_func
-dm4310_extended_multiply_entry:
+extended_multiply_entry:
     stmdb sp!, {r7, r10, r11, lr}
     mov r10, r3
     mov r11, r2
@@ -1782,24 +1782,24 @@ dm4310_extended_multiply_entry:
     it eq
     tsteq.w r3, #0x40000000
     bne .Lmultiply_entry_return
-    bl dm4310_extended_multiply_core
-    bl dm4310_extended_round_core
+    bl extended_multiply_core
+    bl extended_round_core
 .Lmultiply_entry_return:
     pop {r4, r5, r6, r7}
     ldmia.w sp!, {r10, r11, pc}
-.size dm4310_extended_multiply_entry, .-dm4310_extended_multiply_entry
+.size extended_multiply_entry, .-extended_multiply_entry
 
-/* Arithmetic-only source transcription of factory 0x212f0..0x215a6.
+/* Extended-precision division core.
  * Inputs r0:r1:r2 and r3:r4:r5 are extended triples.
  * Outputs r0 sign, r3 exponent, r1:r2 quotient, r6 guard/sticky.
  * Non-AAPCS core; only the C wrapper below may call it.
  */
-.section .text.dm4310_factory_extended_divide_core,"ax",%progbits
+.section .text.softfloat_extended_divide_core,"ax",%progbits
 .balign 4
-.global dm4310_extended_divide_core
-.type dm4310_extended_divide_core, %function
+.global extended_divide_core
+.type extended_divide_core, %function
 .thumb_func
-dm4310_extended_divide_core:
+extended_divide_core:
     bic.w ip, r0, #4278190080
     eor.w r0, r0, r3
     bic.w r7, r3, #4278190080
@@ -1993,7 +1993,7 @@ dm4310_extended_divide_core:
     adc.w r1, r1, r1
     sub.w r3, r3, #1
     bx lr
-.size dm4310_extended_divide_core, . - dm4310_extended_divide_core
+.size extended_divide_core, . - extended_divide_core
 .balign 4
 .Ldivision_reciprocal:
     .byte 128, 128, 127, 126, 125, 124, 123, 122, 121, 120, 119, 118, 118, 117, 116, 115
@@ -2005,13 +2005,13 @@ dm4310_extended_divide_core:
     .byte 74, 73, 73, 73, 72, 72, 72, 71, 71, 71, 71, 70, 70, 70, 69, 69
     .byte 69, 68, 68, 68, 68, 67, 67, 67, 67, 66, 66, 66, 66, 65, 65, 65
 
-/* Factory 0x21758..0x2199a, same raw triple/guard register ABI. */
-.section .text.dm4310_factory_extended_multiply_core,"ax",%progbits
+/* Extended-precision multiply core using the same triple/guard register ABI. */
+.section .text.softfloat_extended_multiply_core,"ax",%progbits
 .balign 4
-.global dm4310_extended_multiply_core
-.type dm4310_extended_multiply_core, %function
+.global extended_multiply_core
+.type extended_multiply_core, %function
 .thumb_func
-dm4310_extended_multiply_core:
+extended_multiply_core:
     bic.w r7, r0, #4278190080
     eor.w r0, r0, r3
     bic.w ip, r3, #4278190080
@@ -2176,15 +2176,15 @@ dm4310_extended_multiply_core:
     adc.w r1, r1, r1
     sub.w r3, r3, #1
     bx lr
-.size dm4310_extended_multiply_core, . - dm4310_extended_multiply_core
+.size extended_multiply_core, . - extended_multiply_core
 
-/* Factory 0x21628..0x21702; r10 mode/r11 rounding, r6 guard. */
-.section .text.dm4310_factory_extended_round_core,"ax",%progbits
+/* Extended-precision rounding core: r10 mode, r11 rounding, r6 guard. */
+.section .text.softfloat_extended_round_core,"ax",%progbits
 .balign 4
-.global dm4310_extended_round_core
-.type dm4310_extended_round_core, %function
+.global extended_round_core
+.type extended_round_core, %function
 .thumb_func
-dm4310_extended_round_core:
+extended_round_core:
     cmp r3, #0
     mov ip, r3
     bmi.n .Lround_21690
@@ -2261,4 +2261,4 @@ dm4310_extended_round_core:
     mov.w r2, #0
     mov.w r1, #0
     b.n .Lround_2162e
-.size dm4310_extended_round_core, . - dm4310_extended_round_core
+.size extended_round_core, . - extended_round_core

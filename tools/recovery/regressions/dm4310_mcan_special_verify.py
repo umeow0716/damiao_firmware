@@ -14,7 +14,7 @@ startup.reg_write(arm.UC_ARM_REG_SP, 0x2000f000)
 startup.emu_start(F(0x20259), F(0x20368), count=1000000)
 assert startup.reg_read(arm.UC_ARM_REG_PC) == F(0x20368)
 factory_sbox = bytes(startup.mem_read(A(0x1fffc678), 0x100))
-source_sbox = elf.get_section_by_name('.dm4310_aes_sbox').data()
+source_sbox = elf.get_section_by_name('.aes_sbox').data()
 assert factory_sbox == source_sbox
 
 write_vectors = (

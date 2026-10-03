@@ -19,7 +19,7 @@ for case in range(96):
         u.reg_write(arm.UC_ARM_REG_SP, 0x2000f000)
         u.reg_write(arm.UC_ARM_REG_LR, 0x30001)
         writes, emitted, context = [], bytearray(), [0]
-        reader = F(0x20edc) if original else symbols['factory_stream_read']
+        reader = F(0x20edc) if original else symbols['stream_read']
         def hook(uc, address, size, data):
             if address == reader: context[0] = uc.reg_read(arm.UC_ARM_REG_R0)
             if address != 0x30020: return
@@ -33,7 +33,7 @@ for case in range(96):
                 if case & 8: uc.mem_write(context[0] + 8, struct.pack('<I', 0x87654321))
             uc.reg_write(arm.UC_ARM_REG_PC, uc.reg_read(arm.UC_ARM_REG_LR))
         u.hook_add(UC_HOOK_CODE, hook)
-        entry = F(0x20ee6) if original else symbols['factory_format_context']
+        entry = F(0x20ee6) if original else symbols['format_context']
         u.emu_start(entry | 1, 0x30000, count=100000)
         assert u.reg_read(arm.UC_ARM_REG_PC) == 0x30000
         results.append((writes, bytes(emitted), u.reg_read(arm.UC_ARM_REG_R0)))

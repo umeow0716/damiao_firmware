@@ -7,7 +7,7 @@ startup.reg_write(arm.UC_ARM_REG_SP, 0x2000f000)
 startup.emu_start(F(0x20259), F(0x20368), count=1000000)
 assert startup.reg_read(arm.UC_ARM_REG_PC) == F(0x20368)
 sbox = bytes(startup.mem_read(A(0x1fffc678), 0x100))
-assert sbox == elf.get_section_by_name('.dm4310_aes_sbox').data()
+assert sbox == elf.get_section_by_name('.aes_sbox').data()
 source = Path(__file__).with_name('dm4310_gain_stepped_verify.py').read_text()
 source = source.replace('if 0x19 <= address <= 0x1c for incoming in values',
                         'if address in (0x18, 0x21, 0x22) for incoming in values')

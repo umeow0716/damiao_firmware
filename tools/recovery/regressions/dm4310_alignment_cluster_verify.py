@@ -17,7 +17,7 @@ FACTORY_PWM = {F(0x219b0)}
 SOURCE_PWM = {
     symbol['st_value'] & ~1
     for symbol in elf.get_section_by_name('.symtab').iter_symbols()
-    if symbol.name == '__dm4310_svpwm_helper_veneer'
+    if symbol.name == '__svpwm_helper_veneer'
 }
 SOURCE_PWM.add(symbols['board_sampling_timer_write_space_vector'])
 FACTORY_DELAY = F(0x21f60)

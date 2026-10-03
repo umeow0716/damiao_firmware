@@ -36,7 +36,7 @@ segments = [(s['p_paddr'], s.data()) for s in elf.iter_segments() if s['p_type']
 rng = random.Random(957)
 mapping = [(F(0x27ad8), '__wrap___aeabi_f2d', 0x58),
            (F(0x270d8), '__wrap___aeabi_dadd', 0x150),
-           (F(0x27754), 'dm4310_softdouble_reverse_subtract_core', 0x16),
+           (F(0x27754), 'softdouble_reverse_subtract_core', 0x16),
            (F(0x27904), '__wrap___aeabi_dsub', 0x1d4),
            (F(0x27558), '__wrap___aeabi_dmul', 0x154),
            (F(0x27228), '__wrap___aeabi_ddiv', 0x228)]

@@ -8,7 +8,8 @@
 #include "safety.h"
 #include "can_protocol.h"
 
-typedef struct {
+typedef struct
+{
     volatile bool print_menu;
     volatile bool print_debug_info;
     volatile bool save_parameters;
@@ -25,7 +26,8 @@ typedef struct {
     volatile uint8_t can_error;
 } AppEvents;
 
-typedef struct {
+typedef struct
+{
     MotorConfig config;
     MotorController motor;
     FaultMonitor safety;
@@ -44,13 +46,8 @@ typedef struct {
 } AppState;
 
 extern AppState g_app;
-#if defined(DAMIAO_DM4310)
-#define APP_DEFERRED_EVENTS dm4310_runtime_status
-#define APP_FAULT_INDICATOR_TICKS dm4310_runtime_status.fault_indicator_ticks
-#else
-#define APP_DEFERRED_EVENTS g_app.events
-#define APP_FAULT_INDICATOR_TICKS g_app.fault_indicator_ticks
-#endif
+#define APP_DEFERRED_EVENTS runtime_status
+#define APP_FAULT_INDICATOR_TICKS runtime_status.fault_indicator_ticks
 void app_state_init(void);
 
 #endif

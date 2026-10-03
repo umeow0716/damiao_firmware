@@ -4,7 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef enum {
+typedef enum
+{
     MOTOR_MODE_DISABLED = 0,
     MOTOR_MODE_MIT = 1,
     MOTOR_MODE_POSITION_SPEED = 2,
@@ -12,7 +13,8 @@ typedef enum {
     MOTOR_MODE_HYBRID = 4,
 } MotorControlMode;
 
-typedef enum {
+typedef enum
+{
     MOTOR_FAULT_NONE = 0,
     MOTOR_STATUS_ENABLED = 1,
     MOTOR_FAULT_OUTPUT_CALIBRATION_MISSING = 2,
@@ -27,7 +29,8 @@ typedef enum {
     MOTOR_FAULT_OVERLOAD = 0xEU,
 } MotorFault;
 
-typedef struct {
+typedef struct
+{
     float position;
     float velocity;
     float kp;
@@ -36,7 +39,8 @@ typedef struct {
     MotorControlMode mode;
 } MotorCommand;
 
-typedef struct {
+typedef struct
+{
     float position;
     float velocity;
     float current_d;
@@ -48,7 +52,8 @@ typedef struct {
     MotorFault fault;
 } MotorFeedback;
 
-typedef struct {
+typedef struct
+{
     float position_min;
     float position_max;
     float velocity_min;
@@ -66,7 +71,7 @@ typedef struct {
     float deceleration_limit;
     float speed_limit;
     float current_limit;
-    /* Fixed at 120 C by the official fault monitor; retained in the typed
+    /* Fixed at 120 C by the runtime fault policy; retained in the typed
      * runtime view for readable diagnostics, not as a persistent setting. */
     float mos_temperature_limit;
     float motor_temperature_limit;
@@ -97,11 +102,7 @@ typedef struct {
     uint32_t bootloader_version;
     uint16_t can_id;
     uint16_t master_id;
-#if defined(DAMIAO_DM4310)
     uint32_t pole_pairs;
-#else
-    uint8_t pole_pairs;
-#endif
     uint8_t can_data_rate_selector;
     MotorControlMode control_mode;
     bool sensor_inverted;

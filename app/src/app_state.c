@@ -4,11 +4,7 @@
 
 #include "app_config.h"
 
-#if defined(DAMIAO_DM4310)
-AppState g_app __attribute__((section(".dm4310_app_state")));
-#else
-AppState g_app;
-#endif
+AppState g_app __attribute__((section(".app_state")));
 
 void app_state_init(void)
 {
@@ -19,7 +15,4 @@ void app_state_init(void)
     motor_control_init(&g_app.motor);
     g_app.motor.command.mode = g_app.config.control_mode;
     safety_init(&g_app.safety);
-#if !defined(DAMIAO_DM4310)
-    g_app.events.print_menu = true;
-#endif
 }

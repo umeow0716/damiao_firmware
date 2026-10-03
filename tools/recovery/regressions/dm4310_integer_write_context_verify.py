@@ -16,7 +16,7 @@ for fmt in formats:
                 u.reg_write(arm.UC_ARM_REG_SP, 0x2000f000)
                 u.reg_write(arm.UC_ARM_REG_LR, 0x30001)
                 trace, emitted, writes, context_pointer = [], bytearray(), [], [0]
-                reader = F(0x20edc) if original else symbols['factory_stream_read']
+                reader = F(0x20edc) if original else symbols['stream_read']
                 writer = F(0x24ea8) if original else symbols['platform_debug_write']
                 def hook(uc, address, size, data):
                     if address == reader:

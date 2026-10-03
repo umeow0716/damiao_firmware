@@ -7,4 +7,3 @@
 uint32_t crc32_ieee(const void *data, size_t length, uint32_t seed);
 
 #endif
-

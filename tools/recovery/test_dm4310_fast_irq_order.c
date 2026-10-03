@@ -11,7 +11,7 @@
 #include "platform.h"
 
 AppState g_app;
-Dm4310RuntimeStatus dm4310_runtime_status;
+FactoryRuntimeStatus dm4310_runtime_status;
 
 static char trace[32];
 static size_t trace_length;

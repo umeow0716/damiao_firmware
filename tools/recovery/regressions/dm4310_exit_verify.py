@@ -2,7 +2,7 @@ from pathlib import Path
 import struct
 from unicorn import UC_HOOK_CODE
 exec(Path(__file__).with_name('dm4310_softfloat_verify.py').read_text().split('\nfor old, name, size in mapping[:1]:')[0])
-new = symbols['dm4310_runtime_exit']
+new = symbols['runtime_exit']
 def normalize(value):
     return {new + 0x1b: F(0x20381), new + 0x21: F(0x20387)}.get(value, value)
 for case in range(256):

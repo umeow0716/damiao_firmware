@@ -5,33 +5,32 @@
 #include <string.h>
 
 #include "app_profile.h"
+#include "memory_layout.h"
 #include "safety.h"
-#if defined(DAMIAO_DM4310)
 #include "board_adc.h"
 #include "position_sensor.h"
 #include "temperature_table.h"
-#endif
 
-#define CURRENT_ADC_SCALE               (0x1p-11f)
-#define CONTROL_SAMPLE_PERIOD           (0.00005f)
-#define OUTER_SAMPLE_PERIOD             (0.001f)
-#define OUTER_SAMPLE_FREQUENCY          (1000.0f)
+#define CURRENT_ADC_SCALE (0x1p-11f)
+#define CONTROL_SAMPLE_PERIOD (0.00005f)
+#define OUTER_SAMPLE_PERIOD (0.001f)
+#define OUTER_SAMPLE_FREQUENCY (1000.0f)
 #define VOLTAGE_NORMALIZATION APP_PROFILE_CURRENT_FULL_SCALE_A
-#define INV_SQRT3_F                     (0.5773502588272095f)
-#define INV_TWO_PI_F                    (0.15915493667125702f)
-#define TWO_PI_F                        (6.2831854820251465f)
-#define MODULATION_VECTOR_LIMIT         (0.9800000190734863f)
-#define MOTION_OBSERVER_BANDWIDTH       (1000.0f)
-#define MOTION_OBSERVER_STATE_GAIN      (600.0f)
-#define MOTOR_TEMPERATURE_FILTER_OLD     (0.9995002746582031f)
-#define MOTOR_TEMPERATURE_FILTER_NEW     (0.000499725341796875f)
+#define INV_SQRT3_F (0.5773502588272095f)
+#define INV_TWO_PI_F (0.15915493667125702f)
+#define TWO_PI_F (6.2831854820251465f)
+#define MODULATION_VECTOR_LIMIT (0.9800000190734863f)
+#define MOTION_OBSERVER_BANDWIDTH (1000.0f)
+#define MOTION_OBSERVER_STATE_GAIN (600.0f)
+#define MOTOR_TEMPERATURE_FILTER_OLD (0.9995002746582031f)
+#define MOTOR_TEMPERATURE_FILTER_NEW (0.000499725341796875f)
 
-#if defined(DAMIAO_DM4310)
-/* These adjacent factory objects are shared by startup, commissioning,
+/* These adjacent firmware objects are shared by startup, commissioning,
  * motor identification and the 20 kHz control IRQ.  Keep the proven object
  * boundaries fixed while individual words are promoted to semantic fields
  * as their complete read/write lifetimes are established. */
-typedef struct {
+typedef struct
+{
     float rotor_position;
     float rotor_velocity;
     int32_t revolutions;
@@ -62,9 +61,10 @@ typedef struct {
     float filtered_current_q;
     float motor_temperature_filter_old;
     float motor_temperature_filter_new;
-} Dm4310MotorRuntimeState;
+} MotorRuntimeState;
 
-typedef struct {
+typedef struct
+{
     float command_position;
     float command_velocity;
     float command_torque;
@@ -106,163 +106,88 @@ typedef struct {
     float previous_wrapped_position;
     float accumulated_position_delta;
     float position_delta;
-} Dm4310SampleRuntimeState;
+} SampleRuntimeState;
 
-static volatile Dm4310MotorRuntimeState dm4310_motor_runtime_state
-    __attribute__((section(".dm4310_motor_runtime_state"), used));
-static volatile Dm4310SampleRuntimeState dm4310_sample_runtime_state
-    __attribute__((section(".dm4310_sample_runtime_state"), used));
-static CurrentController dm4310_current_d
-    __attribute__((section(FACTORY_LAYOUT_SECTION(
-        ".dm4310_current_d", ".dm8009_current_d")), used));
-static CurrentController dm4310_current_q
-    __attribute__((section(FACTORY_LAYOUT_SECTION(
-        ".dm4310_current_q", ".dm8009_current_q")), used));
-static MotionObserver dm4310_motion_observer
-    __attribute__((section(".dm4310_motion_observer"), used));
+static volatile MotorRuntimeState motor_runtime_state
+    __attribute__((section(".motor_runtime_state"), used));
+static volatile SampleRuntimeState sample_runtime_state
+    __attribute__((section(".sample_runtime_state"), used));
+static CurrentController d_axis_controller
+    __attribute__((section(MEMORY_LAYOUT_SECTION(".current_d", ".alternate_current_d")), used));
+static CurrentController q_axis_controller
+    __attribute__((section(MEMORY_LAYOUT_SECTION(".current_q", ".alternate_current_q")), used));
+static MotionObserver motion_observer __attribute__((section(".motion_observer"), used));
 
-_Static_assert(sizeof(dm4310_motor_runtime_state) == 0x7CU,
-               "DM4310 motor runtime state size changed");
-_Static_assert(offsetof(Dm4310MotorRuntimeState, electrical_offset) == 0x14U,
-               "DM4310 electrical offset changed");
-_Static_assert(offsetof(Dm4310MotorRuntimeState,
-                        motor_output_position_offset) == 0x24U,
-               "DM4310 motor/output zero offset changed");
-_Static_assert(offsetof(Dm4310MotorRuntimeState, direction) == 0x34U,
-               "DM4310 direction offset changed");
-_Static_assert(sizeof(dm4310_sample_runtime_state) == 0xA4U,
-               "DM4310 sample runtime state size changed");
-_Static_assert(offsetof(Dm4310MotorRuntimeState, output_torque_constant) ==
-                   0x44U,
-               "DM4310 torque constant offset changed");
-_Static_assert(offsetof(Dm4310MotorRuntimeState, velocity_filter_previous) ==
-                   0x68U,
-               "DM4310 velocity filter offset changed");
-_Static_assert(offsetof(Dm4310MotorRuntimeState, filtered_current_q) == 0x70U,
-               "DM4310 filtered-current offset changed");
-_Static_assert(offsetof(Dm4310MotorRuntimeState, console_mode) == 0x38U,
-               "DM4310 console-mode offset changed");
-_Static_assert(offsetof(Dm4310SampleRuntimeState, bus_voltage) == 0x68U,
-               "DM4310 bus voltage offset changed");
-_Static_assert(offsetof(Dm4310SampleRuntimeState, outer_loop_divider) == 0x38U,
-               "DM4310 outer-loop divider offset changed");
-_Static_assert(offsetof(Dm4310SampleRuntimeState, command_kd) == 0x10U,
-               "DM4310 command layout changed");
-_Static_assert(offsetof(Dm4310SampleRuntimeState, current_u) == 0x4CU,
-               "DM4310 phase-current offset changed");
-_Static_assert(offsetof(Dm4310SampleRuntimeState, electrical_sine) == 0x78U,
-               "DM4310 sincos offset changed");
-_Static_assert(offsetof(Dm4310SampleRuntimeState, voltage_alpha) == 0x70U,
-               "DM4310 voltage-vector offset changed");
-_Static_assert(offsetof(Dm4310SampleRuntimeState, fault) == 0x80U,
-               "DM4310 fault offset changed");
-_Static_assert(offsetof(Dm4310SampleRuntimeState, current_q_reference) ==
-                   0x2CU,
-               "DM4310 Q-current reference offset changed");
-_Static_assert(offsetof(Dm4310SampleRuntimeState, raw_position) == 0x8CU,
-               "DM4310 position scratch offset changed");
-_Static_assert(sizeof(dm4310_current_d) == 0x4CU,
-               "DM4310 D current controller size changed");
-_Static_assert(sizeof(dm4310_current_q) == 0x4CU,
-               "DM4310 Q current controller size changed");
-_Static_assert(sizeof(dm4310_motion_observer) == 0x3CU,
-               "DM4310 motion observer size changed");
-#endif
+SRAM_ABI_ASSERT_SIZE(MotorRuntimeState, 0x7CU);
+SRAM_ABI_ASSERT_OFFSET(MotorRuntimeState, electrical_offset, 0x14U);
+SRAM_ABI_ASSERT_OFFSET(MotorRuntimeState, motor_output_position_offset, 0x24U);
+SRAM_ABI_ASSERT_OFFSET(MotorRuntimeState, direction, 0x34U);
+SRAM_ABI_ASSERT_OFFSET(MotorRuntimeState, output_torque_constant, 0x44U);
+SRAM_ABI_ASSERT_OFFSET(MotorRuntimeState, velocity_filter_previous, 0x68U);
+SRAM_ABI_ASSERT_OFFSET(MotorRuntimeState, filtered_current_q, 0x70U);
+SRAM_ABI_ASSERT_OFFSET(MotorRuntimeState, console_mode, 0x38U);
+SRAM_ABI_ASSERT_SIZE(SampleRuntimeState, 0xA4U);
+SRAM_ABI_ASSERT_OFFSET(SampleRuntimeState, bus_voltage, 0x68U);
+SRAM_ABI_ASSERT_OFFSET(SampleRuntimeState, outer_loop_divider, 0x38U);
+SRAM_ABI_ASSERT_OFFSET(SampleRuntimeState, command_kd, 0x10U);
+SRAM_ABI_ASSERT_OFFSET(SampleRuntimeState, current_u, 0x4CU);
+SRAM_ABI_ASSERT_OFFSET(SampleRuntimeState, electrical_sine, 0x78U);
+SRAM_ABI_ASSERT_OFFSET(SampleRuntimeState, voltage_alpha, 0x70U);
+SRAM_ABI_ASSERT_OFFSET(SampleRuntimeState, fault, 0x80U);
+SRAM_ABI_ASSERT_OFFSET(SampleRuntimeState, current_q_reference, 0x2CU);
+SRAM_ABI_ASSERT_OFFSET(SampleRuntimeState, raw_position, 0x8CU);
+SRAM_ABI_ASSERT_SIZE(CurrentController, 0x4CU);
+SRAM_ABI_ASSERT_SIZE(MotionObserver, 0x3CU);
 
-#if defined(DAMIAO_DM4310)
 /* Owned by commissioning.c because the two 10-word loop states live beside
  * its other fixed runtime drive objects. */
 void commissioning_reset_runtime_loop_states(volatile float *speed, float value);
 void commissioning_configure_runtime_loop_states(const MotorConfig *config);
-#endif
 
 static CurrentController *current_d_state(MotorController *controller)
 {
-#if defined(DAMIAO_DM4310)
     (void)controller;
-    return &dm4310_current_d;
-#else
-    return &controller->current_d;
-#endif
+    return &d_axis_controller;
 }
-
-#if !defined(DAMIAO_DM4310)
-static CurrentController *current_q_state(MotorController *controller)
-{
-    return &controller->current_q;
-}
-#endif
 
 static MotionObserver *motion_observer_state(MotorController *controller)
 {
-#if defined(DAMIAO_DM4310)
     (void)controller;
-    return &dm4310_motion_observer;
-#else
-    return &controller->motion_observer;
-#endif
+    return &motion_observer;
 }
 
-#if !defined(DAMIAO_DM4310)
-static float control_clampf(float value, float minimum, float maximum)
+static float configure_current_axis(CurrentController *axis, const MotorConfig *config,
+                                    float plant_gain)
 {
-    return motor_clampf(value, minimum, maximum);
-}
-#endif
-
-#if !defined(DAMIAO_DM4310)
-static void control_limit_vector(float limit, float *x, float *y)
-{
-    motor_limit_vector(limit, x, y);
-}
-#endif
-
-#if !defined(DAMIAO_DM4310)
-static float output_torque_constant(const MotorConfig *config)
-{
-    if (config->torque_constant != 0.0f) {
-        return config->torque_constant * VOLTAGE_NORMALIZATION;
-    }
-    return config->gear_ratio * (float)config->pole_pairs * 1.5f *
-           config->flux_linkage * VOLTAGE_NORMALIZATION *
-           config->gear_torque_efficiency;
-}
-#endif
-
-static float configure_current_axis(CurrentController *axis,
-                                   const MotorConfig *config,
-                                   float plant_gain)
-{
-#if defined(DAMIAO_DM4310)
     (void)config;
-    const volatile float *const cache = (const volatile float *)FACTORY_SRAM_ADDRESS(0x1FFFF23CUL, 0x1FFFF1C8UL);
+    const volatile float *const cache =
+        (const volatile float *)MEMORY_LAYOUT_ADDRESS(0x1FFFF23CUL, 0x1FFFF1C8UL);
     volatile CurrentController *const state = axis;
     const float period = cache[3];
     state->sample_period = period;
     const float current_scale = cache[2];
     const float inductance = cache[18];
-    /* DM4310 passes the retained sample voltage here; legacy passes an
-     * already-derived plant gain. Do not reread the IRQ-owned sample. */
+    /* The firmware passes the retained sample voltage here. Do not reread the
+     * IRQ-owned sample. */
     const float voltage = plant_gain;
     float denominator;
     float numerator;
-    __asm volatile (
-        "vmul.f32 %0, %2, %3\n"
-        "vmul.f32 %1, %4, %5\n"
-        "vdiv.f32 %0, %1, %0"
-        : "=&t" (denominator), "=&t" (numerator)
-        : "t" (current_scale), "t" (inductance),
-          "t" (voltage), "t" (INV_SQRT3_F) : "memory");
+    __asm volatile("vmul.f32 %0, %2, %3\n"
+                   "vmul.f32 %1, %4, %5\n"
+                   "vdiv.f32 %0, %1, %0"
+                   : "=&t"(denominator), "=&t"(numerator)
+                   : "t"(current_scale), "t"(inductance), "t"(voltage), "t"(INV_SQRT3_F)
+                   : "memory");
     plant_gain = denominator;
     state->plant_gain = plant_gain;
     float inverse_gain;
     float plant_gain_dt;
-    /* Factory publishes gain before evaluating its inverse and dt product. */
-    __asm volatile ("vdiv.f32 %0, %2, %3\n"
-                    "vmul.f32 %1, %3, %4"
-                    : "=&t" (inverse_gain), "=&t" (plant_gain_dt)
-                    : "t" (1.0f), "t" (plant_gain), "t" (period)
-                    : "memory");
+    /* Firmware publishes gain before evaluating its inverse and dt product. */
+    __asm volatile("vdiv.f32 %0, %2, %3\n"
+                   "vmul.f32 %1, %3, %4"
+                   : "=&t"(inverse_gain), "=&t"(plant_gain_dt)
+                   : "t"(1.0f), "t"(plant_gain), "t"(period)
+                   : "memory");
     state->inverse_plant_gain = inverse_gain;
     state->plant_gain_dt = plant_gain_dt;
     const float bandwidth = cache[14];
@@ -272,23 +197,22 @@ static float configure_current_axis(CurrentController *axis,
     float doubled_enhancement;
     float observer_l1_dt;
     float observer_l2_dt;
-    /* 0x25202..0x25210: operand order selects NaN payloads when DN is clear.
-     * Keep the square between doubling and the two period products too. */
-    __asm volatile ("vmul.f32 %0, %3, %4\n"
-                    "vmul.f32 %2, %3, %3\n"
-                    "vmul.f32 %1, %0, %5\n"
-                    "vmul.f32 %2, %2, %5"
-                    : "=&t" (doubled_enhancement), "=&t" (observer_l1_dt),
-                      "=&t" (observer_l2_dt)
-                    : "t" (enhancement), "t" (2.0f), "t" (period)
-                    : "memory");
+    /* Operand order selects NaN payloads when DN is clear.  Keep the square
+     * between doubling and the two period products too. */
+    __asm volatile("vmul.f32 %0, %3, %4\n"
+                   "vmul.f32 %2, %3, %3\n"
+                   "vmul.f32 %1, %0, %5\n"
+                   "vmul.f32 %2, %2, %5"
+                   : "=&t"(doubled_enhancement), "=&t"(observer_l1_dt), "=&t"(observer_l2_dt)
+                   : "t"(enhancement), "t"(2.0f), "t"(period)
+                   : "memory");
     state->observer_l1_dt = observer_l1_dt;
     state->observer_l2_dt = observer_l2_dt;
     state->output_min = -1.0f;
     state->output_max = 1.0f;
-    /* Factory configures Q from the retained D coefficients, without
+    /* Firmware configures Q from the retained D coefficients, without
      * re-reading cache or the D state. */
-    volatile CurrentController *const q = &dm4310_current_q;
+    volatile CurrentController *const q = &q_axis_controller;
     q->sample_period = period;
     q->plant_gain = plant_gain;
     q->inverse_plant_gain = inverse_gain;
@@ -300,56 +224,40 @@ static float configure_current_axis(CurrentController *axis,
     q->output_min = -1.0f;
     q->output_max = 1.0f;
     return current_scale;
-#else
-    axis->control_bandwidth = config->current_loop_bandwidth;
-    axis->sample_period = CONTROL_SAMPLE_PERIOD;
-    axis->observer_bandwidth = config->current_loop_enhancement;
-    axis->plant_gain = plant_gain;
-    axis->inverse_plant_gain = 1.0f / plant_gain;
-    axis->plant_gain_dt = plant_gain * CONTROL_SAMPLE_PERIOD;
-    axis->observer_l1_dt = 2.0f * config->current_loop_enhancement *
-                           CONTROL_SAMPLE_PERIOD;
-    axis->observer_l2_dt = config->current_loop_enhancement *
-                           config->current_loop_enhancement *
-                           CONTROL_SAMPLE_PERIOD;
-    axis->output_min = -1.0f;
-    axis->output_max = 1.0f;
-    return VOLTAGE_NORMALIZATION;
-#endif
 }
 
-static void configure_motion_observer(MotionObserver *observer,
-                                      const MotorConfig *config,
+static void configure_motion_observer(MotionObserver *observer, const MotorConfig *config,
                                       float current_scale)
 {
-#if defined(DAMIAO_DM4310)
     (void)config;
-    const volatile float *const cache = (const volatile float *)FACTORY_SRAM_ADDRESS(0x1FFFF23CUL, 0x1FFFF1C8UL);
+    const volatile float *const cache =
+        (const volatile float *)MEMORY_LAYOUT_ADDRESS(0x1FFFF23CUL, 0x1FFFF1C8UL);
     volatile MotionObserver *const state = observer;
     const float pole_pairs = cache[16];
     const float inertia = cache[20];
-    /* 0x25258 evaluates this product before loading flux at 0x2525c.
-     * The memory clobber prevents the shared-cache read moving earlier. */
+    /* Evaluate the pole product before loading flux.  The memory clobber
+     * prevents the shared-cache read from moving earlier. */
     float scaled_poles;
-    __asm volatile ("vmul.f32 %0, %1, %2"
-                    : "=t" (scaled_poles)
-                    : "t" (pole_pairs), "t" (1.5f) : "memory");
+    __asm volatile("vmul.f32 %0, %1, %2"
+                   : "=t"(scaled_poles)
+                   : "t"(pole_pairs), "t"(1.5f)
+                   : "memory");
     const float flux = cache[19];
     float mechanical_gain;
     float torque;
-    __asm volatile (
-        "vmul.f32 %0, %2, %3\n"
-        "vmul.f32 %1, %0, %4\n"
-        "vdiv.f32 %0, %1, %5"
-        : "=&t" (mechanical_gain), "=&t" (torque)
-        : "t" (scaled_poles), "t" (flux), "t" (current_scale),
-          "t" (inertia) : "memory");
+    __asm volatile("vmul.f32 %0, %2, %3\n"
+                   "vmul.f32 %1, %0, %4\n"
+                   "vdiv.f32 %0, %1, %5"
+                   : "=&t"(mechanical_gain), "=&t"(torque)
+                   : "t"(scaled_poles), "t"(flux), "t"(current_scale), "t"(inertia)
+                   : "memory");
     state->plant_gain = mechanical_gain;
     float inverse_gain;
-    /* 0x2526e publishes gain before the inverse division at 0x25272. */
-    __asm volatile ("vdiv.f32 %0, %1, %2"
-                    : "=t" (inverse_gain)
-                    : "t" (1.0f), "t" (mechanical_gain) : "memory");
+    /* Publish gain before evaluating its inverse. */
+    __asm volatile("vdiv.f32 %0, %1, %2"
+                   : "=t"(inverse_gain)
+                   : "t"(1.0f), "t"(mechanical_gain)
+                   : "memory");
     state->inverse_plant_gain = inverse_gain;
     state->sample_period = OUTER_SAMPLE_PERIOD;
     state->error = 0.0f;
@@ -359,173 +267,100 @@ static void configure_motion_observer(MotionObserver *observer,
     state->observer_state_gain = cache[23];
     state->output_min = -1.0f;
     state->output_max = 1.0f;
-#else
-    (void)current_scale;
-    const float mechanical_gain =
-        ((float)config->pole_pairs * 1.5f * config->flux_linkage *
-         VOLTAGE_NORMALIZATION) /
-        config->rotor_inertia;
-    observer->sample_period = OUTER_SAMPLE_PERIOD;
-    /* derive_control_parameters@0x25282..0x2528a clears exactly these three
-     * dynamic words on every startup, motor-ID and UgQ call.  It deliberately
-     * retains previous_error, error_derivative and disturbance_current. */
-#if defined(DAMIAO_DM4310)
-    observer->error = 0.0f;
-    observer->estimated_velocity = 0.0f;
-    observer->observer_state = 0.0f;
-#endif
-    /* load_motor_configuration writes literal 1000 and 600
-     * into motor-parameter words 22/23; derive_control_parameters copies
-     * them to observer fields 8/9.  They are intentionally not aliases for
-     * the user speed limit. */
-    observer->observer_bandwidth = MOTION_OBSERVER_BANDWIDTH;
-    observer->observer_state_gain = MOTION_OBSERVER_STATE_GAIN;
-    observer->plant_gain = mechanical_gain;
-    observer->inverse_plant_gain = 1.0f / mechanical_gain;
-    observer->output_min = -1.0f;
-    observer->output_max = 1.0f;
-#endif
 }
 
-#if defined(DAMIAO_DM4310)
-void dm4310_motor_control_configure_velocity_filter_irq(
-    float bandwidth, bool filtered, volatile float *coefficients,
-    float radians)
-#else
-void motor_control_configure_velocity_filter(MotorController *controller,
-                                             float bandwidth)
-#endif
+void motor_control_configure_velocity_filter_irq(float bandwidth, bool filtered,
+                                                 volatile float *coefficients, float radians)
 {
-#if defined(DAMIAO_DM4310)
     /* DM control consumes only the fixed runtime coefficients. Keep the
      * generic field/layout for other models, but do not mirror stores. */
-    if (filtered) {
+    if (filtered)
+    {
         float denominator = 1000.0f;
         const float numerator = 1000.0f;
         float previous;
-        __asm__ volatile (
-            "vmla.f32 %0, %2, %3\n\t"
-            "vdiv.f32 %1, %4, %0"
-            : "+&t" (denominator), "=&t" (previous)
-            : "t" (bandwidth), "t" (radians), "t" (numerator)
-            : "memory");
+        __asm__ volatile("vmla.f32 %0, %2, %3\n\t"
+                         "vdiv.f32 %1, %4, %0"
+                         : "+&t"(denominator), "=&t"(previous)
+                         : "t"(bandwidth), "t"(radians), "t"(numerator)
+                         : "memory");
         coefficients[0] = previous;
         const float one = 1.0f;
         float next;
-        __asm__ volatile ("vsub.f32 %0, %1, %2"
-                          : "=t" (next)
-                          : "t" (one), "t" (previous)
-                          : "memory");
+        __asm__ volatile("vsub.f32 %0, %1, %2" : "=t"(next) : "t"(one), "t"(previous) : "memory");
         coefficients[1] = next;
-    } else {
-        /* The factory write path saturates all positive encodings at or
+    }
+    else
+    {
+        /* The firmware write path saturates all positive encodings at or
          * above 500 Hz, including +Inf and positive-payload NaNs. */
         const float zero = 0.0f;
         const float one = 1.0f;
-        __asm__ volatile (
-            "vstr %1, [%0]\n\t"
-            "vstr %2, [%0, #4]"
-            :
-            : "r" (coefficients), "t" (zero), "t" (one)
-            : "memory");
+        __asm__ volatile("vstr %1, [%0]\n\t"
+                         "vstr %2, [%0, #4]"
+                         :
+                         : "r"(coefficients), "t"(zero), "t"(one)
+                         : "memory");
     }
-#else
-    controller->current_filter_previous = 1000.0f /
-        (1000.0f + bandwidth * TWO_PI_F);
-#endif
 }
 
-#if defined(DAMIAO_DM4310)
-void dm4310_motor_control_configure_velocity_filter_selected(
-    MotorController *controller, float bandwidth, bool filtered)
+void motor_control_configure_velocity_filter_selected(MotorController *controller, float bandwidth,
+                                                      bool filtered)
 {
     (void)controller;
-    dm4310_motor_control_configure_velocity_filter_irq(
-        bandwidth, filtered,
-        &dm4310_motor_runtime_state.velocity_filter_previous, TWO_PI_F);
+    motor_control_configure_velocity_filter_irq(
+        bandwidth, filtered, &motor_runtime_state.velocity_filter_previous, TWO_PI_F);
 }
 
-void motor_control_configure_velocity_filter(MotorController *controller,
-                                             float bandwidth)
+void motor_control_configure_velocity_filter(MotorController *controller, float bandwidth)
 {
     uint32_t raw;
     memcpy(&raw, &bandwidth, sizeof(raw));
-    dm4310_motor_control_configure_velocity_filter_selected(
-        controller, bandwidth,
-        (int32_t)raw < (int32_t)UINT32_C(0x43FA0000));
+    motor_control_configure_velocity_filter_selected(controller, bandwidth,
+                                                     (int32_t)raw < (int32_t)UINT32_C(0x43FA0000));
 }
 
 static float control_vmla_f32(float accumulator, float left, float right)
 {
 #if defined(__arm__) || defined(__thumb__)
-    __asm volatile ("vmla.f32 %0, %1, %2"
-                    : "+t" (accumulator)
-                    : "t" (left), "t" (right));
+    __asm volatile("vmla.f32 %0, %1, %2" : "+t"(accumulator) : "t"(left), "t"(right));
     return accumulator;
 #else
     return accumulator + left * right;
 #endif
 }
 
-void dm4310_motion_observer_state_step(MotionObserver *observer)
+void motion_observer_state_step(MotionObserver *observer)
 {
-    const float error = observer->measured_velocity -
-                        observer->estimated_velocity;
+    const float error = observer->measured_velocity - observer->estimated_velocity;
     observer->error = error;
-    const float derivative = (error - observer->previous_error) *
-                             OUTER_SAMPLE_FREQUENCY;
+    const float derivative = (error - observer->previous_error) * OUTER_SAMPLE_FREQUENCY;
     observer->error_derivative = derivative;
     observer->previous_error = error;
-    float velocity_derivative = control_vmla_f32(
-        observer->observer_state, observer->observer_bandwidth, error);
-    velocity_derivative = control_vmla_f32(
-        velocity_derivative, observer->plant_gain, observer->current_q);
-    observer->estimated_velocity = control_vmla_f32(
-        observer->estimated_velocity, observer->sample_period,
-        velocity_derivative);
+    float velocity_derivative =
+        control_vmla_f32(observer->observer_state, observer->observer_bandwidth, error);
+    velocity_derivative =
+        control_vmla_f32(velocity_derivative, observer->plant_gain, observer->current_q);
+    observer->estimated_velocity = control_vmla_f32(observer->estimated_velocity,
+                                                    observer->sample_period, velocity_derivative);
     float correction = derivative;
-    correction = control_vmla_f32(
-        correction, observer->observer_bandwidth, error);
-    observer->observer_state = control_vmla_f32(
-        observer->observer_state,
-        observer->sample_period * observer->observer_state_gain,
-        correction);
-    /* motion_observer@0x1fff9fde uses ordinary ordered comparisons, so an
+    correction = control_vmla_f32(correction, observer->observer_bandwidth, error);
+    observer->observer_state =
+        control_vmla_f32(observer->observer_state,
+                         observer->sample_period * observer->observer_state_gain, correction);
+    /* motion_observer uses ordinary ordered comparisons, so an
      * unordered result survives both upper- and lower-limit tests. */
-    observer->disturbance_current = motor_clampf(
-        observer->observer_state * observer->inverse_plant_gain,
-        observer->output_min, observer->output_max);
+    observer->disturbance_current =
+        motor_clampf(observer->observer_state * observer->inverse_plant_gain, observer->output_min,
+                     observer->output_max);
 }
-#endif
 
-void motor_control_motion_observer_step(MotionObserver *observer,
-                                        float measured_velocity,
+void motor_control_motion_observer_step(MotionObserver *observer, float measured_velocity,
                                         float current_q)
 {
     observer->measured_velocity = measured_velocity;
     observer->current_q = current_q;
-#if defined(DAMIAO_DM4310)
-    dm4310_motion_observer_helper(observer);
-#else
-    const float error = measured_velocity - observer->estimated_velocity;
-    observer->error = error;
-    const float derivative = (error - observer->previous_error) *
-                             OUTER_SAMPLE_FREQUENCY;
-    observer->error_derivative = derivative;
-    observer->previous_error = error;
-    float velocity_derivative = observer->observer_state;
-    velocity_derivative += observer->observer_bandwidth * error;
-    velocity_derivative += observer->plant_gain * current_q;
-    observer->estimated_velocity += observer->sample_period *
-                                    velocity_derivative;
-    float correction = derivative;
-    correction += observer->observer_bandwidth * error;
-    observer->observer_state +=
-        (observer->sample_period * observer->observer_state_gain) * correction;
-    observer->disturbance_current = motor_clampf(
-        observer->observer_state * observer->inverse_plant_gain,
-        observer->output_min, observer->output_max);
-#endif
+    motion_observer_helper(observer);
 }
 
 void motor_control_init(MotorController *controller)
@@ -536,265 +371,204 @@ void motor_control_init(MotorController *controller)
     controller->command.mode = MOTOR_MODE_DISABLED;
 }
 
-void motor_control_configure(MotorController *controller,
-                             const MotorConfig *config,
+void motor_control_configure(MotorController *controller, const MotorConfig *config,
                              float bus_voltage)
 {
-    /* derive_control_parameters@0x25138 computes these coefficients with raw
+    /* derive_control_parameters computes these coefficients with raw
      * IEEE-754 division. Low bus voltage is handled by the fault state, not
      * by replacing the current-controller plant gain with zero. */
-#if defined(DAMIAO_DM4310)
     const float current_scale =
         configure_current_axis(current_d_state(controller), config, bus_voltage);
-#else
-    const float current_scale = VOLTAGE_NORMALIZATION;
-    const float plant_gain = (bus_voltage * INV_SQRT3_F) /
-                             (VOLTAGE_NORMALIZATION *
-                              config->phase_inductance);
-    configure_current_axis(current_d_state(controller), config, plant_gain);
-    configure_current_axis(current_q_state(controller), config, plant_gain);
-#endif
-    configure_motion_observer(motion_observer_state(controller), config,
-                              current_scale);
-#if !defined(DAMIAO_DM4310)
-    motor_control_configure_velocity_filter(
-        controller, config->velocity_filter_bandwidth);
-
-    const float torque_constant = output_torque_constant(config);
-    controller->torque_to_current = 1.0f / torque_constant;
-#endif
+    configure_motion_observer(motion_observer_state(controller), config, current_scale);
 }
 
-#if defined(DAMIAO_DM4310)
-void dm4310_motor_control_configure_runtime_motor(MotorController *controller,
-                                                 const MotorConfig *config)
+void motor_control_configure_runtime_motor(MotorController *controller, const MotorConfig *config)
 {
     const volatile uint32_t *const staging_words =
-        (const volatile uint32_t *)FACTORY_SRAM_ADDRESS(0x1FFFA5C8UL, 0x1FFFA558UL);
+        (const volatile uint32_t *)MEMORY_LAYOUT_ADDRESS(0x1FFFA5C8UL, 0x1FFFA558UL);
     const volatile float *const staging =
-        (const volatile float *)FACTORY_SRAM_ADDRESS(0x1FFFA5C8UL, 0x1FFFA558UL);
+        (const volatile float *)MEMORY_LAYOUT_ADDRESS(0x1FFFA5C8UL, 0x1FFFA558UL);
     const uint32_t pole_count = staging_words[16];
     const float pole_pairs = (float)pole_count;
     const float flux = staging[19];
-    /* Factory retains cache word 2 in s20 across the derivation helper; it
+    /* Firmware retains cache word 2 in s20 across the derivation helper; it
      * does not reread fixed cache after returning. */
     const float current_scale = VOLTAGE_NORMALIZATION;
     float base_torque;
-    __asm volatile (
-        "vmul.f32 %0, %1, %2\n"
-        "vmul.f32 %0, %0, %3\n"
-        "vmul.f32 %0, %0, %4"
-        : "=&t" (base_torque)
-        : "t" (pole_pairs), "t" (1.5f), "t" (flux),
-          "t" (current_scale) : "memory");
+    __asm volatile("vmul.f32 %0, %1, %2\n"
+                   "vmul.f32 %0, %0, %3\n"
+                   "vmul.f32 %0, %0, %4"
+                   : "=&t"(base_torque)
+                   : "t"(pole_pairs), "t"(1.5f), "t"(flux), "t"(current_scale)
+                   : "memory");
     commissioning_configure_runtime_loop_states(config);
     const float override = staging[1];
     uint32_t override_present;
-    __asm volatile (
-        "vcmpe.f32 %1, #0.0\n"
-        "vmrs APSR_nzcv, fpscr\n"
-        "mov %0, #0\n"
-        "it ne\n"
-        "movne %0, #1"
-        : "=r" (override_present) : "t" (override) : "cc");
+    __asm volatile("vcmpe.f32 %1, #0.0\n"
+                   "vmrs APSR_nzcv, fpscr\n"
+                   "mov %0, #0\n"
+                   "it ne\n"
+                   "movne %0, #1"
+                   : "=r"(override_present)
+                   : "t"(override)
+                   : "cc");
     float torque_constant;
-    if (override_present != 0U) {
-        __asm volatile ("vmul.f32 %0, %1, %2"
-                        : "=t" (torque_constant)
-                        : "t" (override), "t" (current_scale));
-    } else {
+    if (override_present != 0U)
+    {
+        __asm volatile("vmul.f32 %0, %1, %2"
+                       : "=t"(torque_constant)
+                       : "t"(override), "t"(current_scale));
+    }
+    else
+    {
         const float ratio = staging[20];
         const float correction = staging[30];
-        __asm volatile (
-            "vmul.f32 %0, %1, %2\n"
-            "vmul.f32 %0, %0, %3"
-            : "=&t" (torque_constant)
-            : "t" (ratio), "t" (base_torque), "t" (correction));
+        __asm volatile("vmul.f32 %0, %1, %2\n"
+                       "vmul.f32 %0, %0, %3"
+                       : "=&t"(torque_constant)
+                       : "t"(ratio), "t"(base_torque), "t"(correction));
     }
-    dm4310_motor_runtime_state.output_torque_constant = torque_constant;
+    motor_runtime_state.output_torque_constant = torque_constant;
     const float inverse_torque = 1.0f / torque_constant;
-    dm4310_motor_runtime_state.inverse_output_torque_constant =
-        inverse_torque;
+    motor_runtime_state.inverse_output_torque_constant = inverse_torque;
     controller->torque_to_current = inverse_torque;
-    dm4310_motor_runtime_state.pole_pairs = pole_count;
-    dm4310_motor_runtime_state.pole_pairs_per_radian =
-        pole_pairs / TWO_PI_F;
-    dm4310_motor_runtime_state.inverse_pole_pairs = 1.0f / pole_pairs;
+    motor_runtime_state.pole_pairs = pole_count;
+    motor_runtime_state.pole_pairs_per_radian = pole_pairs / TWO_PI_F;
+    motor_runtime_state.inverse_pole_pairs = 1.0f / pole_pairs;
     const float gear_ratio = staging[20];
-    dm4310_motor_runtime_state.position_sensor_scale = 1.0f / gear_ratio;
-    dm4310_motor_runtime_state.motor_to_output_scale = pole_pairs * gear_ratio;
-    dm4310_motor_runtime_state.gear_ratio = gear_ratio;
+    motor_runtime_state.position_sensor_scale = 1.0f / gear_ratio;
+    motor_runtime_state.motor_to_output_scale = pole_pairs * gear_ratio;
+    motor_runtime_state.gear_ratio = gear_ratio;
     uint32_t mode = staging_words[10];
-    if ((mode - 1U) >= 4U) {
+    if ((mode - 1U) >= 4U)
+    {
         mode = 1U;
-        *((volatile uint32_t *)FACTORY_SRAM_ADDRESS(0x1FFFA5F0UL, 0x1FFFA580UL)) = mode;
+        *((volatile uint32_t *)MEMORY_LAYOUT_ADDRESS(0x1FFFA5F0UL, 0x1FFFA580UL)) = mode;
 #if !APP_PROFILE_RELOAD_NORMALIZED_MODE
-        dm4310_sample_runtime_state.control_mode = mode;
-    } else {
-        dm4310_sample_runtime_state.control_mode = staging_words[10];
+        sample_runtime_state.control_mode = mode;
+    }
+    else
+    {
+        sample_runtime_state.control_mode = staging_words[10];
 #endif
     }
 #if APP_PROFILE_RELOAD_NORMALIZED_MODE
-    dm4310_sample_runtime_state.control_mode = staging_words[10];
+    sample_runtime_state.control_mode = staging_words[10];
 #endif
-    dm4310_motor_runtime_state.motor_temperature_filter_old =
-        MOTOR_TEMPERATURE_FILTER_OLD;
-    dm4310_motor_runtime_state.motor_temperature_filter_new =
-        MOTOR_TEMPERATURE_FILTER_NEW;
-    /* load_motor_configuration@0x22b5e..0x22b76 installs the analogue
+    motor_runtime_state.motor_temperature_filter_old = MOTOR_TEMPERATURE_FILTER_OLD;
+    motor_runtime_state.motor_temperature_filter_new = MOTOR_TEMPERATURE_FILTER_NEW;
+    /* load_motor_configuration installs the analogue
      * encoder weights and clears these words after motor constants. */
-    *((volatile uint32_t *)FACTORY_SRAM_ADDRESS(0x1FFFF1B0UL, 0x1FFFF13CUL)) = 0x3F7C0A7BU;
-    *((volatile uint32_t *)FACTORY_SRAM_ADDRESS(0x1FFFF1B4UL, 0x1FFFF140UL)) = 0x3C7D6140U;
-    *((volatile uint32_t *)FACTORY_SRAM_ADDRESS(0x1FFFF220UL, 0x1FFFF1ACUL)) = 0U;
-    dm4310_sample_runtime_state.outer_loop_divider = 0U;
-    dm4310_motor_runtime_state.raw_rotor_velocity = 0.0f;
+    *((volatile uint32_t *)MEMORY_LAYOUT_ADDRESS(0x1FFFF1B0UL, 0x1FFFF13CUL)) = 0x3F7C0A7BU;
+    *((volatile uint32_t *)MEMORY_LAYOUT_ADDRESS(0x1FFFF1B4UL, 0x1FFFF140UL)) = 0x3C7D6140U;
+    *((volatile uint32_t *)MEMORY_LAYOUT_ADDRESS(0x1FFFF220UL, 0x1FFFF1ACUL)) = 0U;
+    sample_runtime_state.outer_loop_divider = 0U;
+    motor_runtime_state.raw_rotor_velocity = 0.0f;
     controller->command.mode = (MotorControlMode)mode;
 }
-#endif
 
-#if defined(DAMIAO_DM4310)
-float dm4310_current_controller_state_step(CurrentController *axis)
+float current_controller_state_step(CurrentController *axis)
 {
     const float tracking_error = axis->measurement - axis->estimated_current;
     axis->tracking_error = tracking_error;
-    /* Keep the three additions in the factory VMLA order.  Regrouping this
+    /* Keep the three additions in the firmware VMLA order.  Regrouping this
      * expression changes the observer state after sustained 20 kHz use. */
-    float estimated_current = control_vmla_f32(
-        axis->estimated_current, axis->sample_period,
-        axis->disturbance_state);
-    estimated_current = control_vmla_f32(
-        estimated_current, axis->observer_l1_dt, tracking_error);
-    estimated_current = control_vmla_f32(
-        estimated_current, axis->plant_gain_dt, axis->control_output);
+    float estimated_current =
+        control_vmla_f32(axis->estimated_current, axis->sample_period, axis->disturbance_state);
+    estimated_current = control_vmla_f32(estimated_current, axis->observer_l1_dt, tracking_error);
+    estimated_current =
+        control_vmla_f32(estimated_current, axis->plant_gain_dt, axis->control_output);
     axis->estimated_current = estimated_current;
-    float disturbance_state = control_vmla_f32(
-        axis->disturbance_state, axis->observer_l2_dt, tracking_error);
+    float disturbance_state =
+        control_vmla_f32(axis->disturbance_state, axis->observer_l2_dt, tracking_error);
     axis->disturbance_state = disturbance_state;
     axis->control_error = axis->reference - axis->estimated_current;
     axis->raw_control = axis->control_bandwidth * axis->control_error;
-    axis->control_output = (axis->raw_control - axis->disturbance_state) *
-                           axis->inverse_plant_gain;
-    /* current_controller@0x1fffa07a likewise preserves unordered output. */
-    axis->control_output = motor_clampf(axis->control_output,
-                                        axis->output_min,
-                                        axis->output_max);
+    axis->control_output = (axis->raw_control - axis->disturbance_state) * axis->inverse_plant_gain;
+    /* current_controller likewise preserves unordered output. */
+    axis->control_output = motor_clampf(axis->control_output, axis->output_min, axis->output_max);
     axis->limited_output = axis->control_output;
     return axis->limited_output;
 }
-#endif
 
-float motor_control_current_step(CurrentController *axis,
-                                 float reference, float measurement)
+float motor_control_current_step(CurrentController *axis, float reference, float measurement)
 {
     axis->reference = reference;
     axis->measurement = measurement;
-#if defined(DAMIAO_DM4310)
-    return dm4310_current_controller_helper(axis);
-#else
-    const float tracking_error = measurement - axis->estimated_current;
-    axis->tracking_error = tracking_error;
-    float estimated_current = axis->estimated_current;
-    estimated_current += axis->sample_period * axis->disturbance_state;
-    estimated_current += axis->observer_l1_dt * tracking_error;
-    estimated_current += axis->plant_gain_dt * axis->control_output;
-    axis->estimated_current = estimated_current;
-    float disturbance_state = axis->disturbance_state;
-    disturbance_state += axis->observer_l2_dt * tracking_error;
-    axis->disturbance_state = disturbance_state;
-    axis->control_error = reference - axis->estimated_current;
-    axis->raw_control = axis->control_bandwidth * axis->control_error;
-    axis->control_output = (axis->raw_control - axis->disturbance_state) *
-                           axis->inverse_plant_gain;
-    axis->control_output = motor_clampf(axis->control_output,
-                                        axis->output_min,
-                                        axis->output_max);
-    axis->limited_output = axis->control_output;
-    return axis->limited_output;
-#endif
+    return current_controller_helper(axis);
 }
 
-void motor_control_set_command(MotorController *controller,
-                               const MotorCommand *command)
+void motor_control_set_command(MotorController *controller, const MotorCommand *command)
 {
-#if defined(DAMIAO_DM4310)
-    /* CAN publishes fixed words during decoding in factory order. This
+    /* CAN publishes fixed words during decoding in firmware order. This
      * setter only mirrors each family's fields; CTRL_MODE is untouched. */
-    if (command->mode != MOTOR_MODE_SPEED) {
+    if (command->mode != MOTOR_MODE_SPEED)
+    {
         controller->command.position = command->position;
     }
     controller->command.velocity = command->velocity;
-    if (command->mode == MOTOR_MODE_MIT) {
+    if (command->mode == MOTOR_MODE_MIT)
+    {
         controller->command.torque = command->torque;
         controller->command.kp = command->kp;
         controller->command.kd = command->kd;
-    } else if (command->mode == MOTOR_MODE_HYBRID) {
+    }
+    else if (command->mode == MOTOR_MODE_HYBRID)
+    {
         controller->command.torque = command->torque;
     }
     controller->command.mode = command->mode;
-#else
-    controller->command = *command;
-#endif
 }
 
-void motor_control_set_current_calibration(MotorController *controller,
-                                           float offset_u, float offset_v,
-                                           float offset_w)
+void motor_control_set_current_calibration(MotorController *controller, float offset_u,
+                                           float offset_v, float offset_w)
 {
     controller->current_offset_u = offset_u;
     controller->current_offset_v = offset_v;
     controller->current_offset_w = offset_w;
-#if defined(DAMIAO_DM4310)
-    dm4310_sample_runtime_state.current_offset_u = offset_u;
-    dm4310_sample_runtime_state.current_offset_v = offset_v;
-    dm4310_sample_runtime_state.current_offset_w = offset_w;
-#endif
+    sample_runtime_state.current_offset_u = offset_u;
+    sample_runtime_state.current_offset_v = offset_v;
+    sample_runtime_state.current_offset_w = offset_w;
 }
 
-#if defined(DAMIAO_DM4310)
-void dm4310_motor_control_clear_command(MotorController *controller)
+void motor_control_clear_command(MotorController *controller)
 {
-    /* main@0x25420..25430 leaves the fixed control-mode word untouched. */
-    dm4310_sample_runtime_state.command_position = 0.0f;
-    dm4310_sample_runtime_state.command_velocity = 0.0f;
-    dm4310_sample_runtime_state.command_torque = 0.0f;
-    dm4310_sample_runtime_state.command_kp = 0.0f;
-    dm4310_sample_runtime_state.command_kd = 0.0f;
-    __asm volatile ("" : : : "memory");
+    /* main leaves the fixed control-mode word untouched. */
+    sample_runtime_state.command_position = 0.0f;
+    sample_runtime_state.command_velocity = 0.0f;
+    sample_runtime_state.command_torque = 0.0f;
+    sample_runtime_state.command_kp = 0.0f;
+    sample_runtime_state.command_kd = 0.0f;
+    __asm volatile("" : : : "memory");
     controller->command.position = 0.0f;
     controller->command.velocity = 0.0f;
     controller->command.torque = 0.0f;
     controller->command.kp = 0.0f;
     controller->command.kd = 0.0f;
 }
-#endif
 
 void motor_control_arm(MotorController *controller)
 {
-#if defined(DAMIAO_DM4310)
-    dm4310_motor_runtime_state.console_mode = 2U;
-#endif
+    motor_runtime_state.console_mode = 2U;
     controller->armed = true;
 }
 
-#if !defined(DAMIAO_DM4310)
-static
-#endif
 void motor_control_reset_dynamic_state(MotorController *controller)
 {
-#if defined(DAMIAO_DM4310)
-    /* Factory 0x1fff9dc8 clears the sample first, then interleaves the
+    /* This path clears the sample first, then interleaves the
      * two current observers. Volatile stores preserve that SRAM order. */
     (void)controller;
-    const float cleared = *(volatile const float *)FACTORY_SRAM_ADDRESS(0x1FFFA118UL, 0x1FFFA150UL);
-    volatile float *const sample = (volatile float *)(uintptr_t)
-        *(volatile const uint32_t *)FACTORY_SRAM_ADDRESS(0x1FFFA11CUL, 0x1FFFA154UL);
-    volatile CurrentController *const current_q = (volatile CurrentController *)(uintptr_t)
-        *(volatile const uint32_t *)FACTORY_SRAM_ADDRESS(0x1FFFA134UL, 0x1FFFA16CUL);
+    const float cleared =
+        *(volatile const float *)MEMORY_LAYOUT_ADDRESS(0x1FFFA118UL, 0x1FFFA150UL);
+    volatile float *const sample = (volatile float *)(uintptr_t)*(
+        volatile const uint32_t *)MEMORY_LAYOUT_ADDRESS(0x1FFFA11CUL, 0x1FFFA154UL);
+    volatile CurrentController *const current_q = (volatile CurrentController *)(uintptr_t)*(
+        volatile const uint32_t *)MEMORY_LAYOUT_ADDRESS(0x1FFFA134UL, 0x1FFFA16CUL);
     sample[7] = cleared;
     sample[8] = cleared;
     sample[11] = cleared;
-    volatile CurrentController *const current_d = (volatile CurrentController *)(uintptr_t)
-        *(volatile const uint32_t *)FACTORY_SRAM_ADDRESS(0x1FFFA130UL, 0x1FFFA168UL);
+    volatile CurrentController *const current_d = (volatile CurrentController *)(uintptr_t)*(
+        volatile const uint32_t *)MEMORY_LAYOUT_ADDRESS(0x1FFFA130UL, 0x1FFFA168UL);
     current_d->tracking_error = cleared;
     current_q->tracking_error = cleared;
     current_d->estimated_current = cleared;
@@ -808,760 +582,537 @@ void motor_control_reset_dynamic_state(MotorController *controller)
     current_d->limited_output = cleared;
     current_q->limited_output = cleared;
     current_d->control_output = cleared;
-    volatile float *const speed = (volatile float *)(uintptr_t)
-        *(volatile const uint32_t *)FACTORY_SRAM_ADDRESS(0x1FFFA128UL, 0x1FFFA160UL);
+    volatile float *const speed = (volatile float *)(uintptr_t)*(
+        volatile const uint32_t *)MEMORY_LAYOUT_ADDRESS(0x1FFFA128UL, 0x1FFFA160UL);
     current_q->control_output = cleared;
     commissioning_reset_runtime_loop_states(speed, cleared);
-#else
-    CurrentController *const current_d = current_d_state(controller);
-    CurrentController *const current_q = current_q_state(controller);
-    current_d->tracking_error = 0.0f;
-    current_d->estimated_current = 0.0f;
-    current_d->disturbance_state = 0.0f;
-    current_d->control_error = 0.0f;
-    current_d->raw_control = 0.0f;
-    current_d->control_output = 0.0f;
-    current_d->limited_output = 0.0f;
-    current_q->tracking_error = 0.0f;
-    current_q->estimated_current = 0.0f;
-    current_q->disturbance_state = 0.0f;
-    current_q->control_error = 0.0f;
-    current_q->raw_control = 0.0f;
-    current_q->control_output = 0.0f;
-    current_q->limited_output = 0.0f;
-    controller->desired_velocity = 0.0f;
-#endif
 }
 
 void motor_control_disarm(MotorController *controller)
 {
-#if defined(DAMIAO_DM4310)
-    dm4310_motor_runtime_state.console_mode = 0U;
-#endif
+    motor_runtime_state.console_mode = 0U;
     controller->armed = false;
 }
 
 void motor_control_trip(MotorController *controller)
 {
-#if defined(DAMIAO_DM4310)
-    dm4310_motor_runtime_state.console_mode = 0U;
-#endif
+    motor_runtime_state.console_mode = 0U;
     controller->armed = false;
-#if !defined(DAMIAO_DM4310)
-    motor_control_reset_dynamic_state(controller);
-#endif
 }
 
-#if defined(DAMIAO_DM4310)
 void motor_control_set_runtime_fault(MotorFault fault)
 {
-    dm4310_sample_runtime_state.fault = (uint32_t)fault;
+    sample_runtime_state.fault = (uint32_t)fault;
 }
 
 MotorFault motor_control_runtime_fault(void)
 {
-    return (MotorFault)dm4310_sample_runtime_state.fault;
+    return (MotorFault)sample_runtime_state.fault;
 }
 
 void motor_control_set_raw_rotor_velocity(float raw_rotor_velocity)
 {
-    dm4310_motor_runtime_state.raw_rotor_velocity = raw_rotor_velocity;
+    motor_runtime_state.raw_rotor_velocity = raw_rotor_velocity;
 }
 
-void motor_control_set_position_runtime(float rotor_position,
-                                        int32_t revolutions,
+void motor_control_set_position_runtime(float rotor_position, int32_t revolutions,
                                         float output_position)
 {
-    dm4310_motor_runtime_state.rotor_position = rotor_position;
-    dm4310_motor_runtime_state.revolutions = revolutions;
-    dm4310_motor_runtime_state.output_position = output_position;
+    motor_runtime_state.rotor_position = rotor_position;
+    motor_runtime_state.revolutions = revolutions;
+    motor_runtime_state.output_position = output_position;
 }
 
 uint32_t motor_control_console_mode(void)
 {
-    return dm4310_motor_runtime_state.console_mode;
+    return motor_runtime_state.console_mode;
 }
 
 void motor_control_set_console_mode(uint32_t mode)
 {
-    dm4310_motor_runtime_state.console_mode = mode;
+    motor_runtime_state.console_mode = mode;
 }
 
 void motor_control_post_state_change(void)
 {
-    dm4310_motor_runtime_state.motor_state_changed = 1U;
+    motor_runtime_state.motor_state_changed = 1U;
 }
 
 bool motor_control_take_state_change(uint32_t *retained_mode)
 {
-    if (dm4310_motor_runtime_state.motor_state_changed != 1U) {
+    if (motor_runtime_state.motor_state_changed != 1U)
+    {
         return false;
     }
-    const uint32_t mode = dm4310_motor_runtime_state.console_mode;
-    if ((mode != 0U) && (mode != 2U)) {
-        /* main@0x25414 preserves a pending event in setup/other modes. */
+    const uint32_t mode = motor_runtime_state.console_mode;
+    if ((mode != 0U) && (mode != 2U))
+    {
+        /* main preserves a pending event in setup/other modes. */
         return false;
     }
     *retained_mode = mode;
-    dm4310_motor_runtime_state.motor_state_changed = 0U;
+    motor_runtime_state.motor_state_changed = 0U;
     return true;
 }
-#endif
 
-static float slew_velocity(float current, float target,
-                           const MotorConfig *config
-#if defined(DAMIAO_DM4310)
-                           , const volatile float *limits,
-                           volatile float *state
-#endif
-                           )
+static float slew_velocity(float current, float target, const MotorConfig *config,
+                           const volatile float *limits, volatile float *state)
 {
-#if defined(DAMIAO_DM4310)
     (void)current;
     (void)target;
     (void)config;
     float result;
     /* +0x1c is the target, +0x20 the slewed value; +0x24 also holds
      * the slew error. BCS deliberately accepts unordered comparisons. */
-    __asm volatile (
-        "vldr s3, [%1]\n"
-        "vldr s1, [%1, #4]\n"
-        "vsub.f32 s0, s3, s1\n"
-        "vstr s0, [%1, #8]\n"
-        "vldr s2, [%2, #16]\n"
-        "vcmpe.f32 s0, s2\n"
-        "vmrs APSR_nzcv, fpscr\n"
-        "bgt 1f\n"
-        "vldr s2, [%2, #20]\n"
-        "vcmpe.f32 s0, s2\n"
-        "vmrs APSR_nzcv, fpscr\n"
-        "bcs 2f\n"
-        "1: vadd.f32 s3, s1, s2\n"
-        "2: vstr s3, [%1, #4]\n"
-        "vmov.f32 %0, s3"
-        : "=t" (result) : "r" (state), "r" (limits)
-        : "s0", "s1", "s2", "s3", "cc", "memory");
+    __asm volatile("vldr s3, [%1]\n"
+                   "vldr s1, [%1, #4]\n"
+                   "vsub.f32 s0, s3, s1\n"
+                   "vstr s0, [%1, #8]\n"
+                   "vldr s2, [%2, #16]\n"
+                   "vcmpe.f32 s0, s2\n"
+                   "vmrs APSR_nzcv, fpscr\n"
+                   "bgt 1f\n"
+                   "vldr s2, [%2, #20]\n"
+                   "vcmpe.f32 s0, s2\n"
+                   "vmrs APSR_nzcv, fpscr\n"
+                   "bcs 2f\n"
+                   "1: vadd.f32 s3, s1, s2\n"
+                   "2: vstr s3, [%1, #4]\n"
+                   "vmov.f32 %0, s3"
+                   : "=t"(result)
+                   : "r"(state), "r"(limits)
+                   : "s0", "s1", "s2", "s3", "cc", "memory");
     return result;
-#else
-    const float error = target - current;
-    if (error > config->acceleration_limit) {
-        return current + config->acceleration_limit;
-    }
-    if (error < config->deceleration_limit) {
-        return current + config->deceleration_limit;
-    }
-    return target;
-#endif
 }
 
-static bool control_outer_step(MotorController *controller,
-                               const MotorConfig *config,
-                               float rotor_velocity, bool outer_loop_due
-#if defined(DAMIAO_DM4310)
-                               , const Dm4310OuterLoopReferences *references
-#endif
-                               )
+static bool control_outer_step(MotorController *controller, const MotorConfig *config,
+                               float rotor_velocity, bool outer_loop_due,
+                               const OuterLoopContext *references)
 {
-#if defined(DAMIAO_DM4310)
     (void)controller;
-    if (!outer_loop_due) {
+    if (!outer_loop_due)
+    {
         return false;
     }
-    volatile Dm4310SampleRuntimeState *const sample_state =
-        (volatile Dm4310SampleRuntimeState *)references->sample;
-    volatile Dm4310MotorRuntimeState *const motor_state =
-        (volatile Dm4310MotorRuntimeState *)references->motor;
-#else
-    (void)outer_loop_due;
-    if (++controller->outer_loop_divider < 20U) {
-        return false;
-    }
-    controller->outer_loop_divider = 0U;
-#endif
+    volatile SampleRuntimeState *const sample_state =
+        (volatile SampleRuntimeState *)references->sample;
+    volatile MotorRuntimeState *const motor_state = (volatile MotorRuntimeState *)references->motor;
 
-#if !defined(DAMIAO_DM4310)
-    const float filter_previous = controller->current_filter_previous;
-    const float filter_new = 1.0f - filter_previous;
-    controller->filtered_current_q =
-        controller->filtered_current_q * filter_previous +
-        controller->feedback.current_q * filter_new;
-    controller->feedback.output_torque = output_torque_constant(config) *
-                                         controller->filtered_current_q;
-#endif
-
-#if defined(DAMIAO_DM4310)
     volatile float *const position_loop = references->speed + 10;
     const float command_position = sample_state->command_position;
     const float output_position = motor_state->output_position;
     float position_error;
-    __asm volatile ("vsub.f32 %0, %1, %2"
-                    : "=t" (position_error)
-                    : "t" (command_position), "t" (output_position));
+    __asm volatile("vsub.f32 %0, %1, %2"
+                   : "=t"(position_error)
+                   : "t"(command_position), "t"(output_position));
     position_loop[2] = position_error;
     const float position_gain = position_loop[0];
     float position_output;
-    __asm volatile ("vmul.f32 %0, %1, %2"
-                    : "=t" (position_output)
-                    : "t" (position_gain), "t" (position_error));
+    __asm volatile("vmul.f32 %0, %1, %2"
+                   : "=t"(position_output)
+                   : "t"(position_gain), "t"(position_error));
     position_loop[6] = position_output;
     const uint32_t mode = sample_state->control_mode;
-    if ((mode == MOTOR_MODE_POSITION_SPEED) || (mode == MOTOR_MODE_HYBRID)) {
+    if ((mode == MOTOR_MODE_POSITION_SPEED) || (mode == MOTOR_MODE_HYBRID))
+    {
         const float limit = sample_state->command_velocity;
-        sample_state->desired_velocity =
-            dm4310_clamp_helper(position_output, -limit, limit);
-    } else if (mode == MOTOR_MODE_SPEED) {
+        sample_state->desired_velocity = clamp_helper(position_output, -limit, limit);
+    }
+    else if (mode == MOTOR_MODE_SPEED)
+    {
         const float limit = references->limits[6];
         const float command_velocity = sample_state->command_velocity;
-        sample_state->desired_velocity =
-            dm4310_clamp_helper(command_velocity, -limit, limit);
+        sample_state->desired_velocity = clamp_helper(command_velocity, -limit, limit);
     }
     /* MIT/unknown retain the target, but still publish position-loop state
      * and advance the fixed slew state before current filtering. */
-    (void)slew_velocity(0.0f, 0.0f, config, references->limits,
-                        &sample_state->desired_velocity);
-#else
-    if (controller->command.mode != MOTOR_MODE_MIT) {
-        float velocity_target = 0.0f;
-        if ((controller->command.mode == MOTOR_MODE_POSITION_SPEED) ||
-            (controller->command.mode == MOTOR_MODE_HYBRID)) {
-            const float velocity_limit = controller->command.velocity;
-            velocity_target = config->position_kp *
-                (controller->command.position - controller->feedback.position);
-            velocity_target = control_clampf(velocity_target, -velocity_limit,
-                                             velocity_limit);
-        } else if (controller->command.mode == MOTOR_MODE_SPEED) {
-            velocity_target = control_clampf(controller->command.velocity,
-                                             -config->speed_limit,
-                                             config->speed_limit);
-        }
-        controller->desired_velocity = slew_velocity(
-            controller->desired_velocity, velocity_target, config);
-    }
-#endif
+    (void)slew_velocity(0.0f, 0.0f, config, references->limits, &sample_state->desired_velocity);
 
-#if defined(DAMIAO_DM4310)
-    /* Factory 0x1fff8492 executes after target slewing. Its observer
+    /* This path executes after target slewing. Its observer
      * input is raw Q current, not the torque-reporting filtered value. */
     const float old_weight = motor_state->velocity_filter_previous;
     const float previous_current = motor_state->filtered_current_q;
     const float new_weight = motor_state->velocity_filter_new;
-    /* IRQ 0x1fff849e retains this pool pointer through the observer call
-     * and subsequent speed-loop reads. Load it before filtering begins. */
-    MotionObserver *const observer = (MotionObserver *)(uintptr_t)
-        *(const volatile uint32_t *)FACTORY_SRAM_ADDRESS(0x1FFF8630UL, 0x1FFF9978UL);
+    /* Retain this observer pointer through the observer call and subsequent
+     * speed-loop reads.  Load it before filtering begins. */
+    MotionObserver *const observer = (MotionObserver *)(uintptr_t)*(
+        const volatile uint32_t *)MEMORY_LAYOUT_ADDRESS(0x1FFF8630UL, 0x1FFF9978UL);
     float filtered_current;
-    __asm volatile ("vmul.f32 %0, %1, %2"
-                    : "=t" (filtered_current)
-                    : "t" (old_weight), "t" (previous_current)
-                    : "memory");
+    __asm volatile("vmul.f32 %0, %1, %2"
+                   : "=t"(filtered_current)
+                   : "t"(old_weight), "t"(previous_current)
+                   : "memory");
     const float current_q = sample_state->current_q;
-    __asm volatile ("vmla.f32 %0, %1, %2"
-                    : "+t" (filtered_current)
-                    : "t" (new_weight), "t" (current_q)
-                    : "memory");
+    __asm volatile("vmla.f32 %0, %1, %2"
+                   : "+t"(filtered_current)
+                   : "t"(new_weight), "t"(current_q)
+                   : "memory");
     motor_state->filtered_current_q = filtered_current;
     const float torque_constant = motor_state->output_torque_constant;
     float torque;
-    __asm volatile ("vmul.f32 %0, %1, %2"
-                    : "=t" (torque)
-                    : "t" (torque_constant), "t" (filtered_current)
-                    : "memory");
+    __asm volatile("vmul.f32 %0, %1, %2"
+                   : "=t"(torque)
+                   : "t"(torque_constant), "t"(filtered_current)
+                   : "memory");
     motor_state->output_torque = torque;
-    /* Factory reloads the live filtered velocity after torque publication;
+    /* Firmware reloads the live filtered velocity after torque publication;
      * the raw Q value is retained from the preceding VMLA. */
     float measured_velocity;
-    __asm volatile ("vldr %0, [%1]\nvstr %0, [%2]"
-                    : "=&t" (measured_velocity)
-                    : "r" (&motor_state->rotor_velocity),
-                      "r" (&observer->measured_velocity)
-                    : "memory");
+    __asm volatile("vldr %0, [%1]\nvstr %0, [%2]"
+                   : "=&t"(measured_velocity)
+                   : "r"(&motor_state->rotor_velocity), "r"(&observer->measured_velocity)
+                   : "memory");
     ((volatile MotionObserver *)observer)->current_q = current_q;
     (void)rotor_velocity;
-    dm4310_motion_observer_helper(observer);
+    motion_observer_helper(observer);
     volatile float *const speed_loop = references->speed;
     const float velocity = sample_state->velocity_target;
     const float estimated_velocity =
         ((const volatile MotionObserver *)observer)->estimated_velocity;
     float velocity_error;
-    __asm volatile ("vsub.f32 %0, %1, %2"
-                    : "=t" (velocity_error)
-                    : "t" (velocity), "t" (estimated_velocity));
+    __asm volatile("vsub.f32 %0, %1, %2"
+                   : "=t"(velocity_error)
+                   : "t"(velocity), "t"(estimated_velocity));
     speed_loop[2] = velocity_error;
-    const float disturbance =
-        ((const volatile MotionObserver *)observer)->disturbance_current;
+    const float disturbance = ((const volatile MotionObserver *)observer)->disturbance_current;
     const float speed_gain = speed_loop[0];
     float speed_output;
-    __asm volatile ("vnmls.f32 %0, %1, %2"
-                    : "=&t" (speed_output)
-                    : "t" (speed_gain), "t" (velocity_error),
-                      "0" (disturbance));
+    __asm volatile("vnmls.f32 %0, %1, %2"
+                   : "=&t"(speed_output)
+                   : "t"(speed_gain), "t"(velocity_error), "0"(disturbance));
     speed_loop[6] = speed_output;
-#else
-    motor_control_motion_observer_step(motion_observer_state(controller),
-                                       rotor_velocity,
-                                       controller->filtered_current_q);
-#endif
     return true;
 }
 
-#if !defined(DAMIAO_DM4310)
-static float non_mit_current_reference(MotorController *controller,
-                                       const MotorConfig *config)
+static void update_fast_current_transform(MotorController *controller, const MotorConfig *config,
+                                          const AdcSample *sample, float voltage_scale,
+                                          volatile PositionSensorScratch *scratch,
+                                          OuterLoopContext *references)
 {
-    const MotionObserver *const observer = motion_observer_state(controller);
-    return config->speed_kp *
-           (controller->desired_velocity -
-            observer->estimated_velocity) -
-           observer->disturbance_current;
-}
-#endif
-
-#if !defined(DAMIAO_DM4310)
-PhaseDuty motor_control_fast_step(MotorController *controller,
-                                  const MotorConfig *config,
-                                  const AdcSample *sample)
-{
-    const PhaseDuty neutral = {
-        .a = 0.5f,
-        .b = 0.5f,
-        .c = 0.5f,
-        .modulation_a = 0.0f,
-        .modulation_b = 0.0f,
-        .modulation_c = 0.0f,
-    };
-    controller->feedback.position = sample->output_position;
-    controller->feedback.velocity = sample->output_velocity;
-    controller->feedback.bus_voltage = sample->bus_voltage;
-    controller->feedback.mos_temperature = sample->mos_temperature;
-    controller->filtered_motor_temperature =
-        controller->filtered_motor_temperature * MOTOR_TEMPERATURE_FILTER_OLD +
-        sample->motor_temperature * MOTOR_TEMPERATURE_FILTER_NEW;
-    controller->feedback.motor_temperature =
-        controller->filtered_motor_temperature;
-
-    const float current_u = control_clampf(
-        (controller->current_offset_u - sample->phase_u) *
-        controller->current_scale, -1.0f, 1.0f);
-    const float current_v = control_clampf(
-        (controller->current_offset_v - sample->phase_v) *
-        controller->current_scale, -1.0f, 1.0f);
-    const AlphaBeta current_ab = motor_clarke(current_u, current_v);
-
-    const float pole_pairs = (float)config->pole_pairs;
-    const uint32_t electrical_turns = (uint32_t)(
-        sample->rotor_angle * (pole_pairs * INV_TWO_PI_F));
-    const float electrical_angle = motor_wrapf(
-        sample->rotor_angle * pole_pairs -
-        (float)electrical_turns * TWO_PI_F + controller->electrical_offset,
-        -3.14159265358979323846f,
-        3.14159265358979323846f);
-    float sine;
-    float cosine;
-    motor_target_sincos(electrical_angle, &sine, &cosine);
-    const DirectQuadrature current_dq = motor_park(current_ab, sine, cosine);
-    controller->feedback.current_d = current_dq.d;
-    controller->feedback.current_q = current_dq.q;
-
-    controller->outer_loop_ran = control_outer_step(
-        controller, config, sample->rotor_velocity, false);
-    if (!controller->armed) {
-        motor_control_reset_dynamic_state(controller);
-        return neutral;
-    }
-
-    float requested_q;
-    if (controller->command.mode == MOTOR_MODE_MIT) {
-        const float requested_torque = controller->command.torque +
-            controller->command.kp *
-                (controller->command.position - controller->feedback.position) +
-            controller->command.kd *
-                (controller->command.velocity - controller->feedback.velocity);
-        requested_q = requested_torque * controller->torque_to_current;
-    } else if ((controller->command.mode == MOTOR_MODE_POSITION_SPEED) ||
-               (controller->command.mode == MOTOR_MODE_SPEED) ||
-               (controller->command.mode == MOTOR_MODE_HYBRID)) {
-        requested_q = non_mit_current_reference(controller, config);
-    } else {
-        requested_q = 0.0f;
-    }
-    float current_limit = config->current_limit;
-    if (controller->command.mode == MOTOR_MODE_HYBRID) {
-        current_limit = controller->command.torque;
-    }
-    requested_q = control_clampf(requested_q, -current_limit, current_limit);
-
-    DirectQuadrature voltage;
-    voltage.d = motor_control_current_step(current_d_state(controller), 0.0f,
-                                           current_dq.d);
-    voltage.q = motor_control_current_step(current_q_state(controller),
-                                           requested_q, current_dq.q);
-    control_limit_vector(MODULATION_VECTOR_LIMIT, &voltage.d, &voltage.q);
-    const AlphaBeta stationary_voltage =
-        motor_inverse_park(voltage, sine, cosine);
-    return motor_svpwm(stationary_voltage);
-}
-#else
-static void motor_control_fast_transform(MotorController *controller,
-                                         const MotorConfig *config,
-                                         const AdcSample *sample, float voltage_scale,
-                                         volatile Dm4310PositionSensorScratch *scratch,
-                                         Dm4310OuterLoopReferences *references)
-{
-    /* The original exposes gear-scaled position/velocity as feedback.  Its
+    /* Expose gear-scaled position and velocity as feedback.  The
      * non-MIT speed observer deliberately uses the unscaled motor-side
      * velocity instead; position_sensor_scale at 0x1ffff088+0x5c is applied
      * only when producing the output velocity at +0x1c. */
     controller->feedback.position = sample->output_position;
     (void)config;
-    volatile Dm4310SampleRuntimeState *const sample_state =
-        (volatile Dm4310SampleRuntimeState *)references->sample;
-    volatile Dm4310MotorRuntimeState *const motor_state =
-        (volatile Dm4310MotorRuntimeState *)references->motor;
+    volatile SampleRuntimeState *const sample_state =
+        (volatile SampleRuntimeState *)references->sample;
+    volatile MotorRuntimeState *const motor_state = (volatile MotorRuntimeState *)references->motor;
     float sine;
     float cosine;
-    if (sample->position_sample_ready) {
+    if (sample->position_sample_ready)
+    {
         const uint32_t pole_pairs = motor_state->pole_pairs;
         const float angle = scratch->wrapped_angle;
         const float per_radian = motor_state->pole_pairs_per_radian;
         float electrical_angle;
         float turns;
-        __asm volatile (
-            "vcvt.f32.u32 %0, %0\n"
-            "vmul.f32 %0, %2, %0\n"
-            "vmul.f32 %1, %2, %3\n"
-            "vcvt.u32.f32 %1, %1\n"
-            "vcvt.f32.u32 %1, %1"
-            : "=&t" (electrical_angle), "=&t" (turns)
-            : "t" (angle), "t" (per_radian),
-              "0" (pole_pairs) : "memory");
-        const float two_pi = *(const volatile float *)FACTORY_SRAM_ADDRESS(0x1FFF8448UL, 0x1FFF975CUL);
-        __asm volatile ("vmls.f32 %0, %1, %2"
-                        : "+t" (electrical_angle)
-                        : "t" (turns), "t" (two_pi) : "memory");
+        __asm volatile("vcvt.f32.u32 %0, %0\n"
+                       "vmul.f32 %0, %2, %0\n"
+                       "vmul.f32 %1, %2, %3\n"
+                       "vcvt.u32.f32 %1, %1\n"
+                       "vcvt.f32.u32 %1, %1"
+                       : "=&t"(electrical_angle), "=&t"(turns)
+                       : "t"(angle), "t"(per_radian), "0"(pole_pairs)
+                       : "memory");
+        const float two_pi =
+            *(const volatile float *)MEMORY_LAYOUT_ADDRESS(0x1FFF8448UL, 0x1FFF975CUL);
+        __asm volatile("vmls.f32 %0, %1, %2"
+                       : "+t"(electrical_angle)
+                       : "t"(turns), "t"(two_pi)
+                       : "memory");
         const float offset = motor_state->electrical_offset;
-        __asm volatile ("vadd.f32 %0, %0, %1"
-                        : "+t" (electrical_angle) : "t" (offset));
+        __asm volatile("vadd.f32 %0, %0, %1" : "+t"(electrical_angle) : "t"(offset));
         motor_state->electrical_angle = electrical_angle;
-        const float maximum = *(const volatile float *)FACTORY_SRAM_ADDRESS(0x1FFF844CUL, 0x1FFF9760UL);
-        const float minimum = *(const volatile float *)FACTORY_SRAM_ADDRESS(0x1FFF8450UL, 0x1FFF9764UL);
-        dm4310_wrap_helper(
-            &motor_state->electrical_angle,
-            minimum, maximum);
-        motor_target_sincos(motor_state->electrical_angle,
-            &sample_state->electrical_sine,
-            &sample_state->electrical_cosine);
+        const float maximum =
+            *(const volatile float *)MEMORY_LAYOUT_ADDRESS(0x1FFF844CUL, 0x1FFF9760UL);
+        const float minimum =
+            *(const volatile float *)MEMORY_LAYOUT_ADDRESS(0x1FFF8450UL, 0x1FFF9764UL);
+        wrap_helper(&motor_state->electrical_angle, minimum, maximum);
+        motor_target_sincos(motor_state->electrical_angle, &sample_state->electrical_sine,
+                            &sample_state->electrical_cosine);
     }
     const float current_u = sample_state->current_u;
     sample_state->current_alpha = current_u;
     float beta;
     const float two = 2.0f;
-#if defined(DAMIAO_LAYOUT_DM800X)
+#if defined(DAMIAO_LAYOUT_RELOCATED_SRAM)
     (void)voltage_scale;
     const float phase_for_beta = sample_state->current_w;
-    const float inverse_sqrt_three =
-        *(const volatile float *)(uintptr_t)UINT32_C(0x1fff9768);
+    const float inverse_sqrt_three = *(const volatile float *)(uintptr_t)UINT32_C(0x1fff9768);
 #else
     const float phase_for_beta = sample_state->current_v;
     const float inverse_sqrt_three = voltage_scale;
 #endif
-    references->status = (volatile uint32_t *)(uintptr_t)
-        *(const volatile uint32_t *)FACTORY_SRAM_ADDRESS(0x1FFF83F8UL, 0x1FFF970CUL);
-    __asm volatile ("vmla.f32 %0, %1, %2"
-                    : "=&t" (beta)
-                    : "t" (phase_for_beta), "t" (two), "0" (current_u) : "memory");
-    references->limits = (const volatile float *)(uintptr_t)
-        *(const volatile uint32_t *)FACTORY_SRAM_ADDRESS(0x1FFF83FCUL, 0x1FFF9710UL);
-    references->speed = (volatile float *)(uintptr_t)
-        *(const volatile uint32_t *)FACTORY_SRAM_ADDRESS(0x1FFF8454UL, 0x1FFF976CUL);
-    __asm volatile ("vmul.f32 %0, %0, %1"
-                    : "+t" (beta) : "t" (inverse_sqrt_three) : "memory");
+    references->status = (volatile uint32_t *)(uintptr_t)*(
+        const volatile uint32_t *)MEMORY_LAYOUT_ADDRESS(0x1FFF83F8UL, 0x1FFF970CUL);
+    __asm volatile("vmla.f32 %0, %1, %2"
+                   : "=&t"(beta)
+                   : "t"(phase_for_beta), "t"(two), "0"(current_u)
+                   : "memory");
+    references->limits = (const volatile float *)(uintptr_t)*(
+        const volatile uint32_t *)MEMORY_LAYOUT_ADDRESS(0x1FFF83FCUL, 0x1FFF9710UL);
+    references->speed = (volatile float *)(uintptr_t)*(
+        const volatile uint32_t *)MEMORY_LAYOUT_ADDRESS(0x1FFF8454UL, 0x1FFF976CUL);
+    __asm volatile("vmul.f32 %0, %0, %1" : "+t"(beta) : "t"(inverse_sqrt_three) : "memory");
     sample_state->current_beta = beta;
     cosine = sample_state->electrical_cosine;
     sine = sample_state->electrical_sine;
     DirectQuadrature current_dq;
-    __asm volatile (
-        "vmul.f32 %0, %2, %3\n"
-        "vmla.f32 %0, %4, %5\n"
-        "vmul.f32 %1, %2, %5\n"
-        "vmls.f32 %1, %4, %3"
-        : "=&t" (current_dq.d), "=&t" (current_dq.q)
-        : "t" (cosine), "t" (current_u), "t" (sine), "t" (beta));
-#if defined(DAMIAO_DM4310)
+    __asm volatile("vmul.f32 %0, %2, %3\n"
+                   "vmla.f32 %0, %4, %5\n"
+                   "vmul.f32 %1, %2, %5\n"
+                   "vmls.f32 %1, %4, %3"
+                   : "=&t"(current_dq.d), "=&t"(current_dq.q)
+                   : "t"(cosine), "t"(current_u), "t"(sine), "t"(beta));
     sample_state->current_d = current_dq.d;
     sample_state->current_q = current_dq.q;
-#endif
 }
 
-/* Factory IRQ002 selects the hybrid current-limit source with an explicit
+/* Firmware IRQ002 selects the hybrid current-limit source with an explicit
  * branch.  Thumb IT conversion around the VFP loads changes the live S0 value
- * observed by the fixed SRAM clamp helper, so keep this recovered boundary
- * branch-based even under the DM4310 target's size optimization. */
-__attribute__((optimize("no-if-conversion", "no-if-conversion2")))
-static CurrentController *motor_control_fast_prepare(MotorController *controller,
-                                       const MotorConfig *config,
-                                       const AdcSample *sample, float cleared,
-                                       const Dm4310OuterLoopReferences *references)
+ * observed by the fixed SRAM clamp helper, so keep this fixed-layout boundary
+ * branch-based even under the firmware size optimization. */
+__attribute__((optimize("no-if-conversion", "no-if-conversion2"))) static CurrentController *
+prepare_current_controllers(MotorController *controller, const MotorConfig *config,
+                            const AdcSample *sample, float cleared,
+                            const OuterLoopContext *references)
 {
-    volatile Dm4310SampleRuntimeState *const sample_state =
-        (volatile Dm4310SampleRuntimeState *)references->sample;
-    volatile Dm4310MotorRuntimeState *const motor_state =
-        (volatile Dm4310MotorRuntimeState *)references->motor;
-    (void)control_outer_step(
-        controller, config, sample->rotor_velocity, sample->outer_loop_due,
-        references);
+    volatile SampleRuntimeState *const sample_state =
+        (volatile SampleRuntimeState *)references->sample;
+    volatile MotorRuntimeState *const motor_state = (volatile MotorRuntimeState *)references->motor;
+    (void)control_outer_step(controller, config, sample->rotor_velocity, sample->outer_loop_due,
+                             references);
     const uint32_t mode = sample_state->control_mode;
     float requested_q;
-    if (mode == MOTOR_MODE_MIT) {
+    if (mode == MOTOR_MODE_MIT)
+    {
         const float command_position = sample_state->command_position;
         const float position = motor_state->output_position;
         const float velocity = motor_state->output_velocity;
         float requested_torque;
-        __asm volatile ("vsub.f32 %0, %1, %2"
-                        : "=t" (requested_torque)
-                        : "t" (command_position), "t" (position));
+        __asm volatile("vsub.f32 %0, %1, %2"
+                       : "=t"(requested_torque)
+                       : "t"(command_position), "t"(position));
         const float kp = sample_state->command_kp;
-        __asm volatile ("vmul.f32 %0, %0, %1"
-                        : "+t" (requested_torque) : "t" (kp));
+        __asm volatile("vmul.f32 %0, %0, %1" : "+t"(requested_torque) : "t"(kp));
         const float command_velocity = sample_state->command_velocity;
         float velocity_error;
-        __asm volatile ("vsub.f32 %0, %1, %2"
-                        : "=t" (velocity_error)
-                        : "t" (command_velocity), "t" (velocity));
+        __asm volatile("vsub.f32 %0, %1, %2"
+                       : "=t"(velocity_error)
+                       : "t"(command_velocity), "t"(velocity));
         const float kd = sample_state->command_kd;
-        __asm volatile ("vmla.f32 %0, %1, %2"
-                        : "+t" (requested_torque)
-                        : "t" (kd), "t" (velocity_error));
+        __asm volatile("vmla.f32 %0, %1, %2"
+                       : "+t"(requested_torque)
+                       : "t"(kd), "t"(velocity_error));
         const float feed_forward = sample_state->command_torque;
-        __asm volatile ("vadd.f32 %0, %0, %1"
-                        : "+t" (requested_torque) : "t" (feed_forward));
+        __asm volatile("vadd.f32 %0, %0, %1" : "+t"(requested_torque) : "t"(feed_forward));
         *(volatile float *)(references->temperature_scratch + 4U) = requested_torque;
         const float inverse_torque = motor_state->inverse_output_torque_constant;
-        __asm volatile ("vmul.f32 %0, %1, %2"
-                        : "=t" (requested_q)
-                        : "t" (inverse_torque), "t" (requested_torque));
-    } else if ((mode == MOTOR_MODE_POSITION_SPEED) ||
-               (mode == MOTOR_MODE_SPEED) || (mode == MOTOR_MODE_HYBRID)) {
+        __asm volatile("vmul.f32 %0, %1, %2"
+                       : "=t"(requested_q)
+                       : "t"(inverse_torque), "t"(requested_torque));
+    }
+    else if ((mode == MOTOR_MODE_POSITION_SPEED) || (mode == MOTOR_MODE_SPEED) ||
+             (mode == MOTOR_MODE_HYBRID))
+    {
         requested_q = references->speed[6];
-    } else {
+    }
+    else
+    {
         requested_q = cleared;
     }
     /* Known modes publish the unbounded reference before reading the
      * limit. Unknown modes write zero and skip the clamp entirely. */
     sample_state->current_q_reference = requested_q;
-    if ((mode >= MOTOR_MODE_MIT) && (mode <= MOTOR_MODE_HYBRID)) {
-        const float current_limit = (mode == MOTOR_MODE_HYBRID) ?
-            sample_state->current_limit :
-            references->limits[3];
-        requested_q = dm4310_clamp_helper(requested_q,
-                                          -current_limit, current_limit);
+    if ((mode >= MOTOR_MODE_MIT) && (mode <= MOTOR_MODE_HYBRID))
+    {
+        const float current_limit =
+            (mode == MOTOR_MODE_HYBRID) ? sample_state->current_limit : references->limits[3];
+        requested_q = clamp_helper(requested_q, -current_limit, current_limit);
         sample_state->current_q_reference = requested_q;
     }
 
-    /* Preserve the factory VFP publications at 0x1fff8508..0x1fff8526.
-     * Plain float copies otherwise become integer LDR/STR pairs. */
-    CurrentController *const current_d = (CurrentController *)(uintptr_t)
-        *(volatile const uint32_t *)FACTORY_SRAM_ADDRESS(0x1FFF8634UL, 0x1FFF997CUL);
+    /* Preserve VFP-based state publication.  Plain float copies otherwise
+     * become integer LDR/STR pairs and change floating-point side effects. */
+    CurrentController *const current_d = (CurrentController *)(uintptr_t)*(
+        volatile const uint32_t *)MEMORY_LAYOUT_ADDRESS(0x1FFF8634UL, 0x1FFF997CUL);
     CurrentController *const current_q = current_d + 1;
     float publication;
-    __asm volatile (
-        "vldr %0, [%1]\nvstr %0, [%2]\n"
-        "vstr %7, [%3]\n"
-        "vldr %0, [%4]\nvstr %0, [%5]\n"
-        "vldr %0, [%6]\nvstr %0, [%8]"
-        : "=&t" (publication)
-        : "r" (&sample_state->current_d),
-          "r" (&current_d->measurement), "r" (&current_d->reference),
-          "r" (&sample_state->current_q),
-          "r" (&current_q->measurement),
-          "r" (&sample_state->current_q_reference),
-          "t" (cleared), "r" (&current_q->reference)
-        : "memory");
-    (void)dm4310_current_controller_helper(current_d);
-    (void)dm4310_current_controller_helper(current_q);
+    __asm volatile("vldr %0, [%1]\nvstr %0, [%2]\n"
+                   "vstr %7, [%3]\n"
+                   "vldr %0, [%4]\nvstr %0, [%5]\n"
+                   "vldr %0, [%6]\nvstr %0, [%8]"
+                   : "=&t"(publication)
+                   : "r"(&sample_state->current_d), "r"(&current_d->measurement),
+                     "r"(&current_d->reference), "r"(&sample_state->current_q),
+                     "r"(&current_q->measurement), "r"(&sample_state->current_q_reference),
+                     "t"(cleared), "r"(&current_q->reference)
+                   : "memory");
+    (void)current_controller_helper(current_d);
+    (void)current_controller_helper(current_q);
     return current_d;
 }
 
-void dm4310_motor_control_begin_sample(Dm4310OuterLoopReferences *references)
+void motor_control_begin_sample(OuterLoopContext *references)
 {
-    volatile Dm4310SampleRuntimeState *const sample_state =
-        (volatile Dm4310SampleRuntimeState *)(uintptr_t)
-        *(const volatile uint32_t *)FACTORY_SRAM_ADDRESS(0x1FFF8400UL, 0x1FFF9714UL);
+    volatile SampleRuntimeState *const sample_state = (volatile SampleRuntimeState *)(uintptr_t)*(
+        const volatile uint32_t *)MEMORY_LAYOUT_ADDRESS(0x1FFF8400UL, 0x1FFF9714UL);
     references->sample = sample_state;
-    const uint32_t divider =
-        sample_state->outer_loop_divider + 1U;
+    const uint32_t divider = sample_state->outer_loop_divider + 1U;
     sample_state->outer_loop_divider = divider;
 }
 
-float dm4310_motor_control_fast_sample_prefix(MotorController *controller,
-                                             AdcSample *sample,
-                                             const volatile uint16_t *raw,
-                                             Dm4310OuterLoopReferences *references)
+float motor_control_fast_sample_prefix(MotorController *controller, AdcSample *sample,
+                                       const volatile uint16_t *raw, OuterLoopContext *references)
 {
-    volatile Dm4310SampleRuntimeState *const sample_state =
-        (volatile Dm4310SampleRuntimeState *)references->sample;
+    volatile SampleRuntimeState *const sample_state =
+        (volatile SampleRuntimeState *)references->sample;
     const uint16_t mos_raw = raw[6];
-    const volatile float *const temperatures = (const volatile float *)(uintptr_t)
-        *(const volatile uint32_t *)FACTORY_SRAM_ADDRESS(0x1FFF8430UL, 0x1FFF9744UL);
-    volatile uint8_t *const temperature_index = (volatile uint8_t *)(uintptr_t)
-        *(const volatile uint32_t *)FACTORY_SRAM_ADDRESS(0x1FFF842CUL, 0x1FFF9740UL);
+    const volatile float *const temperatures = (const volatile float *)(uintptr_t)*(
+        const volatile uint32_t *)MEMORY_LAYOUT_ADDRESS(0x1FFF8430UL, 0x1FFF9744UL);
+    volatile uint8_t *const temperature_index = (volatile uint8_t *)(uintptr_t)*(
+        const volatile uint32_t *)MEMORY_LAYOUT_ADDRESS(0x1FFF842CUL, 0x1FFF9740UL);
     references->temperature_scratch = (uintptr_t)temperature_index;
     const float mos_temperature = temperatures[(mos_raw >> 4U) & 0xFFU];
-    volatile Dm4310MotorRuntimeState *const motor =
-        (volatile Dm4310MotorRuntimeState *)(uintptr_t)
-        *(const volatile uint32_t *)FACTORY_SRAM_ADDRESS(0x1FFF8404UL, 0x1FFF9718UL);
+    volatile MotorRuntimeState *const motor = (volatile MotorRuntimeState *)(uintptr_t)*(
+        const volatile uint32_t *)MEMORY_LAYOUT_ADDRESS(0x1FFF8404UL, 0x1FFF9718UL);
     references->motor = motor;
     sample->mos_temperature = mos_temperature;
     controller->feedback.mos_temperature = sample->mos_temperature;
     sample_state->mos_temperature = sample->mos_temperature;
-    const uint8_t motor_temperature_index =
-        (uint8_t)(raw[7] >> 4U);
-    /* Factory byte scratch aliases the last word of the Q drive object. */
+    const uint8_t motor_temperature_index = (uint8_t)(raw[7] >> 4U);
+    /* Firmware byte scratch aliases the last word of the Q drive object. */
     *temperature_index = motor_temperature_index;
     float filtered_temperature;
-    const float previous_temperature =
-        motor->filtered_motor_temperature;
-    const float temperature_old =
-        motor->motor_temperature_filter_old;
-    __asm volatile ("vmul.f32 %0, %1, %2"
-                    : "=t" (filtered_temperature)
-                    : "t" (previous_temperature), "t" (temperature_old));
-    const float temperature_new =
-        motor->motor_temperature_filter_new;
+    const float previous_temperature = motor->filtered_motor_temperature;
+    const float temperature_old = motor->motor_temperature_filter_old;
+    __asm volatile("vmul.f32 %0, %1, %2"
+                   : "=t"(filtered_temperature)
+                   : "t"(previous_temperature), "t"(temperature_old));
+    const float temperature_new = motor->motor_temperature_filter_new;
     sample->motor_temperature = temperatures[motor_temperature_index];
-    __asm volatile ("vmla.f32 %0, %1, %2"
-                    : "+t" (filtered_temperature)
-                    : "t" (temperature_new), "t" (sample->motor_temperature));
+    __asm volatile("vmla.f32 %0, %1, %2"
+                   : "+t"(filtered_temperature)
+                   : "t"(temperature_new), "t"(sample->motor_temperature));
     controller->filtered_motor_temperature = filtered_temperature;
-    controller->feedback.motor_temperature =
-        controller->filtered_motor_temperature;
-    motor->filtered_motor_temperature =
-        controller->filtered_motor_temperature;
+    controller->feedback.motor_temperature = controller->filtered_motor_temperature;
+    motor->filtered_motor_temperature = controller->filtered_motor_temperature;
     const uint16_t bus_raw = raw[3];
-    const float bus_scale = *(const volatile float *)FACTORY_SRAM_ADDRESS(0x1FFF8434UL, 0x1FFF9748UL);
+    const float bus_scale =
+        *(const volatile float *)MEMORY_LAYOUT_ADDRESS(0x1FFF8434UL, 0x1FFF9748UL);
     sample->bus_voltage = (float)bus_raw * bus_scale;
     controller->feedback.bus_voltage = sample->bus_voltage;
     sample_state->bus_voltage = sample->bus_voltage;
-    const float voltage_scale = *(const volatile float *)FACTORY_SRAM_ADDRESS(0x1FFF8438UL, 0x1FFF974CUL);
-    sample_state->normalized_bus_voltage =
-        sample->bus_voltage * voltage_scale;
+    const float voltage_scale =
+        *(const volatile float *)MEMORY_LAYOUT_ADDRESS(0x1FFF8438UL, 0x1FFF974CUL);
+    sample_state->normalized_bus_voltage = sample->bus_voltage * voltage_scale;
     sample->phase_u = (float)raw[0];
     const float offset_u = sample_state->current_offset_u;
     float current_u;
-    __asm volatile ("vsub.f32 %0, %1, %2"
-                    : "=t" (current_u)
-                    : "t" (offset_u), "t" (sample->phase_u) : "memory");
-    const float current_scale = *(const volatile float *)FACTORY_SRAM_ADDRESS(0x1FFF843CUL, 0x1FFF9750UL);
+    __asm volatile("vsub.f32 %0, %1, %2"
+                   : "=t"(current_u)
+                   : "t"(offset_u), "t"(sample->phase_u)
+                   : "memory");
+    const float current_scale =
+        *(const volatile float *)MEMORY_LAYOUT_ADDRESS(0x1FFF843CUL, 0x1FFF9750UL);
     current_u *= current_scale;
     sample_state->current_u = current_u;
     sample->phase_v = (float)raw[1];
-    const float current_v =
-        (sample_state->current_offset_v - sample->phase_v) *
-        current_scale;
+    const float current_v = (sample_state->current_offset_v - sample->phase_v) * current_scale;
     sample_state->current_v = current_v;
-#if defined(DAMIAO_LAYOUT_DM800X)
+#if defined(DAMIAO_LAYOUT_RELOCATED_SRAM)
     sample->phase_w = (float)raw[2];
-    const float current_w =
-        (sample_state->current_offset_w - sample->phase_w) *
-        current_scale;
+    const float current_w = (sample_state->current_offset_w - sample->phase_w) * current_scale;
     sample_state->current_w = current_w;
 #endif
-    sample_state->current_u = dm4310_clamp_helper(
-        current_u, -1.0f, 1.0f);
-    sample_state->current_v = dm4310_clamp_helper(
-        sample_state->current_v, -1.0f, 1.0f);
-#if defined(DAMIAO_LAYOUT_DM800X)
-    sample_state->current_w = dm4310_clamp_helper(
-        sample_state->current_w, -1.0f, 1.0f);
+    sample_state->current_u = clamp_helper(current_u, -1.0f, 1.0f);
+    sample_state->current_v = clamp_helper(sample_state->current_v, -1.0f, 1.0f);
+#if defined(DAMIAO_LAYOUT_RELOCATED_SRAM)
+    sample_state->current_w = clamp_helper(sample_state->current_w, -1.0f, 1.0f);
 #endif
     return voltage_scale;
 }
 
-CurrentController *dm4310_motor_control_fast_prepare(MotorController *controller,
-                                       const MotorConfig *config,
-                                       const AdcSample *sample, float cleared,
-                                       const Dm4310OuterLoopReferences *references)
+CurrentController *motor_control_fast_prepare(MotorController *controller,
+                                              const MotorConfig *config, const AdcSample *sample,
+                                              float cleared, const OuterLoopContext *references)
 {
-    return motor_control_fast_prepare(controller, config, sample, cleared, references);
+    return prepare_current_controllers(controller, config, sample, cleared, references);
 }
 
-float dm4310_motor_control_fast_transform(MotorController *controller,
-                                         const MotorConfig *config,
-                                         AdcSample *sample, float voltage_scale,
-                                         volatile Dm4310PositionSensorScratch *scratch,
-                                         Dm4310OuterLoopReferences *references)
+float motor_control_fast_transform(MotorController *controller, const MotorConfig *config,
+                                   AdcSample *sample, float voltage_scale,
+                                   volatile PositionSensorScratch *scratch,
+                                   OuterLoopContext *references)
 {
-    motor_control_fast_transform(controller, config, sample, voltage_scale, scratch,
-                                 references);
-    const float cleared = *(const volatile float *)FACTORY_SRAM_ADDRESS(0x1FFF8458UL, 0x1FFF9770UL);
-    /* IRQ002@0x1fff834e tests the divider after publishing D/Q currents. */
-    const volatile Dm4310SampleRuntimeState *const sample_state =
-        (const volatile Dm4310SampleRuntimeState *)references->sample;
+    update_fast_current_transform(controller, config, sample, voltage_scale, scratch, references);
+    const float cleared =
+        *(const volatile float *)MEMORY_LAYOUT_ADDRESS(0x1FFF8458UL, 0x1FFF9770UL);
+    /* IRQ002 tests the divider after publishing D/Q currents. */
+    const volatile SampleRuntimeState *const sample_state =
+        (const volatile SampleRuntimeState *)references->sample;
     sample->outer_loop_due = sample_state->outer_loop_divider == 20U;
     return cleared;
 }
 
-void dm4310_motor_control_fast_apply_state(MotorController *controller,
-    const Dm4310OuterLoopReferences *references)
+void motor_control_fast_apply_state(MotorController *controller, const OuterLoopContext *references)
 {
-    const volatile Dm4310MotorRuntimeState *const motor_state =
-        (const volatile Dm4310MotorRuntimeState *)references->motor;
+    const volatile MotorRuntimeState *const motor_state =
+        (const volatile MotorRuntimeState *)references->motor;
     const bool enabled = motor_state->console_mode == 2U;
     controller->armed = enabled;
     /* IRQ002 clears/increments communication age before selective reset,
      * using the same retained enabled-state decision. */
     safety_finish_control_tick(enabled, references->status);
-    if (!enabled) {
+    if (!enabled)
+    {
         /* IRQ002 tests the enabled state only after fault monitoring. */
-        dm4310_reset_control_state_helper();
+        reset_control_state_helper();
     }
 }
 
-AlphaBeta dm4310_motor_control_fast_finish(volatile CurrentController *current_d,
-    const Dm4310OuterLoopReferences *references)
+AlphaBeta motor_control_fast_finish(volatile CurrentController *current_d,
+                                    const OuterLoopContext *references)
 {
     /* IRQ002 retains its 8506 pool pointer through fault monitoring/reset. */
     volatile CurrentController *const current_q = current_d + 1;
-    const float limit = *(volatile const float *)FACTORY_SRAM_ADDRESS(0x1FFF8638UL, 0x1FFF9980UL);
-    dm4310_limit_vector_helper(limit,
-        &current_d->limited_output, &current_q->limited_output);
-    volatile Dm4310SampleRuntimeState *const sample_state =
-        (volatile Dm4310SampleRuntimeState *)references->sample;
+    const float limit = *(volatile const float *)MEMORY_LAYOUT_ADDRESS(0x1FFF8638UL, 0x1FFF9980UL);
+    limit_vector_helper(limit, &current_d->limited_output, &current_q->limited_output);
+    volatile SampleRuntimeState *const sample_state =
+        (volatile SampleRuntimeState *)references->sample;
     const float cosine = sample_state->electrical_cosine;
     const float voltage_d = current_d->limited_output;
     const float sine = sample_state->electrical_sine;
     const float voltage_q = current_q->limited_output;
     AlphaBeta stationary_voltage;
-    __asm volatile (
-        "vmul.f32 %0, %2, %3\n"
-        "vmls.f32 %0, %4, %5\n"
-        "vmul.f32 %1, %4, %3\n"
-        "vmla.f32 %1, %2, %5"
-        : "=&t" (stationary_voltage.alpha), "=&t" (stationary_voltage.beta)
-        : "t" (cosine), "t" (voltage_d), "t" (sine), "t" (voltage_q)
-        : "memory");
+    __asm volatile("vmul.f32 %0, %2, %3\n"
+                   "vmls.f32 %0, %4, %5\n"
+                   "vmul.f32 %1, %4, %3\n"
+                   "vmla.f32 %1, %2, %5"
+                   : "=&t"(stationary_voltage.alpha), "=&t"(stationary_voltage.beta)
+                   : "t"(cosine), "t"(voltage_d), "t"(sine), "t"(voltage_q)
+                   : "memory");
     sample_state->voltage_alpha = stationary_voltage.alpha;
     sample_state->voltage_beta = stationary_voltage.beta;
     return stationary_voltage;
 }
 
-PhaseDuty motor_control_fast_step(MotorController *controller,
-                                  const MotorConfig *config,
+PhaseDuty motor_control_fast_step(MotorController *controller, const MotorConfig *config,
                                   const AdcSample *sample)
 {
     AdcSample working_sample = *sample;
-    Dm4310OuterLoopReferences references;
-    dm4310_motor_control_begin_sample(&references);
-    const float voltage_scale = dm4310_motor_control_fast_sample_prefix(
-        controller, &working_sample, (const volatile uint16_t *)FACTORY_SRAM_ADDRESS(0x1FFFC778UL, 0x1FFFF348UL),
-        &references);
-    const float cleared = dm4310_motor_control_fast_transform(
+    OuterLoopContext references;
+    motor_control_begin_sample(&references);
+    const float voltage_scale = motor_control_fast_sample_prefix(
+        controller, &working_sample,
+        (const volatile uint16_t *)MEMORY_LAYOUT_ADDRESS(0x1FFFC778UL, 0x1FFFF348UL), &references);
+    const float cleared = motor_control_fast_transform(
         controller, config, &working_sample, voltage_scale,
-        (volatile Dm4310PositionSensorScratch *)FACTORY_SRAM_ADDRESS(0x1FFFF190UL, 0x1FFFF11CUL), &references);
+        (volatile PositionSensorScratch *)MEMORY_LAYOUT_ADDRESS(0x1FFFF190UL, 0x1FFFF11CUL),
+        &references);
     CurrentController *const current_d =
-        motor_control_fast_prepare(controller, config, &working_sample, cleared,
-                                    &references);
-    dm4310_motor_control_fast_apply_state(controller, &references);
-    return motor_svpwm_modulation(
-        dm4310_motor_control_fast_finish(current_d, &references));
+        motor_control_fast_prepare(controller, config, &working_sample, cleared, &references);
+    motor_control_fast_apply_state(controller, &references);
+    return motor_svpwm_modulation(motor_control_fast_finish(current_d, &references));
 }
-#endif

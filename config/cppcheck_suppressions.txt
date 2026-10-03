@@ -16,7 +16,7 @@ duplicateExpression:*bootloader/src/platform.c
 # union type-pun and mistakes the read of estimate.bits for an overwrite.
 redundantInitialization:*app/src/commissioning_math.c
 
-# The lower bound mirrors the original protocol's explicit selector range.
+# The lower bound mirrors the protocol's explicit selector range.
 # Cppcheck proves it from the preceding selector==0 return, but retaining both
 # bounds keeps the protocol condition readable and machine-code-compatible.
 knownConditionTrueFalse:*app/src/parameter_protocol.c

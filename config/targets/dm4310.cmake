@@ -1,7 +1,7 @@
 # DM4310 V3 V5017.04 target profile.
 
 set(DAMIAO_TARGET_COMPILE_DEFINITIONS
-    DAMIAO_DM4310=1
+    DAMIAO_MODEL_DM4310=1
 )
 
 include("${CMAKE_CURRENT_LIST_DIR}/dm_v3_common.cmake")

@@ -26,7 +26,7 @@ for case in range(256):
             trace.append((access,address,size,bits if access==UC_MEM_WRITE else int.from_bytes(uc.mem_read(address,size),'little')))
         for lo,hi in [(A(0x1fffa118),A(0x1fffa12f)),(0x20008000,0x200083ff)]:
             u.hook_add(UC_HOOK_MEM_READ|UC_HOOK_MEM_WRITE,memory,begin=lo,end=hi)
-        entry=A(0x1fff9d5c) if original else symbols['dm4310_clear_runtime_loop_states_helper']
+        entry=A(0x1fff9d5c) if original else symbols['clear_runtime_loop_states_helper']
         u.emu_start(entry|1,0x30000,count=10000)
         assert u.reg_read(arm.UC_ARM_REG_PC)==0x30000
         results.append((trace,bytes(u.mem_read(0x20008000,0x400)),u.reg_read(arm.UC_ARM_REG_FPSCR)))

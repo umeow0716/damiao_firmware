@@ -7,11 +7,9 @@ void position_sensor_dma_irq(void);
 void adc_foc_control_irq(void);
 void mcan1_receive_irq(void);
 void debug_uart_receive_irq(void);
-#if defined(DAMIAO_DM4310)
-void dm4310_fault_monitor_state_step(void);
-void dm4310_fault_monitor_helper(void);
-void dm4310_reset_control_state_step(void);
-#endif
+void fault_monitor_state_step(void);
+void fault_monitor_helper(void);
+void reset_control_state_step(void);
 
 /* Names consumed directly by startup_hc32f448.S. */
 void IRQ000_Handler(void);

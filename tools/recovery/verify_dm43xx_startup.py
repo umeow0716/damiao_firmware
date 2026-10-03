@@ -114,12 +114,12 @@ def run_source(symbols, segments):
     machine.hook_add(UC_HOOK_CODE, skip_system_init)
     machine.emu_start(
         symbols["Reset_Handler"] | 1,
-        symbols["dm4310_runtime_main_entry"],
+        symbols["runtime_main_entry"],
         count=2_000_000,
     )
     assert (
         machine.reg_read(arm.UC_ARM_REG_PC)
-        == symbols["dm4310_runtime_main_entry"]
+        == symbols["runtime_main_entry"]
     )
     return machine
 
@@ -173,7 +173,7 @@ def verify_model(model, profile):
         FACTORY_RUNTIME_ENTRY | 1, profile["main"], count=100_000
     )
     source_machine.emu_start(
-        symbols["dm4310_runtime_main_entry"] | 1,
+        symbols["runtime_main_entry"] | 1,
         symbols["main"],
         count=100_000,
     )

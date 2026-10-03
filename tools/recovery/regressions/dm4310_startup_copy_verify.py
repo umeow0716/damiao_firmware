@@ -43,8 +43,8 @@ for original in (True, False):
                 uc.reg_write(arm.UC_ARM_REG_PC, uc.reg_read(arm.UC_ARM_REG_LR))
         if not real_system: u.hook_add(UC_HOOK_CODE, skip_system)
         u.emu_start(symbols['Reset_Handler'] | 1,
-                    symbols['dm4310_runtime_main_entry'], count=2000000)
-        assert u.reg_read(arm.UC_ARM_REG_PC) == symbols['dm4310_runtime_main_entry']
+                    symbols['runtime_main_entry'], count=2000000)
+        assert u.reg_read(arm.UC_ARM_REG_PC) == symbols['runtime_main_entry']
         sections = [s for s in elf.iter_sections()
                     if FIXED_IMAGE_BASE <= s['sh_addr'] < FACTORY_STATE_BASE
                     and s['sh_type'] != 'SHT_NOBITS' and s['sh_size']]
@@ -99,7 +99,7 @@ runtime = []
 entry_stacks = []
 heaps = []
 for original, u in zip((True, False), machines):
-    entry = F(0x20368) if original else symbols['dm4310_runtime_main_entry']
+    entry = F(0x20368) if original else symbols['runtime_main_entry']
     stop = F(0x252f4) if original else symbols['main']
     u.emu_start(entry | 1, stop, count=100000)
     assert u.reg_read(arm.UC_ARM_REG_PC) == stop

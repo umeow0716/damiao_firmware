@@ -2,19 +2,18 @@
 
 bool boot_record_is_normal(const BootPersistentRecord *record)
 {
-    return (record != 0) && (record->boot_request == 0U) &&
-           (record->application_confirmed == 1U);
+    return (record != 0) && (record->boot_request == 0U) && (record->application_confirmed == 1U);
 }
 
 bool boot_record_is_update_requested(const BootPersistentRecord *record)
 {
-    return (record != 0) && (record->boot_request == 1U) &&
-           (record->application_confirmed == 0U);
+    return (record != 0) && (record->boot_request == 1U) && (record->application_confirmed == 0U);
 }
 
 void boot_record_request_update(BootPersistentRecord *record)
 {
-    if (record != 0) {
+    if (record != 0)
+    {
         record->boot_request = 1U;
         record->application_confirmed = 0U;
     }
@@ -22,7 +21,8 @@ void boot_record_request_update(BootPersistentRecord *record)
 
 void boot_record_clear_request(BootPersistentRecord *record)
 {
-    if (record != 0) {
+    if (record != 0)
+    {
         record->boot_request = 0U;
         record->application_confirmed = 0U;
     }
@@ -30,7 +30,8 @@ void boot_record_clear_request(BootPersistentRecord *record)
 
 void boot_record_confirm_application(BootPersistentRecord *record)
 {
-    if (record != 0) {
+    if (record != 0)
+    {
         record->boot_request = 0U;
         record->application_confirmed = 1U;
     }
@@ -39,35 +40,35 @@ void boot_record_confirm_application(BootPersistentRecord *record)
 void boot_record_set_application_identity(BootPersistentRecord *record,
                                           uint32_t application_identity)
 {
-    if (record != 0) {
+    if (record != 0)
+    {
         record->application_identity = application_identity;
     }
 }
 
 bool boot_update_journal_in_progress(const BootUpdateJournal *journal)
 {
-    return (journal != 0) &&
-           (journal->magic == APP_UPDATE_JOURNAL_MAGIC) &&
+    return (journal != 0) && (journal->magic == APP_UPDATE_JOURNAL_MAGIC) &&
            (journal->version == APP_UPDATE_JOURNAL_VERSION) &&
            (journal->state == APP_UPDATE_JOURNAL_IN_PROGRESS) &&
-           (journal->state_inverse ==
-            (uint32_t)~(uint32_t)APP_UPDATE_JOURNAL_IN_PROGRESS);
+           (journal->state_inverse == (uint32_t)~(uint32_t)APP_UPDATE_JOURNAL_IN_PROGRESS);
 }
 
 void boot_update_journal_begin(BootUpdateJournal *journal)
 {
-    if (journal != 0) {
+    if (journal != 0)
+    {
         journal->magic = APP_UPDATE_JOURNAL_MAGIC;
         journal->version = APP_UPDATE_JOURNAL_VERSION;
         journal->state = APP_UPDATE_JOURNAL_IN_PROGRESS;
-        journal->state_inverse =
-            (uint32_t)~(uint32_t)APP_UPDATE_JOURNAL_IN_PROGRESS;
+        journal->state_inverse = (uint32_t)~(uint32_t)APP_UPDATE_JOURNAL_IN_PROGRESS;
     }
 }
 
 void boot_update_journal_clear(BootUpdateJournal *journal)
 {
-    if (journal != 0) {
+    if (journal != 0)
+    {
         journal->magic = UINT32_MAX;
         journal->version = UINT32_MAX;
         journal->state = UINT32_MAX;

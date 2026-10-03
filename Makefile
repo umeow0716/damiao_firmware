@@ -24,13 +24,13 @@ help:
 	@echo "  make build            Build all profiled source APP targets"
 	@echo "  make verify-firmware-outputs  Check generated files without cross-model equality"
 	@echo "  make clean            Remove build and dist outputs"
-	@echo "  make send CAN_IF=can0 Send dist/development/dm4310_enc.bin through the loader"
+	@echo "  make send CAN_IF=can0 Send the packaged DM4310 CAN frames through the loader"
 	@echo ""
 	@echo "Toolchain: locked by cmake/arm-none-eabi-toolchain.cmake"
 	@echo "Default toolchain root: tools/arm-gnu-toolchain"
 	@echo "Override only when needed: DM_ARM_TOOLCHAIN_ROOT=/path/to/arm-gnu-toolchain make"
 	@echo ""
-	@echo "All model targets track the paired V3 sub-version 04 references listed in docs/FIRMWARE_RECOVERY_PROGRESS.md."
+	@echo "All model targets use the V3 sub-version 04 target profiles."
 	@echo "Bootloader source is intentionally not built or tracked in this app-only workspace."
 	@echo "No cross-model byte-equality check is enforced; model images may legitimately diverge."
 
@@ -72,7 +72,7 @@ verify-firmware-outputs:
 
 send: dm4310
 	$(PYTHON) tools/send_update.py --interface $(CAN_IF) \
-		--encrypted $(DIST_DEV)/dm4310_enc.bin --yes
+		--frames $(PACK_ROOT)/dm4310/app_update.frames.jsonl --yes
 
 provision-calibration:
 	$(PYTHON) tools/provision_calibration.py \

@@ -49,7 +49,7 @@ for case in range(256):
             u.hook_add(UC_HOOK_MEM_WRITE, write,
                        begin=address, end=address + size - 1)
         u.hook_add(UC_HOOK_MEM_INVALID, invalid_access)
-        entry = F(0x2a448) if original else symbols['dm4310_reset_control_state_step']
+        entry = F(0x2a448) if original else symbols['reset_control_state_step']
         try:
             u.emu_start(entry | 1, 0x30000, count=10000)
         except Exception as error:

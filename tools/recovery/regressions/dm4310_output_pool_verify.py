@@ -35,7 +35,7 @@ for case in range(2048 if full_chain else 128):
         u.reg_write(arm.UC_ARM_REG_R0,0x20008000)
         u.reg_write(arm.UC_ARM_REG_SP,0x2000f000)
         u.reg_write(arm.UC_ARM_REG_LR,0x30001)
-        target=A(0x1fffa4fa) if original else symbols['dm4310_output_atan2f']
+        target=A(0x1fffa4fa) if original else symbols['output_atan2f']
         def skip_atan(uc,address,size,data):
             if address==target:
                 uc.reg_write(arm.UC_ARM_REG_S0,int.from_bytes(angle,'little'))
@@ -50,7 +50,7 @@ for case in range(2048 if full_chain else 128):
             u.hook_add(UC_HOOK_MEM_READ | UC_HOOK_MEM_WRITE,read,begin=0x20008000,end=0x20008047)
             u.hook_add(UC_HOOK_MEM_READ,read,begin=A(0x1fffd078),end=A(0x1ffff077))
             u.hook_add(UC_HOOK_MEM_READ | UC_HOOK_MEM_WRITE,read,begin=A(0x1ffff490),end=A(0x1ffff4ef))
-        entry=A(0x1fff987c) if original else symbols['dm4310_output_sensor_helper']
+        entry=A(0x1fff987c) if original else symbols['output_sensor_helper']
         u.emu_start(entry|1,0x30000,count=10000)
         assert u.reg_read(arm.UC_ARM_REG_PC)==0x30000
         results.append((bytes(u.mem_read(0x20008000,0x48)),trace,u.reg_read(arm.UC_ARM_REG_FPSCR)))

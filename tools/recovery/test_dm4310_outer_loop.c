@@ -5,7 +5,7 @@
 #include <assert.h>
 #include <string.h>
 
-#define DAMIAO_DM4310 1
+#define DAMIAO_MODEL_DM4310 1
 #include "../../app/src/motor_control.c"
 
 void dm4310_motion_observer_helper(MotionObserver *observer)

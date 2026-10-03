@@ -9,7 +9,7 @@ for fmt in formats:
       results = []
       for original in (True, False):
           u = machine(original)
-          locale = F(0x28670) if original else symbols['dm4310_c_locale']
+          locale = F(0x28670) if original else symbols['c_locale']
           u.mem_write(A(0x1ffff4bc), locale.to_bytes(4, 'little'))
           u.reg_write(arm.UC_ARM_REG_C1_C0_2, 0xf00000)
           u.reg_write(arm.UC_ARM_REG_FPEXC, 0x40000000)

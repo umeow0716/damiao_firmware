@@ -6,14 +6,13 @@
 
 uint16_t board_sampling_timer_duty_to_compare(float duty, uint16_t period)
 {
-    /* The relocated factory sink converts directly with VCVT.U32.F32 and
+    /* The relocated firmware sink converts directly with VCVT.U32.F32 and
      * then stores the low halfword.  Do not insert saturation or a NaN
      * fallback here; those change over-modulation behavior. */
     return (uint16_t)((1.0f - duty) * (float)period);
 }
 
-void board_sampling_timer_build_config(
-    BoardSamplingTimerRegisterImage *config)
+void board_sampling_timer_build_config(BoardSamplingTimerRegisterImage *config)
 {
     memset(config, 0, sizeof(*config));
     config->period = 5000U;
@@ -25,8 +24,7 @@ void board_sampling_timer_build_config(
     config->pwm_control = 0x0010U;
     config->dead_time_rising = 0x0050U;
     config->dead_time_falling = 0x0050U;
-    config->channel_output_enable_mask =
-        APP_PROFILE_TMR4_CHANNEL_OUTPUT_ENABLE_MASK;
+    config->channel_output_enable_mask = APP_PROFILE_TMR4_CHANNEL_OUTPUT_ENABLE_MASK;
     config->main_output_enable_mask = 0x00000100UL;
     config->special_compare = 120U;
     config->special_status = 0x4000U;

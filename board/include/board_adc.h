@@ -4,7 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef struct {
+typedef struct
+{
     uint16_t phase_u;
     uint16_t phase_v;
     uint16_t phase_w;
@@ -16,7 +17,8 @@ typedef struct {
     uint16_t auxiliary;
 } BoardAdcRawSample;
 
-typedef struct {
+typedef struct
+{
     uint32_t channel_select;
     uint16_t adc1_channel_mux;
     uint16_t adc2_channel_mux;
@@ -30,14 +32,16 @@ typedef struct {
     uint32_t irq_source;
 } BoardAdcRegisterImage;
 
-typedef struct {
+typedef struct
+{
     float phase_offset_u;
     float phase_offset_v;
     float phase_offset_w;
     float bus_voltage_raw;
 } BoardAdcStartupCalibration;
 
-typedef struct {
+typedef struct
+{
     float mean_u;
     float mean_v;
 } BoardAdcOutputSensorCalibration;
@@ -45,18 +49,13 @@ typedef struct {
 void board_adc_build_config(BoardAdcRegisterImage *config);
 bool board_adc_init(void);
 bool board_adc_calibrate_startup(BoardAdcStartupCalibration *calibration);
-bool board_adc_calibrate_output_sensor(
-    BoardAdcOutputSensorCalibration *calibration);
+bool board_adc_calibrate_output_sensor(BoardAdcOutputSensorCalibration *calibration);
 bool board_adc_configure_runtime_sampling(void);
 bool board_adc_enable_runtime_irq(void);
 bool board_adc_read(BoardAdcRawSample *sample);
-#if defined(DAMIAO_DM4310)
 const volatile uint16_t *board_adc_read_control_irq(void);
-#endif
 void board_adc_ack_polling_sample(void);
 void board_adc_ack_interrupt(void);
-#if defined(DAMIAO_DM4310)
 void board_adc_clear_primary_conversion_flags(void);
-#endif
 
 #endif

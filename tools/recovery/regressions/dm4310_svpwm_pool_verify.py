@@ -31,7 +31,7 @@ for case in range(1024):
                 uc.mem_write(A(0x1fff9d54),(0x40038200).to_bytes(4,'little'))
         u.hook_add(UC_HOOK_MEM_READ,memory,begin=A(0x1fff9d4c),end=A(0x1fff9d5b))
         u.hook_add(UC_HOOK_MEM_READ|UC_HOOK_MEM_WRITE,memory,begin=0x40038000,end=0x40038fff)
-        entry=A(0x1fff9c40) if original else symbols['dm4310_svpwm_helper']
+        entry=A(0x1fff9c40) if original else symbols['svpwm_helper']
         u.emu_start(entry|1,0x30000,count=10000)
         assert u.reg_read(arm.UC_ARM_REG_PC)==0x30000
         results.append((trace,u.reg_read(arm.UC_ARM_REG_FPSCR),bytes(u.mem_read(0x40038000,0x20))))

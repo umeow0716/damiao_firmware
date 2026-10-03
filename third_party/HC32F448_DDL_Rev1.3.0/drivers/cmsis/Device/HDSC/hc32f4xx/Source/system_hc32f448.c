@@ -42,14 +42,14 @@
  * @defgroup HC32F448_System_Local_Macros HC32F448 System Local Macros
  * @{
  */
-#define HRC_16MHz_VALUE                 (16000000UL)  /*!< Internal high speed RC freq. */
-#define HRC_20MHz_VALUE                 (20000000UL)  /*!< Internal high speed RC freq. */
+#define HRC_16MHz_VALUE (16000000UL) /*!< Internal high speed RC freq. */
+#define HRC_20MHz_VALUE (20000000UL) /*!< Internal high speed RC freq. */
 /* HRC select */
-#define HRC_FREQ_MON()                  (*((volatile uint32_t *)(0x40010684UL)))
+#define HRC_FREQ_MON() (*((volatile uint32_t *)(0x40010684UL)))
 
 /* Vector Table base offset field */
 #ifndef VECT_TAB_OFFSET
-#define VECT_TAB_OFFSET                 (0x0UL)     /*!< This value must be a multiple of 0x400. */
+#define VECT_TAB_OFFSET (0x0UL) /*!< This value must be a multiple of 0x400. */
 #endif
 /**
  * @}
@@ -64,17 +64,9 @@
  */
 
 /*!< System clock frequency */
-#if defined(DAMIAO_DM4310)
-uint32_t SystemCoreClock
-    __attribute__((section(".dm4310_system_core_clock")));
+uint32_t SystemCoreClock __attribute__((section(".system_core_clock")));
 /*!< High speed RC frequency (HRC clock) */
-uint32_t HRC_VALUE
-    __attribute__((section(".dm4310_hrc_value")));
-#else
-__NO_INIT uint32_t SystemCoreClock;
-/*!< High speed RC frequency (HRC clock) */
-__NO_INIT uint32_t HRC_VALUE;
-#endif
+uint32_t HRC_VALUE __attribute__((section(".hrc_value")));
 
 /**
  * @}
@@ -105,11 +97,11 @@ void SystemInit(void)
     SCB->CPACR |= ((3UL << 20) | (3UL << 22)); /* set CP10 and CP11 Full Access */
 #endif
     SystemCoreClockUpdate();
-#if defined (ROM_EXT_QSPI)
+#if defined(ROM_EXT_QSPI)
     SystemInit_QspiMem();
 #endif /* ROM_EXT_QSPI */
     /* Configure the Vector Table relocation */
-    SCB->VTOR = VECT_TAB_OFFSET;    /* Vector Table Relocation */
+    SCB->VTOR = VECT_TAB_OFFSET; /* Vector Table Relocation */
 }
 
 /**
@@ -126,60 +118,55 @@ void SystemCoreClockUpdate(void)
     uint32_t u32PllSrcFreq;
 
     /* Select proper HRC_VALUE according to ICG1.HRCFREQSEL bit */
-    if (1UL == (HRC_FREQ_MON() & 1UL)) {
+    if (1UL == (HRC_FREQ_MON() & 1UL))
+    {
         HRC_VALUE = HRC_16MHz_VALUE;
-    } else {
+    }
+    else
+    {
         HRC_VALUE = HRC_20MHz_VALUE;
     }
     u8SysClkSrc = CM_CMU->CKSWR & CMU_CKSWR_CKSW;
-    switch (u8SysClkSrc) {
-        case 0x00U: /* use internal high speed RC */
-#if defined(DAMIAO_DM4310)
-            /* Factory reloads the fixed SRAM word after reading CKSWR. */
-            SystemCoreClock = *(volatile const uint32_t *)&HRC_VALUE;
-#else
-            SystemCoreClock = HRC_VALUE;
-#endif
-            break;
-        case 0x01U: /* use internal middle speed RC */
-            SystemCoreClock = MRC_VALUE;
-            break;
-        case 0x02U: /* use internal low speed RC */
-            SystemCoreClock = LRC_VALUE;
-            break;
-        case 0x03U: /* use external high speed OSC */
-            SystemCoreClock = XTAL_VALUE;
-            break;
-        case 0x04U: /* use external low speed OSC */
-            SystemCoreClock = XTAL32_VALUE;
-            break;
-        case 0x05U:  /* use PLLH */
-            /* PLLCLK = ((pllsrc / pllm) * plln) / pllp */
-            plln = (CM_CMU->PLLHCFGR & CMU_PLLHCFGR_PLLHN) >> CMU_PLLHCFGR_PLLHN_POS;
-            pllp = (CM_CMU->PLLHCFGR & CMU_PLLHCFGR_PLLHP) >> CMU_PLLHCFGR_PLLHP_POS;
-            pllm = (CM_CMU->PLLHCFGR & CMU_PLLHCFGR_PLLHM) >> CMU_PLLHCFGR_PLLHM_POS;
-#if defined(DAMIAO_DM4310)
-            /* Fourth full-word read at factory 0x23516, not bit-band. */
-            if (0UL == (CM_CMU->PLLHCFGR & 0x80UL)) {
-#else
-            if (0UL == bCM_CMU->PLLHCFGR_b.PLLSRC) {    /* use external high speed OSC as PLL source */
-#endif
-                u32PllSrcFreq = XTAL_VALUE;
-            } else {                                    /* use internal high RC as PLL source */
-#if defined(DAMIAO_DM4310)
-                u32PllSrcFreq = *(volatile const uint32_t *)&HRC_VALUE;
-#else
-                u32PllSrcFreq = HRC_VALUE;
-#endif
-            }
-            SystemCoreClock = u32PllSrcFreq / (pllm + 1UL) * (plln + 1UL) / (pllp + 1UL);
-            break;
-        default:
-            break;
+    switch (u8SysClkSrc)
+    {
+    case 0x00U: /* use internal high speed RC */
+        /* Firmware reloads the fixed SRAM word after reading CKSWR. */
+        SystemCoreClock = *(volatile const uint32_t *)&HRC_VALUE;
+        break;
+    case 0x01U: /* use internal middle speed RC */
+        SystemCoreClock = MRC_VALUE;
+        break;
+    case 0x02U: /* use internal low speed RC */
+        SystemCoreClock = LRC_VALUE;
+        break;
+    case 0x03U: /* use external high speed OSC */
+        SystemCoreClock = XTAL_VALUE;
+        break;
+    case 0x04U: /* use external low speed OSC */
+        SystemCoreClock = XTAL32_VALUE;
+        break;
+    case 0x05U: /* use PLLH */
+        /* PLLCLK = ((pllsrc / pllm) * plln) / pllp */
+        plln = (CM_CMU->PLLHCFGR & CMU_PLLHCFGR_PLLHN) >> CMU_PLLHCFGR_PLLHN_POS;
+        pllp = (CM_CMU->PLLHCFGR & CMU_PLLHCFGR_PLLHP) >> CMU_PLLHCFGR_PLLHP_POS;
+        pllm = (CM_CMU->PLLHCFGR & CMU_PLLHCFGR_PLLHM) >> CMU_PLLHCFGR_PLLHM_POS;
+        /* Fourth full-word read at this path, not bit-band. */
+        if (0UL == (CM_CMU->PLLHCFGR & 0x80UL))
+        {
+            u32PllSrcFreq = XTAL_VALUE;
+        }
+        else
+        { /* use internal high RC as PLL source */
+            u32PllSrcFreq = *(volatile const uint32_t *)&HRC_VALUE;
+        }
+        SystemCoreClock = u32PllSrcFreq / (pllm + 1UL) * (plln + 1UL) / (pllp + 1UL);
+        break;
+    default:
+        break;
     }
 }
 
-#if defined (ROM_EXT_QSPI)
+#if defined(ROM_EXT_QSPI)
 /**
  * @brief  Initialize the QSPI memory.
  * @param  None
@@ -190,24 +177,24 @@ __WEAKDEF void SystemInit_QspiMem(void)
     /* QSPI configure */
     CM_GPIO->PWPR = 0xA501U;
     /* High driver */
-    CM_GPIO->PCRC7  = 0x0020U;
+    CM_GPIO->PCRC7 = 0x0020U;
     CM_GPIO->PCRB14 = 0x0020U;
     CM_GPIO->PCRB13 = 0x0020U;
-    CM_GPIO->PCRD9  = 0x0020U;
+    CM_GPIO->PCRD9 = 0x0020U;
     CM_GPIO->PCRD10 = 0x0020U;
     CM_GPIO->PCRD11 = 0x0020U;
     /* Set function */
-    CM_GPIO->PFSRC7  = 0x07U;
+    CM_GPIO->PFSRC7 = 0x07U;
     CM_GPIO->PFSRB14 = 0x07U;
     CM_GPIO->PFSRB13 = 0x07U;
-    CM_GPIO->PFSRD9  = 0x07U;
+    CM_GPIO->PFSRD9 = 0x07U;
     CM_GPIO->PFSRD10 = 0x07U;
     CM_GPIO->PFSRD11 = 0x07U;
     /* qspi configure */
     CM_PWC->FCG1 &= ~0x00000008UL;
-    CM_QSPI->CR   = 0x0002000D;
+    CM_QSPI->CR = 0x0002000D;
     CM_QSPI->CSCR = 0x00000001;
-    CM_QSPI->FCR  = 0x00008332;
+    CM_QSPI->FCR = 0x00008332;
 }
 #endif /* ROM_EXT_QSPI */
 

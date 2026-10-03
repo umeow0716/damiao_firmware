@@ -24,7 +24,7 @@ for case in range(2048):
         def stop(uc, address, size, data):
             if 0x20002004 <= address <= 0x20002010: uc.emu_stop()
         u.hook_add(UC_HOOK_CODE, stop)
-        entry = F(0x27b9c) if original else symbols['dm4310_softfloat_exception_core']
+        entry = F(0x27b9c) if original else symbols['softfloat_exception_core']
         u.emu_start(entry | 1, 0x30000, count=1000)
         pc = u.reg_read(arm.UC_ARM_REG_PC)
         assert pc == 0x30000 or 0x20002004 <= pc <= 0x20002010

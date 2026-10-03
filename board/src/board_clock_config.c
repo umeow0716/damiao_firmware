@@ -6,8 +6,7 @@ void board_clock_build_config(BoardClockConfig *config)
 {
     memset(config, 0, sizeof(*config));
 
-    /* Literal register images recovered from system_clock_and_systick_init at
-     * app address 0x00023208. PLLH is fed by the board's 8 MHz XTAL:
+    /* PLLH is fed by the board's 8 MHz crystal:
      * VCO=8/1*100=800 MHz, P=200 MHz, Q=80 MHz and R=200 MHz. */
     config->system_clock_config = 0x00112210UL;
     config->pll_config = 0x39306300UL;
@@ -26,7 +25,8 @@ void board_clock_build_config(BoardClockConfig *config)
 
 bool board_clock_validate_config(const BoardClockConfig *config)
 {
-    if (config == NULL) {
+    if (config == NULL)
+    {
         return false;
     }
 
@@ -40,12 +40,9 @@ bool board_clock_validate_config(const BoardClockConfig *config)
     return ((config->pll_config & 0x80UL) == 0UL) &&
            (config->system_clock_config == 0x00112210UL) &&
            (config->flash_read_config == 0x00070003UL) &&
-           (config->sram_wait_config == 0x11000000UL) &&
-           ((vco_hz / pll_p) == config->system_hz) &&
-           ((vco_hz / pll_q) == config->pll_q_hz) &&
-           ((vco_hz / pll_r) == 200000000UL) &&
-           (config->system_hz == config->hclk_hz) &&
-           (config->pclk0_hz == config->system_hz) &&
+           (config->sram_wait_config == 0x11000000UL) && ((vco_hz / pll_p) == config->system_hz) &&
+           ((vco_hz / pll_q) == config->pll_q_hz) && ((vco_hz / pll_r) == 200000000UL) &&
+           (config->system_hz == config->hclk_hz) && (config->pclk0_hz == config->system_hz) &&
            ((config->system_hz >> 1U) == config->pclk1_hz) &&
            ((config->system_hz >> 2U) == config->pclk2_hz) &&
            ((config->system_hz >> 2U) == config->pclk3_hz) &&

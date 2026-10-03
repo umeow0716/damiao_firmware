@@ -2,10 +2,10 @@ from pathlib import Path
 import struct
 from unicorn import UC_HOOK_MEM_READ, UC_HOOK_MEM_WRITE, UC_MEM_WRITE
 exec(Path(__file__).with_name('dm4310_softfloat_verify.py').read_text().split('\nfor old, name, size in mapping[:1]:')[0])
-# The source slice lives inside motor_control_fast_prepare.isra.0.  Anchor it
+# The source slice lives inside prepare_current_controllers.isra.0.  Anchor it
 # to the local symbol so ordinary link-layout changes cannot stale the test.
-SOURCE_SLICE_START = symbols['motor_control_fast_prepare.isra.0'] + 0x8a
-SOURCE_SLICE_END = symbols['motor_control_fast_prepare.isra.0'] + 0xf4
+SOURCE_SLICE_START = symbols['prepare_current_controllers.isra.0'] + 0x8a
+SOURCE_SLICE_END = symbols['prepare_current_controllers.isra.0'] + 0xf4
 for case in range(256):
     observer = A(0x1ffff380) if case < 128 else 0x20002000
     state = struct.pack('<48f', *(rng.uniform(-10,10) for _ in range(48)))

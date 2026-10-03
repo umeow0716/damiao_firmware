@@ -7,17 +7,15 @@
 void board_position_build_config(BoardPositionRegisterImage *config)
 {
     static const uint8_t registers[BOARD_POSITION_SENSOR_REGISTER_COUNT] = {
-        0x00U, 0x01U, 0x02U, 0x03U, 0x04U, 0x05U,
-        0x06U, 0x09U, 0x0EU, 0x10U, 0x1BU,
+        0x00U, 0x01U, 0x02U, 0x03U, 0x04U, 0x05U, 0x06U, 0x09U, 0x0EU, 0x10U, 0x1BU,
     };
     static const uint8_t values[BOARD_POSITION_SENSOR_REGISTER_COUNT] = {
-        0x00U, 0x00U, 0x00U, 0x00U, 0xC0U, 0xFFU,
-        0x1CU, 0x00U, 0x77U, 0x9CU, 0x0EU,
+        0x00U, 0x00U, 0x00U, 0x00U, 0xC0U, 0xFFU, 0x1CU, 0x00U, 0x77U, 0x9CU, 0x0EU,
     };
 
     memset(config, 0, sizeof(*config));
     config->spi_cr = 0x00000048UL;
-    /* Bit 4 is present in the live read-back but the factory APP writes the
+    /* Bit 4 is present in the live read-back but the firmware APP writes the
      * 0x50000000 configuration image. */
     config->spi_cfg1 = 0x50000000UL;
     config->spi_cfg2 = 0x0000EC08UL;

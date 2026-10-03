@@ -4,13 +4,10 @@
 
 #include "app_profile.h"
 
-#define FACTORY_STORED_SOFTWARE_VERSION  0x00000000UL
-#define FACTORY_STORED_SUBVERSION_WORD   0x30303031UL
-#define FACTORY_RUNTIME_SUBVERSION_WORD  0x00000034UL
+#define RUNTIME_SUBVERSION_WORD 0x00000034UL
 
-#if defined(DAMIAO_DM4310)
 static uint32_t config_staging_record[APP_CONFIG_WORD_COUNT]
-    __attribute__((section(".dm4310_config_staging")));
+    __attribute__((section(".config_staging")));
 
 uint32_t *app_config_staging_record(void)
 {
@@ -19,14 +16,19 @@ uint32_t *app_config_staging_record(void)
 
 void app_config_initialize_scatter_defaults(void)
 {
-    /* Factory's initialized staging record, distinct from Flash loading. */
+    /* Firmware's initialized staging record, distinct from Flash loading. */
     static const uint32_t defaults[APP_CONFIG_WORD_COUNT] = {
-        [0x00] = 0x41700000U, [0x02] = 0x42C80000U,
-        [0x03] = 0x3F4CCCCDU, [0x04] = 0x40000000U,
-        [0x05] = 0xC0000000U, [0x06] = APP_PROFILE_SPEED_LIMIT_BITS,
-        [0x08] = 1U, [0x0A] = 1U,
+        [0x00] = 0x41700000U,
+        [0x02] = 0x42C80000U,
+        [0x03] = 0x3F4CCCCDU,
+        [0x04] = 0x40000000U,
+        [0x05] = 0xC0000000U,
+        [0x06] = APP_PROFILE_SPEED_LIMIT_BITS,
+        [0x08] = 1U,
+        [0x0A] = 1U,
         [0x0C] = APP_PROFILE_ROTOR_INERTIA_BITS,
-        [0x0D] = 0x56303033U, [0x0F] = 0x54303035U,
+        [0x0D] = 0x56303033U,
+        [0x0F] = 0x54303035U,
         [0x10] = APP_PROFILE_POLE_PAIRS,
         [0x11] = APP_PROFILE_PHASE_RESISTANCE_BITS,
         [0x12] = APP_PROFILE_PHASE_INDUCTANCE_BITS,
@@ -34,21 +36,26 @@ void app_config_initialize_scatter_defaults(void)
         [0x14] = APP_PROFILE_GEAR_RATIO_BITS,
         [0x15] = APP_PROFILE_POSITION_MAX_BITS,
         [0x16] = APP_PROFILE_VELOCITY_MAX_BITS,
-        [0x17] = APP_PROFILE_TORQUE_MAX_BITS, [0x18] = 0x447A0000U,
-        [0x19] = APP_PROFILE_SPEED_KP_BITS, [0x1A] = 0x3B03126FU,
+        [0x17] = APP_PROFILE_TORQUE_MAX_BITS,
+        [0x18] = 0x447A0000U,
+        [0x19] = APP_PROFILE_SPEED_KP_BITS,
+        [0x1A] = 0x3B03126FU,
         [0x1B] = 0x42580000U,
         [0x1D] = APP_PROFILE_BUS_OVERVOLTAGE_BITS,
-        [0x1E] = 0x3F800000U, [0x1F] = 0x40800000U,
-        [0x20] = 0x42200000U, [0x21] = 0x451C4000U,
+        [0x1E] = 0x3F800000U,
+        [0x1F] = 0x40800000U,
+        [0x20] = 0x42200000U,
+        [0x21] = 0x451C4000U,
         [0x22] = APP_PROFILE_VELOCITY_ENHANCEMENT_BITS,
-        [0x23] = 4U, [0x24] = 0x30303031U,
+        [0x23] = 4U,
+        [0x24] = 0x30303031U,
     };
     volatile uint32_t *const destination = config_staging_record;
-    for (unsigned int word = 0U; word < APP_CONFIG_WORD_COUNT; ++word) {
+    for (unsigned int word = 0U; word < APP_CONFIG_WORD_COUNT; ++word)
+    {
         destination[word] = defaults[word];
     }
 }
-#endif
 
 static uint32_t float_bits(float value)
 {
@@ -66,7 +73,7 @@ static float bits_float(uint32_t bits)
 
 void app_config_load_defaults(MotorConfig *config)
 {
-    *config = (MotorConfig) {
+    *config = (MotorConfig){
         .position_min = -APP_PROFILE_POSITION_MAX,
         .position_max = APP_PROFILE_POSITION_MAX,
         .velocity_min = -APP_PROFILE_VELOCITY_MAX,
@@ -102,7 +109,7 @@ void app_config_load_defaults(MotorConfig *config)
         .velocity_filter_bandwidth = 40.0f,
         .current_loop_enhancement = 2500.0f,
         .velocity_loop_enhancement = APP_PROFILE_VELOCITY_ENHANCEMENT,
-        /* The recovered calibration record uses 1=inverted, 2=normal. */
+        /* The fixed-layout calibration record uses 1=inverted, 2=normal. */
         .direction = 2.0f,
         .maximum_phase_current = APP_PROFILE_MAXIMUM_PHASE_CURRENT,
         .position_sensor_scale = APP_PROFILE_POSITION_SENSOR_SCALE,
@@ -121,8 +128,7 @@ void app_config_load_defaults(MotorConfig *config)
     };
 }
 
-void app_config_encode_persistent(const MotorConfig *config,
-                                  uint32_t words[APP_CONFIG_WORD_COUNT])
+void app_config_encode_persistent(const MotorConfig *config, uint32_t words[APP_CONFIG_WORD_COUNT])
 {
     words[0x00] = float_bits(config->bus_undervoltage);
     words[0x01] = float_bits(config->torque_constant);
@@ -163,41 +169,27 @@ void app_config_encode_persistent(const MotorConfig *config,
     words[0x24] = config->firmware_subversion;
 }
 
-void app_config_encode_factory_persistent(
-    uint32_t words[APP_CONFIG_WORD_COUNT])
+static bool encoded_float_is_nan(uint32_t bits)
 {
-    MotorConfig defaults;
-    app_config_load_defaults(&defaults);
-    app_config_encode_persistent(&defaults, words);
-    /* load_motor_configuration@0x228c0 writes the scatter-loaded template to
-     * erased Flash before replacing these two fields in the live RAM copy. */
-    words[0x0E] = FACTORY_STORED_SOFTWARE_VERSION;
-    words[0x24] = FACTORY_STORED_SUBVERSION_WORD;
-}
-
-static bool official_float_is_nan(uint32_t bits)
-{
-    /* Match the original integer test exactly: infinity is not NaN. */
+    /* Use the protocol's integer classification: infinity is not NaN. */
     return (bits & 0x7FFFFFFFUL) > 0x7F800000UL;
 }
 
-#if defined(DAMIAO_DM4310)
-bool app_config_dm4310_record_present(
-    const volatile uint32_t words[APP_CONFIG_WORD_COUNT])
+bool app_config_record_present(const volatile uint32_t words[APP_CONFIG_WORD_COUNT])
 {
-    /* 0x228d0..e0 short-circuits in serial/software/CAN-ID order. */
-    if (words[0x0F] == UINT32_MAX) {
+    /* Validate serial number, software version, then CAN ID, in that order. */
+    if (words[0x0F] == UINT32_MAX)
+    {
         return false;
     }
-    if (words[0x0E] == UINT32_MAX) {
+    if (words[0x0E] == UINT32_MAX)
+    {
         return false;
     }
     return words[0x08] != UINT32_MAX;
 }
-#endif
 
-static void decode_words(MotorConfig *config,
-                         const uint32_t words[APP_CONFIG_WORD_COUNT])
+static void decode_words(MotorConfig *config, const uint32_t words[APP_CONFIG_WORD_COUNT])
 {
     config->bus_undervoltage = bits_float(words[0x00]);
     config->torque_constant = bits_float(words[0x01]);
@@ -215,11 +207,7 @@ static void decode_words(MotorConfig *config,
     config->hardware_version = words[0x0D];
     config->software_version = words[0x0E];
     config->serial_number = words[0x0F];
-#if defined(DAMIAO_DM4310)
     config->pole_pairs = words[0x10];
-#else
-    config->pole_pairs = (uint8_t)words[0x10];
-#endif
     config->phase_resistance = bits_float(words[0x11]);
     config->phase_inductance = bits_float(words[0x12]);
     config->flux_linkage = bits_float(words[0x13]);
@@ -246,17 +234,16 @@ static void decode_words(MotorConfig *config,
     config->firmware_subversion = words[0x24];
 }
 
-#if defined(DAMIAO_DM4310)
-static void stage_configuration_record(
-    uint32_t loaded[APP_CONFIG_WORD_COUNT],
-    const volatile uint32_t words[APP_CONFIG_WORD_COUNT])
+static void stage_configuration_record(uint32_t loaded[APP_CONFIG_WORD_COUNT],
+                                       const volatile uint32_t words[APP_CONFIG_WORD_COUNT])
 {
     volatile uint32_t *const staging = config_staging_record;
-    /* memcpy@0x207be handles this aligned 0x94-byte copy as nine groups of
+    /* memcpy handles this aligned 0x94-byte copy as nine groups of
      * four reads/four writes followed by one read/write.  Retain a private
      * mirror from those same reads so source-only MotorConfig decoding does
      * not add a second pass over fixed staging or Flash. */
-    for (unsigned int word = 0U; word < 36U; word += 4U) {
+    for (unsigned int word = 0U; word < 36U; word += 4U)
+    {
         const uint32_t first = words[word];
         const uint32_t second = words[word + 1U];
         const uint32_t third = words[word + 2U];
@@ -275,50 +262,54 @@ static void stage_configuration_record(
     loaded[36] = last;
 }
 
-void app_config_dm4310_stage_and_decode(
-    MotorConfig *config,
-    const volatile uint32_t words[APP_CONFIG_WORD_COUNT])
+void app_config_stage_and_decode(MotorConfig *config,
+                                 const volatile uint32_t words[APP_CONFIG_WORD_COUNT])
 {
     uint32_t loaded[APP_CONFIG_WORD_COUNT];
     stage_configuration_record(loaded, words);
 
     volatile uint32_t *const staging = config_staging_record;
-    /* load_motor_configuration@0x22900..80 publishes these words in this
-     * order.  Word 36 is the ASCII subversion used by the factory runtime;
+    /* load_motor_configuration publishes these words in this
+     * order.  Word 36 is the ASCII subversion used by the firmware runtime;
      * the source-only MotorConfig mirror keeps its numeric representation. */
     staging[0x0E] = APP_PROFILE_SOFTWARE_VERSION;
     loaded[0x0E] = APP_PROFILE_SOFTWARE_VERSION;
-    staging[0x24] = FACTORY_RUNTIME_SUBVERSION_WORD;
+    staging[0x24] = RUNTIME_SUBVERSION_WORD;
     loaded[0x24] = APP_PROFILE_FIRMWARE_SUBVERSION;
 
     uint32_t selector = staging[0x23];
-    if (selector > 11U) {
+    if (selector > 11U)
+    {
         selector = 4U;
         staging[0x23] = selector;
     }
     loaded[0x23] = selector;
 
     uint32_t velocity_bw_bits = staging[0x20];
-    if (official_float_is_nan(velocity_bw_bits)) {
+    if (encoded_float_is_nan(velocity_bw_bits))
+    {
         velocity_bw_bits = APP_PROFILE_VELOCITY_FILTER_DEFAULT_BITS;
         staging[0x20] = velocity_bw_bits;
     }
     velocity_bw_bits = staging[0x20];
-    if ((int32_t)velocity_bw_bits >= (int32_t)UINT32_C(0x43FA0000)) {
+    if ((int32_t)velocity_bw_bits >= (int32_t)UINT32_C(0x43FA0000))
+    {
         velocity_bw_bits = UINT32_C(0x43FA0000);
         staging[0x20] = velocity_bw_bits;
     }
     loaded[0x20] = velocity_bw_bits;
 
     uint32_t current_enhancement_bits = staging[0x21];
-    if (official_float_is_nan(current_enhancement_bits)) {
+    if (encoded_float_is_nan(current_enhancement_bits))
+    {
         current_enhancement_bits = UINT32_C(0x451C4000);
         staging[0x21] = current_enhancement_bits;
     }
     loaded[0x21] = current_enhancement_bits;
 
     uint32_t velocity_enhancement_bits = staging[0x22];
-    if (official_float_is_nan(velocity_enhancement_bits)) {
+    if (encoded_float_is_nan(velocity_enhancement_bits))
+    {
         velocity_enhancement_bits = UINT32_C(0x43480000);
         staging[0x22] = velocity_enhancement_bits;
     }
@@ -326,23 +317,19 @@ void app_config_dm4310_stage_and_decode(
 
     decode_words(config, loaded);
 }
-#endif
 
-void app_config_decode_runtime(MotorConfig *config,
-                               const uint32_t words[APP_CONFIG_WORD_COUNT])
+void app_config_decode_runtime(MotorConfig *config, const uint32_t words[APP_CONFIG_WORD_COUNT])
 {
     decode_words(config, words);
 }
 
-bool app_config_decode_persistent(MotorConfig *config,
-                                  const uint32_t words[APP_CONFIG_WORD_COUNT])
+bool app_config_decode_persistent(MotorConfig *config, const uint32_t words[APP_CONFIG_WORD_COUNT])
 {
-    /* load_motor_configuration@0x228c0 treats the record as absent only when
+    /* load_motor_configuration treats the record as absent only when
      * one of these three identity fields is erased.  It does not apply the
      * broad source-only range policy which used to live here. */
-    if ((words[0x0F] == UINT32_MAX) ||
-        (words[0x0E] == UINT32_MAX) ||
-        (words[0x08] == UINT32_MAX)) {
+    if ((words[0x0F] == UINT32_MAX) || (words[0x0E] == UINT32_MAX) || (words[0x08] == UINT32_MAX))
+    {
         return false;
     }
 
@@ -350,31 +337,34 @@ bool app_config_decode_persistent(MotorConfig *config,
     uint32_t velocity_bw_bits = words[0x20];
     uint32_t current_enhancement_bits = words[0x21];
     uint32_t velocity_enhancement_bits = words[0x22];
-    if (official_float_is_nan(velocity_bw_bits)) {
+    if (encoded_float_is_nan(velocity_bw_bits))
+    {
         velocity_bw_bits = float_bits(50.0f);
     }
-    if ((int32_t)velocity_bw_bits >= (int32_t)0x43FA0000L) {
+    if ((int32_t)velocity_bw_bits >= (int32_t)0x43FA0000L)
+    {
         velocity_bw_bits = float_bits(500.0f);
     }
-    if (official_float_is_nan(current_enhancement_bits)) {
+    if (encoded_float_is_nan(current_enhancement_bits))
+    {
         current_enhancement_bits = float_bits(2500.0f);
     }
-    if (official_float_is_nan(velocity_enhancement_bits)) {
+    if (encoded_float_is_nan(velocity_enhancement_bits))
+    {
         velocity_enhancement_bits = float_bits(200.0f);
     }
     const float velocity_bw = bits_float(velocity_bw_bits);
     const float current_enhancement = bits_float(current_enhancement_bits);
     const float velocity_enhancement = bits_float(velocity_enhancement_bits);
 
-    config->control_mode = (words[0x0A] >= MOTOR_MODE_MIT &&
-                            words[0x0A] <= MOTOR_MODE_HYBRID) ?
-                           (MotorControlMode)words[0x0A] : MOTOR_MODE_MIT;
+    config->control_mode = (words[0x0A] >= MOTOR_MODE_MIT && words[0x0A] <= MOTOR_MODE_HYBRID)
+                               ? (MotorControlMode)words[0x0A]
+                               : MOTOR_MODE_MIT;
     config->software_version = APP_PROFILE_SOFTWARE_VERSION;
     config->velocity_filter_bandwidth = velocity_bw;
     config->current_loop_enhancement = current_enhancement;
     config->velocity_loop_enhancement = velocity_enhancement;
-    config->can_data_rate_selector = words[0x23] <= 11U ?
-                                     (uint8_t)words[0x23] : 4U;
+    config->can_data_rate_selector = words[0x23] <= 11U ? (uint8_t)words[0x23] : 4U;
     config->firmware_subversion = APP_PROFILE_FIRMWARE_SUBVERSION;
     return true;
 }

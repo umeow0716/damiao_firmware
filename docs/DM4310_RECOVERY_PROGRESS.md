@@ -2,7 +2,8 @@
 
 最後更新：2026-10-03
 
-三型號總進度與剩餘任務見 `docs/FIRMWARE_RECOVERY_PROGRESS.md`。
+九型號總進度與最終產物見 `docs/FIRMWARE_RECOVERY_PROGRESS.md`；日常開發入口與限制見
+`docs/README.md` 與 `docs/book/README.md`。
 Factory byte-exact 目標已停止；`docs/DM4310_BYTE_EXACT_PROGRESS.md` 僅保存歷史分析。
 目前完成標準是 factory 行為、固定 SRAM/MMIO ABI、64 KiB 映像約束及可持續開發的
 source build，不要求 Flash 函式位址或 whole-file SHA 相同。
@@ -12,10 +13,10 @@ source build，不要求 Flash 函式位址或 whole-file SHA 相同。
 - Factory APP：`recovered/binaries/dm4310/dm4310_v3_v5017_app_flash_00020000_memory.bin`
 - Factory SHA-256：`65aab219268e9159b196d4578d3cd530e6fa90a731a82670a0d3d3be609b59d4`
 - Factory image：51,284 bytes
-- Source-built APP image：53,784 bytes（factory +2,500 bytes，+4.87%）
-- 64 KiB APP 剩餘空間：11,752 bytes
-- Source-built plain SHA-256：`bf38aaf88f85e3441a2115d8d5839fa4d273dd3a24ae1403a2cc52885e19acc2`
-- Source-built encrypted SHA-256：`2e18dc7061845367c92958147f19523f0885fdd1b31ef8b9a071b74ac34d74f8`
+- Source-built APP image：53,856 bytes（factory +2,572 bytes，+5.02%）
+- 64 KiB APP 剩餘空間：11,680 bytes
+- Source-built plain SHA-256：`ce923b242bf9c055aef81c76078bd676cef3b55779f11c403715238384451707`
+- Source-built encrypted SHA-256：`06a519f26e6352e3ebe4d38c6c076845672026ebf67c5d2ed21bdf2fbcbce550`
 - 行為叢集差分：65 / 65 通過（100%）
 - Factory function closure：195 / 195 已建立 source/fixed-runtime owner
 - Ghidra unowned instruction ranges：6 / 6 已分類（3 callable、3 data）
@@ -73,8 +74,8 @@ source build，不要求 Flash 函式位址或 whole-file SHA 相同。
 
 ### 4. 映像與容量
 
-- [x] APP load image 為 53,784 bytes，嚴格小於 65,536 bytes；linker 另對所有 sparse
-      `AT(...)` LMA 的最終尾端強制檢查，剩餘 11,752 bytes。
+- [x] APP load image 為 53,856 bytes，嚴格小於 65,536 bytes；linker 另對所有 sparse
+      `AT(...)` LMA 的最終尾端強制檢查，剩餘 11,680 bytes。
 - [x] vector、42 個 file-backed LOAD segment、45 個初始化 RAM section、35 個 zero-fill
       section、RAMB、fixed helper、heap/stack 均無 VMA/LMA 重疊。
 - [x] 全域存活函式 body 雜湊掃描沒有任何 >=16-byte 重複實作；僅有四個必要的 8-byte
@@ -97,7 +98,7 @@ source build，不要求 Flash 函式位址或 whole-file SHA 相同。
 - [x] 已產出 `dist/development/dm4310_plain.bin` 與 `dm4310_enc.bin`，並驗證 plain 等於
       ELF objcopy、AES-256-CTR round-trip、manifest hash、向量及長度。
 
-固定 SRAM code/literal 只存在於 `ram_helpers.c` 與專用 linker compatibility layer；其位址是
+固定 SRAM code/literal 只存在於 `sram_runtime.c` 與專用 linker compatibility layer；其位址是
 原廠 IRQ、PC-relative literal 與 retained SRAM ABI 的一部分，不是一般程式配置技巧。後續新增
 產品邏輯不應放入這些 section。DM4340 與正確 V3/V6417 DM8009 reference 的重新復原另列為
 後續工作，不以舊的錯誤移植產物宣告完成。

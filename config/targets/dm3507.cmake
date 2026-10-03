@@ -1,5 +1,5 @@
 # DM3507 V3 V5717.04: standard 24 V fixed-SRAM family.
 set(DAMIAO_TARGET_COMPILE_DEFINITIONS
-    DAMIAO_DM4310=1
-    DAMIAO_DM3507=1)
+    DAMIAO_MODEL_DM3507=1
+)
 include("${CMAKE_CURRENT_LIST_DIR}/dm_v3_common.cmake")

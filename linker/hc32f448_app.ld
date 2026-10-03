@@ -1,7 +1,7 @@
 MEMORY
 {
-    /* 0x30000 and above contain the recovered configuration and calibration
-     * records.  Keep source application code in the original 64 KiB window. */
+    /* The upper flash partition contains fixed-layout configuration and
+     * calibration records.  Keep application code in its 64 KiB partition. */
     FLASH (rx)  : ORIGIN = 0x00020000, LENGTH = 64K
     RAM   (rwx) : ORIGIN = 0x1FFF8000, LENGTH = 64K
     RAMB  (rwx) : ORIGIN = 0x200F0000, LENGTH = 4K

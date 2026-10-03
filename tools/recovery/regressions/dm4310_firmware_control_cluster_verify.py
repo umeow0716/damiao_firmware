@@ -25,8 +25,8 @@ factory_calls = {
     'free': F(0x20426),
 }
 source_calls = {
-    'alloc': symbols['dm4310_runtime_alloc'],
-    'copy': symbols['dm4310_runtime_copy_bytes'],
+    'alloc': symbols['runtime_alloc'],
+    'copy': symbols['runtime_copy_bytes'],
     'flash': symbols['board_flash_replace_sector_prefix'],
     'uart': symbols['platform_debug_write'],
     'delay': symbols['board_delay_us'],
@@ -35,9 +35,9 @@ source_calls = {
     'derive': min(
         symbol['st_value'] & ~1
         for symbol in elf.get_section_by_name('.symtab').iter_symbols()
-        if symbol.name == '__dm4310_derive_control_parameters_helper_veneer'
+        if symbol.name == '__derive_control_parameters_helper_veneer'
     ),
-    'free': symbols['dm4310_runtime_free'],
+    'free': symbols['runtime_free'],
 }
 factory_barriers = {F(0x26d62), F(0x26d74)}
 source_barriers = {

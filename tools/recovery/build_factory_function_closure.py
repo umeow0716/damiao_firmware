@@ -91,7 +91,7 @@ SYNTHETIC_FUNCTIONS = [
     },
     {
         "entry": "0x00020edc", "end": "0x00020ee5", "body_bytes": "0xa",
-        "name": "factory_stream_reader", "thunk_target": "",
+        "name": "stream_reader", "thunk_target": "",
         "callers": "00020ee6", "callees": "",
     },
     {

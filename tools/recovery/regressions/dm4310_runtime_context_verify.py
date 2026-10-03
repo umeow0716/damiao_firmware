@@ -21,7 +21,7 @@ for case in range(256):
                           int.from_bytes(uc.mem_read(address, size), 'little')))
         u.hook_add(UC_HOOK_MEM_READ | UC_HOOK_MEM_WRITE, memory,
                    begin=A(0x1ffff490), end=A(0x1ffff4ef))
-        entry = F(0x21088) if original else symbols['dm4310_runtime_context_initialize']
+        entry = F(0x21088) if original else symbols['runtime_context_initialize']
         u.emu_start(entry | 1, 0x30000, count=1000)
         assert u.reg_read(arm.UC_ARM_REG_PC) == 0x30000
         snapshots.append(([u.reg_read(reg) for reg in registers],

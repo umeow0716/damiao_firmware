@@ -4,7 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef struct {
+typedef struct
+{
     uint32_t system_clock_config;
     uint32_t pll_config;
     uint32_t flash_read_config;

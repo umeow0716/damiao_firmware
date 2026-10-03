@@ -234,7 +234,7 @@ def run_reset(original, fixed, peripheral, system):
     def code(emu, address, size, _):
         nonlocal barriers
         bank = (F(0x26e04) if original else
-                SYMBOLS['dm4310_select_configuration_bank_b_helper'])
+                SYMBOLS['select_configuration_bank_b_helper'])
         delay = F(0x21f60) if original else SYMBOLS['board_delay_us']
         if address == bank:
             events.append(('bank-b',))

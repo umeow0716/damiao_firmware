@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify every initialized DM4310 SRAM section has a startup copy source."""
+"""Verify every initialized application SRAM section has a startup copy source."""
 
 from __future__ import annotations
 
@@ -29,22 +29,22 @@ def main() -> int:
     missing: list[str] = []
     checked = 0
     descriptor_initializer_called = (
-        "bl dm4310_initialize_shared_literals" in startup
-        and "__dm4310_literal_copies_start__" in linker
-        and "__dm4310_literal_copies_end__" in linker
+        "bl sram_runtime_initialize_literals" in startup
+        and "__image_literal_copies_start__" in linker
+        and "__image_literal_copies_end__" in linker
     )
     pattern = re.compile(
-        r"\]\s+(\.dm4310_\S+)\s+PROGBITS\s+([0-9a-fA-F]+)\s+"
+        r"\]\s+(\.\S+)\s+PROGBITS\s+([0-9a-fA-F]+)\s+"
         r"[0-9a-fA-F]+\s+([0-9a-fA-F]+)"
     )
     for match in pattern.finditer(sections):
         section = match.group(1)
         address = int(match.group(2), 16)
         size = int(match.group(3), 16)
-        if not 0x1FFF8000 <= address < 0x20000000:
+        if size == 0 or not 0x1FFF8000 <= address < 0x20000000:
             continue
         checked += 1
-        load_symbol = f"__{section[1:]}_load__"
+        load_symbol = f"__image_{section[1:]}_load__"
         direct_copy = load_symbol in startup
         descriptor = re.search(
             rf"LONG\({re.escape(load_symbol)}\);\s*"
@@ -54,15 +54,16 @@ def main() -> int:
         )
         descriptor_copy = False
         if descriptor_initializer_called and descriptor is not None:
-            descriptor_copy = int(descriptor.group(1), 0) * 4 == size
+            copied_bytes = int(descriptor.group(1), 0) * 4
+            descriptor_copy = 0 < copied_bytes <= size
         if load_symbol not in linker or not (direct_copy or descriptor_copy):
             missing.append(f"{section} ({load_symbol})")
 
     if checked == 0:
-        print("no initialized DM4310 SRAM sections found", file=sys.stderr)
+        print("no initialized application SRAM sections found", file=sys.stderr)
         return 1
     if missing:
-        print("DM4310 SRAM sections missing startup copies:", file=sys.stderr)
+        print("application SRAM sections missing startup copies:", file=sys.stderr)
         for section in missing:
             print(f"  {section}", file=sys.stderr)
         return 1

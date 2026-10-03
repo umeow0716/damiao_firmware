@@ -4,11 +4,8 @@
 #include "can_protocol.h"
 
 void app_apply_can_command(CanCommandKind kind, const MotorCommand *command);
-#if defined(DAMIAO_DM4310)
-void dm4310_app_apply_can_command_irq(CanCommandKind kind,
-    const MotorCommand *command,
-    const Dm4310McanIrqReferences *references);
-#endif
+void app_apply_can_command_irq(CanCommandKind kind, const MotorCommand *command,
+                               const McanIrqContext *references);
 void app_service_motor_state_change(void);
 void app_service_control_status_tick(void);
 

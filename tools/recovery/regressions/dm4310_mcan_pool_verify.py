@@ -1,9 +1,9 @@
 from pathlib import Path
 from unicorn import UC_HOOK_MEM_READ, UC_HOOK_MEM_WRITE, UC_MEM_WRITE
 exec(Path(__file__).with_name('dm4310_softfloat_verify.py').read_text().split('\nfor old, name, size in mapping[:1]:')[0])
-entries=[(A(0x1fff9acc),'dm4310_mcan_send_classic_helper'),
-         (A(0x1fff9b0e),'dm4310_mcan_send_variable_fd_helper'),
-         (A(0x1fff9ba0),'dm4310_mcan_send_fd_helper')]
+entries=[(A(0x1fff9acc),'mcan_send_classic_helper'),
+         (A(0x1fff9b0e),'mcan_send_variable_fd_helper'),
+         (A(0x1fff9ba0),'mcan_send_fd_helper')]
 for old,name in entries:
     for case in range(256):
         length=case

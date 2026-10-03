@@ -32,7 +32,8 @@ int _close(int file)
 int _fstat(int file, struct stat *status)
 {
     (void)file;
-    if (status != NULL) {
+    if (status != NULL)
+    {
         status->st_mode = S_IFCHR;
     }
     return 0;
@@ -89,6 +90,7 @@ int _kill(int process, int signal)
 void _exit(int status)
 {
     (void)status;
-    for (;;) {
+    for (;;)
+    {
     }
 }

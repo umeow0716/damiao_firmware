@@ -63,7 +63,7 @@ def _section_ranges():
     target = _elf(ROOT / f"build/{MODEL}.elf")
     target_sections = {section.name: section for section in target.iter_sections()}
     dm800x_section_aliases = {
-        f".dm4310_{suffix}": f".dm8009_{suffix}"
+        f".{suffix}": f".alternate_{suffix}"
         for suffix in (
             "runtime_drive_d",
             "runtime_drive_q",
@@ -76,7 +76,7 @@ def _section_ranges():
     }
     ranges = []
     for section in canonical.iter_sections():
-        if not section.name.startswith(".dm4310_"):
+        if not section.name.startswith("."):
             continue
         start = section["sh_addr"]
         if not 0x1FFF8000 <= start < 0x20000000:
@@ -306,13 +306,13 @@ def F(address):
 # differential tests compare the object-relative address instead of requiring
 # the source linker to reproduce the factory Flash layout.
 _RELOCATED_FLASH_OBJECTS = (
-    (0x00020368, "dm4310_runtime_main_entry", True),
+    (0x00020368, "runtime_main_entry", True),
     (0x00021CC8, "board_mcan_init_classic", True),
     (0x00021FC4, "board_mcan_init_fd", True),
     (0x00022244, "IRQ004_Handler", True),
     (0x00027CA0, "temperature_celsius_table", False),
-    (0x00028668, "dm4310_c_locale_name", False),
-    (0x00028670, "dm4310_c_locale", False),
+    (0x00028668, "c_locale_name", False),
+    (0x00028670, "c_locale", False),
 )
 
 

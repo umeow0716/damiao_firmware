@@ -117,14 +117,14 @@ ELF_SYMBOLS = {
     "IRQ003_Handler": (0x1FFF88B8, 0x0004),
     "erase_and_program_from_sram": (0x1FFF9950, 0x00D8),
     "board_flash_erase_sector_from_sram": (0x1FFF9A38, 0x0088),
-    "dm4310_clear_runtime_loop_states_helper": (0x1FFF9D5C, 0x0004),
-    "dm4310_derive_runtime_controller_states_helper": (0x1FFF9EA6, 0x000A),
+    "clear_runtime_loop_states_helper": (0x1FFF9D5C, 0x0004),
+    "derive_runtime_controller_states_helper": (0x1FFF9EA6, 0x000A),
     "dm4310_mcan_send_variable_fd_helper": (0x1FFF9B0E, 0x000A),
     "dm4310_mcan_send_classic_helper": (0x1FFF9ACC, 0x0004),
     "dm4310_mcan_send_fd_helper": (0x1FFF9BA0, 0x0004),
-    "dm4310_output_sensor_helper": (0x1FFF987C, 0x00B8),
-    "dm4310_svpwm_helper": (0x1FFF9C40, 0x0004),
-    "dm4310_reset_control_state_helper": (0x1FFF9DC8, 0x0004),
+    "output_sensor_helper": (0x1FFF987C, 0x00B8),
+    "svpwm_helper": (0x1FFF9C40, 0x0004),
+    "reset_control_state_helper": (0x1FFF9DC8, 0x0004),
     "dm4310_motion_observer_helper": (0x1FFF9FDE, 0x009C),
     "dm4310_current_controller_helper": (0x1FFFA07A, 0x009E),
     "dm4310_identification_filter_helper": (0x1FFF9E44, 0x0062),
@@ -133,13 +133,13 @@ ELF_SYMBOLS = {
     "dm4310_sincos_helper": (0x1FFFA30C, 0x007E),
     "dm4310_clamp_helper": (0x1FFFA38A, 0x0020),
     "dm4310_wrap_helper": (0x1FFFA3AA, 0x0034),
-    "dm4310_wrap_angle_helper": (0x1FFFA3DE, 0x0036),
+    "wrap_angle_helper": (0x1FFFA3DE, 0x0036),
     "dm4310_limit_vector_helper": (0x1FFFA414, 0x0056),
     "dm4310_float_to_uint_helper": (0x1FFFA46A, 0x0028),
     "dm4310_uint_to_float_helper": (0x1FFFA492, 0x004A),
-    "dm4310_derive_control_parameters_helper": (0x1FFFA4DC, 0x000A),
+    "derive_control_parameters_helper": (0x1FFFA4DC, 0x000A),
     "dm4310_delay_ms_helper": (0x1FFFA4E6, 0x000A),
-    "dm4310_select_configuration_bank_b_helper": (0x1FFFA4F0, 0x000A),
+    "select_configuration_bank_b_helper": (0x1FFFA4F0, 0x000A),
     "dm4310_atan2_helper": (0x1FFFA4FA, 0x000A),
     "dm4310_sqrt_helper": (0x1FFFA504, 0x000A),
     "runtime_drive_d": (0x1FFFA510, 0x0028),
@@ -319,13 +319,13 @@ def verify_elf(
         fail("ELF Reset_Handler disassembly is missing")
     reset_body = reset_match.group(1)
     entry_branch = re.search(
-        r"\bb(?:\.w)?\s+[0-9a-f]+\s+<dm4310_runtime_main_entry>",
+        r"\bb(?:\.w)?\s+[0-9a-f]+\s+<runtime_main_entry>",
         reset_body,
     )
     if entry_branch is None:
         fail("ELF Reset_Handler lacks runtime main entry")
     entry_match = re.search(
-        r"^[0-9a-f]+ <dm4310_runtime_main_entry>:\n(.*?)"
+        r"^[0-9a-f]+ <runtime_main_entry>:\n(.*?)"
         r"(?=^[0-9a-f]+ <)",
         disassembly,
         re.MULTILINE | re.DOTALL,
@@ -385,7 +385,7 @@ def main() -> int:
                          "float_to_uint", "uint_to_float"):
                 address, size = ELF_SYMBOLS[f"dm4310_{name}_helper"]
                 if name == "wrap":
-                    size += ELF_SYMBOLS["dm4310_wrap_angle_helper"][1]
+                    size += ELF_SYMBOLS["wrap_angle_helper"][1]
                 section_path = pathlib.Path(temporary_directory) / name
                 subprocess.run(
                     [args.objcopy, "--dump-section",

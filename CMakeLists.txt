@@ -28,7 +28,7 @@ set(FIRMWARE_COMPILE_FLAGS
     -fdata-sections
     -fno-common
     -fno-strict-aliasing
-    # The official ARM/Keil image uses the legacy non-fused VMLA sequence.
+    # Preserve the non-fused VMLA sequence required by the control arithmetic.
     # GCC otherwise emits VFMA and diverges after sustained control ticks.
     -ffp-contract=off
     -Wall
@@ -149,7 +149,7 @@ set(DAMIAO_APP_SOURCES
     app/src/calibration_upload.c
     app/src/commissioning.c
     app/src/commissioning_math.c
-    app/src/ram_helpers.c
+    app/src/sram_runtime.c
     app/src/runtime_compat.c
     app/src/app_commands.c
     app/src/app_state.c
@@ -281,17 +281,17 @@ foreach(target IN LISTS DAMIAO_FIRMWARE_TARGETS)
         "${CMAKE_CURRENT_SOURCE_DIR}/config/targets/${target}.cmake")
 endforeach()
 
-# The recovered V3 applications occupy a fixed 64 KiB APP partition and
-# share the recovered arithmetic/runtime implementation.  Per-model constants
-# and fixed SRAM placement remain selected by the target profile and linker.
-set(DAMIAO_V3_RECOVERY_SOURCES
-    app/src/dm4310_binary64_extended.c
-    app/src/dm4310_extended_arithmetic.c
-    app/src/dm4310_extended_core.S
-    app/src/dm4310_decimal_power.c
-    app/src/dm4310_fixed_scaled.c
+# The V3 applications occupy a fixed 64 KiB APP partition and share the same
+# arithmetic/runtime implementation. Per-model constants and fixed SRAM
+# placement remain selected by the target profile and linker.
+set(DAMIAO_V3_RUNTIME_SOURCES
+    app/src/softfloat_binary64.c
+    app/src/extended_arithmetic.c
+    app/src/extended_arithmetic_core.S
+    app/src/decimal_power.c
+    app/src/fixed_decimal.c
 )
 foreach(target IN LISTS DAMIAO_FIRMWARE_TARGETS)
     target_compile_options(${target} PRIVATE ${FIRMWARE_SIZE_OPTIMIZATION})
-    target_sources(${target} PRIVATE ${DAMIAO_V3_RECOVERY_SOURCES})
+    target_sources(${target} PRIVATE ${DAMIAO_V3_RUNTIME_SOURCES})
 endforeach()

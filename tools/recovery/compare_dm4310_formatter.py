@@ -55,7 +55,7 @@ def arm_formatter(root):
         output.clear()
         machine.mem_write(0x20000000, bytes(0x1000))
         machine.mem_write(0x20001000, fmt.encode() + b"\0")
-        machine.mem_write(0x1ffff4bc, struct.pack("<I", symbols["dm4310_c_locale"]))
+        machine.mem_write(0x1ffff4bc, struct.pack("<I", symbols["c_locale"]))
         for register in (arm.UC_ARM_REG_R1, arm.UC_ARM_REG_R2, arm.UC_ARM_REG_R3):
             machine.reg_write(register, 0)
         if isinstance(value, tuple):
