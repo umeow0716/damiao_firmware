@@ -112,8 +112,13 @@ build 後宣稱 differential PASS。
 
 ## 大小與效能
 
-正式基線 `-Os`，不要在 source 塞 attribute 到處個別最佳化。比較其他最佳化等級時使用另一個
-build directory：
+正式基線是全域 `-Os`。目前只有三個量測過的 20 kHz 路徑熱點使用
+`DAMIAO_OPTIMIZE_SPEED`（GCC `-O2`）：`safety_update()`、`output_atan2f()` 與
+`svpwm_result()`。這些一般 Flash 速度例外集中由 `common/include/compiler_optimization.h` 定義；
+不要直接散寫 `optimize("O2")`，也不要把整個 source file 升成 `-O2`。固定 SRAM compatibility
+邊界原有的 code-generation attribute 不屬於這項速度策略。
+
+比較其他全域最佳化等級時使用另一個 build directory：
 
 ```sh
 cmake -S . -B build-o2 \
@@ -122,8 +127,23 @@ cmake -S . -B build-o2 \
 cmake --build build-o2 --target dm4310 -j
 ```
 
-評估時同時比較 Flash、固定 SRAM slot、stack、20 kHz worst-case timing與差分結果。不要只看
-`arm-none-eabi-size` 的單一 total。
+目前 DM4310 的量測基準如下：
+
+| 配置 | ELF text | 96 組 IRQ002 動態指令 | 判定 |
+|---|---:|---:|---|
+| 全域 `-Os` | 53,672 bytes | 91,064 | 基準 |
+| 全域 `-O2` | 57,668 bytes | 未採用 | 尺寸增加 3,996 bytes |
+| `-Os` + 三個熱點 `-O2` | 53,936 bytes | 87,032 | 採用；每 tick 平均減少 42 指令 |
+
+動態指令數由 Unicorn 對 96 組已差分的 IRQ002 路徑計數，代表 compiler-code 路徑比較，不等於
+實機 cycle。評估時仍須同時比較 Flash、固定 SRAM slot、stack、20 kHz worst-case timing 與差分
+結果；不要只看 `arm-none-eabi-size` 的單一 total。需要重跑指令計數時，先建立候選 ELF，再使用：
+
+```sh
+DAMIAO_RECOVERY_ELF=build-candidate/dm4310.elf \
+DAMIAO_COUNT_INSTRUCTIONS=1 \
+.venv/bin/python tools/recovery/regressions/dm4310_adc_retained_pointer_verify.py
+```
 
 ## 測試碼放置
 

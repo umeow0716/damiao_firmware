@@ -152,7 +152,8 @@ linker 固定位址或移除 ABI assertion。
 先用 `nm --size-sort` 與 map 找真實大項，再考慮：共用重複常數、刪除不可達路徑、縮短格式字串、
 讓普通函式可被 GC。不要犧牲：浮點順序、fixed kernel、校正表、fault、安全診斷或可讀的模組邊界。
 
-比較 `-Oz` 可用獨立 build directory，不直接改正式旗標。尺寸改善只有在九型號差分與 timing 通過後
-才可採用。
+比較 `-Oz/-O2/-O3` 可用獨立 build directory，不直接改正式旗標。一般 Flash 函式的速度最佳化
+只能透過 `DAMIAO_OPTIMIZE_SPEED` 加在已量測熱點，不要直接寫 `optimize("O2")` 或把整個檔案升級。
+尺寸或速度改善只有在九型號差分、映像容量與實機 timing 通過後才可採用。
 
 [上一章：建置與驗證](09-build-test-debug.md) · [下一章：上板驗收](11-validation-recovery.md)

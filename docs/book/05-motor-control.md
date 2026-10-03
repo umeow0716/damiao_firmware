@@ -59,6 +59,10 @@ build 使用 Cortex-M4F hard-float 與 `-ffp-contract=off`。這不是單純追�
 可以用普通 C 表達的產品邏輯應維持 C；只有 ABI／浮點 side effect 已被證明必要的窄邊界才使用
 ASM。不要把整個新控制功能寫成 ASM，也不要為了「清理」而無證據地刪除窄邊界 ASM。
 
+全域仍以 `-Os` 編譯；目前只有 `safety_update()`、`output_atan2f()` 與 `svpwm_result()` 經 96 組
+完整 IRQ002 路徑量測後使用函式級 `-O2`。這是窄幅且有回歸依據的 timing 取捨，不是一般函式的
+預設。修改這三個函式或考慮增加熱點時，必須重跑行為差分、指令計數與實機 worst-case timing。
+
 ## SVPWM 與輸出
 
 current controller 產生 d/q voltage，經 vector magnitude limit 與 inverse Park 得到 α/β，最後

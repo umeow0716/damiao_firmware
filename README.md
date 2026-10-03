@@ -83,8 +83,8 @@ HC32F448 + inverter + sensors
 4. 20 kHz IRQ 內禁止阻塞、配置記憶體、格式化輸出或擦寫 Flash；慢工作透過 deferred event
    交回 `main()`。
 5. 正常 `make` 不編入測試碼。復原差分與測試留在 `tools/recovery/`，另行執行。
-6. `-Os`、hard-float 與 `-ffp-contract=off` 是目前驗證過的基線；改最佳化或浮點順序後必須重做
-   差分與實機 timing 驗收。
+6. 全域 `-Os`、hard-float 與 `-ffp-contract=off` 是目前驗證過的基線；三個量測過的即時熱點以
+   `DAMIAO_OPTIMIZE_SPEED` 使用 `-O2`。新增或移除函式級例外都必須重做差分與實機 timing 驗收。
 
-目前各 target 的 plain 映像約 53.8 KiB，64 KiB APP partition 尚餘約 11.7 KiB；此餘裕不是
+目前各 target 的 plain 映像約 54.1 KiB，64 KiB APP partition 尚餘約 11.4 KiB；此餘裕不是
 跳過 map、stack、IRQ latency 與硬體安全驗證的理由。

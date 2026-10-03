@@ -29,7 +29,9 @@ if model not in FACTORY_PATHS:
     raise ValueError(f'unsupported DAMIAO_RECOVERY_MODEL: {model}')
 is_dm800x = model in ('dm8006', 'dm8009')
 factory = FACTORY_PATHS[model].read_bytes()
-elf = ELFFile(BytesIO((root / f'build/{model}.elf').read_bytes()))
+elf_path = Path(os.environ.get('DAMIAO_RECOVERY_ELF',
+                               root / f'build/{model}.elf'))
+elf = ELFFile(BytesIO(elf_path.read_bytes()))
 symbols = {s.name: s['st_value'] & ~1 for s in elf.get_section_by_name('.symtab').iter_symbols()}
 symbol_sizes = elf_symbol_sizes(elf)
 segments = [(s['p_paddr'], s.data()) for s in elf.iter_segments() if s['p_type'] == 'PT_LOAD' and s['p_filesz']]

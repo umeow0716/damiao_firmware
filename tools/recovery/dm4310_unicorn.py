@@ -23,7 +23,9 @@ MODEL = os.environ.get("DAMIAO_RECOVERY_MODEL", "dm4310").lower()
 if MODEL not in FACTORY_PATHS:
     raise ValueError(f"unsupported DAMIAO_RECOVERY_MODEL: {MODEL}")
 FACTORY_PATH = FACTORY_PATHS[MODEL]
-DEFAULT_ELF_PATH = ROOT / f"build/{MODEL}.elf"
+DEFAULT_ELF_PATH = Path(
+    os.environ.get("DAMIAO_RECOVERY_ELF", ROOT / f"build/{MODEL}.elf")
+)
 
 
 def load_images(elf_path=DEFAULT_ELF_PATH):

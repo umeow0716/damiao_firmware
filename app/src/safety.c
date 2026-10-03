@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "compiler_optimization.h"
+
 RuntimeStatus runtime_status __attribute__((section(".runtime_status")));
 SRAM_ABI_ASSERT_SIZE(RuntimeStatus, 0x4CU);
 SRAM_ABI_ASSERT_OFFSET(RuntimeStatus, save_staged_parameters, 0x0CU);
@@ -44,8 +46,8 @@ void safety_init(FaultMonitor *monitor)
      * Initializing a monitor must not erase live firmware counters/events. */
 }
 
-MotorFault safety_update(FaultMonitor *monitor, const MotorConfig *config,
-                         const MotorFeedback *feedback, bool motor_armed)
+DAMIAO_OPTIMIZE_SPEED MotorFault safety_update(FaultMonitor *monitor, const MotorConfig *config,
+                                               const MotorFeedback *feedback, bool motor_armed)
 {
     volatile RuntimeStatus *const status = (volatile RuntimeStatus *)(uintptr_t)*(
         const volatile uint32_t *)MEMORY_LAYOUT_ADDRESS(0x1FFF83F8UL, 0x1FFF970CUL);

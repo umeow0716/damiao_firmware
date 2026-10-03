@@ -1,6 +1,9 @@
-from pathlib import Path
+import os
 import struct
-from unicorn import UC_HOOK_MEM_READ, UC_HOOK_MEM_WRITE, UC_MEM_WRITE
+from pathlib import Path
+
+from unicorn import (UC_HOOK_CODE, UC_HOOK_MEM_READ, UC_HOOK_MEM_WRITE,
+                     UC_MEM_WRITE)
 
 exec(Path(__file__).with_name('dm4310_softfloat_verify.py').read_text().split(
     '\nfor old, name, size in mapping[:1]:')[0])
@@ -8,6 +11,8 @@ exec(Path(__file__).with_name('dm4310_softfloat_verify.py').read_text().split(
 FACTORY_ENTRY = A(0x1fff8137)
 SOURCE_ENTRY = A(0x1fff8137)
 STOP = 0xe000e280
+COUNT_INSTRUCTIONS = os.environ.get('DAMIAO_COUNT_INSTRUCTIONS') == '1'
+instruction_counts = {True: [], False: []}
 
 def put_u32(u, address, value):
     u.mem_write(address, struct.pack('<I', value))
@@ -102,6 +107,11 @@ for case in range(96):
         u.reg_write(arm.UC_ARM_REG_FPSCR, (case % 4) << 22)
         trace = []
         done = [False]
+        instruction_count = [0]
+        if COUNT_INSTRUCTIONS:
+            def instruction_hook(uc, address, size, unused):
+                instruction_count[0] += 1
+            u.hook_add(UC_HOOK_CODE, instruction_hook)
         def hook(uc, access, address, size, value, _):
             observed = value if access == UC_MEM_WRITE else int.from_bytes(
                 uc.mem_read(address, size), 'little')
@@ -128,6 +138,8 @@ for case in range(96):
         u.emu_start(FACTORY_ENTRY if original else SOURCE_ENTRY,
                     0x30000, count=400000)
         assert done[0], (case, original, hex(u.reg_read(arm.UC_ARM_REG_PC)))
+        if COUNT_INSTRUCTIONS:
+            instruction_counts[original].append(instruction_count[0])
         results.append((trace, bytes(u.mem_read(status, 0x4c)),
                         bytes(u.mem_read(sample, 0xa4)),
                         bytes(u.mem_read(motor, 0x7c)),
@@ -160,6 +172,15 @@ for case in range(96):
             else:
                 print('component', component, factory_part, source_part)
         raise AssertionError('factory/source mismatch')
+
+if COUNT_INSTRUCTIONS:
+    print('IRQ002 dynamic instructions:')
+    for original, label in ((True, 'factory'), (False, 'source')):
+        counts = instruction_counts[original]
+        print(f'  {label}: total={sum(counts)} min={min(counts)} '
+              f'max={max(counts)}')
+    print('  source totals by mode:',
+          [sum(instruction_counts[False][mode::6]) for mode in range(6)])
 
 print('PASS: 96 full IRQ002 executions; retained status/config/sample/motor/'
       'speed/temperature/raw pointers, fixed-address poison ranges, state and FPSCR')

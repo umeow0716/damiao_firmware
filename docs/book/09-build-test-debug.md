@@ -8,12 +8,14 @@
 DM_ARM_TOOLCHAIN_ROOT=/opt/arm-gnu-toolchain make dm4310
 ```
 
-重要編譯契約：C11、Cortex-M4、Thumb、FPv4-SP-D16、hard-float、`-Os`、
+重要編譯契約：C11、Cortex-M4、Thumb、FPv4-SP-D16、hard-float、全域 `-Os`、
 `-ffp-contract=off`、function/data sections、`--gc-sections`，以及大量 warning + `-Werror`。
 
-`-Os` 是目前尺寸、速度與差分驗證的平衡基線。可用 CMake cache 做實驗 build，但切換 `-Oz/-O2/-O3`
-後必須重新評估 binary size、IRQ timing、stack、固定 kernel size與長序列浮點行為，不能只因能編譯就
-改成正式設定。
+`-Os` 是目前尺寸、速度與差分驗證的平衡基線。只有 `safety_update()`、`output_atan2f()` 與
+`svpwm_result()` 經量測後以 `DAMIAO_OPTIMIZE_SPEED` 使用函式級 `-O2`；全域 `-O2` 會使 DM4310
+text 增加約 4 KiB。可用 CMake cache 做實驗 build，但切換 `-Oz/-O2/-O3` 或增加函式級例外後，
+必須重新評估 binary size、IRQ timing、stack、固定 kernel size 與長序列浮點行為，不能只因能編譯
+就改成正式設定。
 
 ## 日常命令
 
@@ -38,7 +40,7 @@ build/package/<model>/         plain、enc、frames、cansend、manifest
 dist/development/              九型號最終 plain/enc
 ```
 
-目前 plain 約 53,848–53,872 bytes，不能把這個範圍硬寫成 build gate；真正 gate 是 64 KiB partition、
+目前 plain 約 54,112–54,140 bytes，不能把這個範圍硬寫成 build gate；真正 gate 是 64 KiB partition、
 linker ASSERT 與每次輸出的實際 free symbol。
 
 ## 離線驗收層級

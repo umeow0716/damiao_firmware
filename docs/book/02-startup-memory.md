@@ -29,7 +29,7 @@
 | 一般 BSS | `0x20002000` 起 | 不需要 factory 固定位址的新狀態 |
 
 標準 layout 的目前開發餘裕為：`.app_state` 1,760 bytes、一般 BSS 到 SRAM 末端 24,396 bytes；
-九個 target 的 Flash 餘裕為 11,664–11,688 bytes。這些數字可由 ELF linker symbol 重新查詢：
+九個 target 的 Flash 餘裕為 11,396–11,424 bytes。這些數字可由 ELF linker symbol 重新查詢：
 
 ```sh
 tools/arm-gnu-toolchain/bin/arm-none-eabi-nm -n build/dm4310.elf \

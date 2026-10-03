@@ -7,6 +7,7 @@
 #include "motor_math.h"
 #include "app_profile.h"
 #include "calibration_upload.h"
+#include "compiler_optimization.h"
 #include "memory_layout.h"
 #include "runtime_compat.h"
 
@@ -63,7 +64,7 @@ static float vfp_multiply_subtract(float accumulator, float lhs, float rhs)
     return accumulator;
 }
 
-float output_atan2f(float y, float x)
+DAMIAO_OPTIMIZE_SPEED float output_atan2f(float y, float x)
 {
     uint32_t y_bits;
     uint32_t x_bits;

@@ -26,20 +26,20 @@ original/decrypted 配對的九款 V3 sub-version 04 韌體；DM1h10L 與 DM6006
 
 ## 最終產物
 
-所有檔案位於 `dist/development/`。Plain 大小比對應 factory image 大 4.91–5.03%，
-仍保留 11,664–11,688 bytes 的 64 KiB APP 空間；一般 Flash 函式沒有固定地址或長度。
+所有檔案位於 `dist/development/`。Plain 大小比對應 factory image 大 5.44–5.53%，
+仍保留 11,396–11,424 bytes 的 64 KiB APP 空間；一般 Flash 函式沒有固定地址或長度。
 
 | 型號 | Plain/enc 大小 | 剩餘 APP | Plain SHA-256 | Encrypted SHA-256 |
 |---|---:|---:|---|---|
-| `dm10010` | 53,856 | 11,680 | `6f20a3704f2c1e1f7532b73f492d2a276cdf77c79578a546d430e8342b46148e` | `bc896c287dd539ab63351ff4aca7fc7d18cd9d733db6ad8c1f6d5c6db8b7069b` |
-| `dm3507` | 53,848 | 11,688 | `0d6d9f4ec8bfde570431c9cd9213c71fa83e6a6dd1363da591c9f3ccc3e919f4` | `2194f868f82ce1191d9f3c415a8a13238f8a5d5e7b3e9ad748f08f7f20718fd8` |
-| `dm3507_48v` | 53,864 | 11,672 | `9c91ed14847d46d9025f7e20b8fe8dec0984a971b1937ce89db86c205d406952` | `af1adc352617fbaed1a4fe2cb244c9d5664302f3e7895cb9d5559d51745855f3` |
-| `dm4310` | 53,856 | 11,680 | `ce923b242bf9c055aef81c76078bd676cef3b55779f11c403715238384451707` | `06a519f26e6352e3ebe4d38c6c076845672026ebf67c5d2ed21bdf2fbcbce550` |
-| `dm4310_48v` | 53,872 | 11,664 | `e2300cbac596a81bc9000249460e637b225657f4e03b70c75964f51df89475e0` | `24cc72578a081bac64af5e6aebb041d1f93d47911f9be4e00d9fd337278d4cf2` |
-| `dm4340` | 53,856 | 11,680 | `d379fddde892b002cd49560b251c02d552f8e749abaaf77f6fd0f7ee3cf4df3d` | `e589ce8606db692b8e5c65a232279f1cc53b070c7637cfded4dadc5386965d63` |
-| `dm4340_48v` | 53,872 | 11,664 | `beb7549ff34289ad8db905ad3312830fb97e8d1f854a5987ec3c0293e96575be` | `ec1288219856a94161a67c02b1913cc779c74699a7dd88bde17f8a2887762da2` |
-| `dm8006` | 53,868 | 11,668 | `6114d7da6b04e02f103d98de0ef8bfc45a7154cdfb6a1bc70d42becbeb2e3963` | `9361a5f8180874c602b31b03868542b493abab5169b47a5d58a7a8fce0624b22` |
-| `dm8009` | 53,868 | 11,668 | `1ece8d7d0a47fc347588a29337bf26c950926f66af31f81456bc38b47dda4dbc` | `0d77352bca3ac51e961cdb88add976d6eb56aaac719277ed484b8b6550e9d42b` |
+| `dm10010` | 54,120 | 11,416 | `67a48572b90f4f968e14273bb284fd94fbc285dccde5d5a44205d1259a6a7d09` | `768ed754d84465fe6f2112148844667d55ba0ef71079d9e437898608b17b2567` |
+| `dm3507` | 54,112 | 11,424 | `e9d354d85b79279e8d976b0d16f97cba81b7a9f81ec3dba645a28e4eef5ef4e6` | `c78ba910d5f42955b1da944b00609a71f63835ea2a9ed10062917576df1f9962` |
+| `dm3507_48v` | 54,128 | 11,408 | `61691d82f10da848aa334bbec51f7b25304a53fb310b264954bb66c389e4c6ca` | `1d43ed47d5f92319ae94f5af52cec1187d6921c1643f9761c8393be5c2ccc178` |
+| `dm4310` | 54,120 | 11,416 | `6aae35703a2a4119c83af8dc63d854bd7009ca706cbaa203dcccedfe3afee069` | `6ab4945dd9f14c945785e32af187673bf6afd2c37be87c89f09200701cb36348` |
+| `dm4310_48v` | 54,128 | 11,408 | `20555e3f138331c6e9f5bd3edecf9dddba027d69cda80101b033c7715c78f322` | `da4a820080e2fee99a905877a5b80bb7e38d3a122ce32a663f55dd916ad3fe9a` |
+| `dm4340` | 54,120 | 11,416 | `5e52b398cbfc5d76d577fd5328cf6fa4f5fda0e2f10cee3be2c3db5182d04d8d` | `9a481c5e4b1f39313f48dae1300ffc4ca88ec8734d033e6edb9592e3e4928b04` |
+| `dm4340_48v` | 54,128 | 11,408 | `61b3a91f4ea997c2e468d192b9de4517ee1496fd7d6e74fd327a352b48847ad5` | `de28de5310706c206025a95cf918a58f2345db168c437da138812d2b9d11042f` |
+| `dm8006` | 54,140 | 11,396 | `cb298dbad0a59158eab9ba234d190a914e9f5545baa70992153a2d1ca9a047c9` | `4b9bfb3100b01ba6fb900dcea4047a4c22f74b2086adb251c6fb6ebc0cba66ec` |
+| `dm8009` | 54,140 | 11,396 | `ba491b7de5a2accbfb92b4d54f83d78828ab9a71e9639d448d10b9e61cad35ee` | `8517bff57349e736fb9993e2b05ba3c9871308761100820cae93e8f39ded1e95` |
 
 每個 plain 都逐 byte 等於對應 ELF 的 objcopy 結果。每個 encrypted 產物都通過
 AES-256-CTR 解密 round-trip，manifest 的大小與 SHA-256 也已核對。
@@ -70,7 +70,7 @@ AES-256-CTR 解密 round-trip，manifest 的大小與 SHA-256 也已核對。
   不屬於一般 CMake/make 編譯流程；一般 Flash 函式沒有 padding 或 address anchor。
 - 私有 C 型別已撤除無必要的固定 offset assertion；真正由 SRAM/IRQ/ASM 取用的型別改用
   `SRAM_ABI_ASSERT_*` 明確標示。這些 compile-time 檢查不占映像空間。
-- linker 直接匯出可開發餘裕：九型號 Flash 尚餘 11,664–11,688 bytes，`.app_state`
+- linker 直接匯出可開發餘裕：九型號 Flash 尚餘 11,396–11,424 bytes，`.app_state`
   尚餘 1,760 bytes，一般 BSS 尚餘 24,396 bytes；新增功能不必修改固定 SRAM 物件。
 
 ## 最終交付閘門

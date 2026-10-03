@@ -3,6 +3,7 @@
 
 #include <math.h>
 
+#include "compiler_optimization.h"
 #include "motor_sine_table.h"
 
 #define INV_SQRT3_F 0.5773502691896258f
@@ -138,7 +139,8 @@ AlphaBeta motor_inverse_park(DirectQuadrature rotating, float sine, float cosine
     return result;
 }
 
-static PhaseDuty svpwm_result(AlphaBeta voltage, bool normalized_duty, float projection_scale)
+DAMIAO_OPTIMIZE_SPEED static PhaseDuty svpwm_result(AlphaBeta voltage, bool normalized_duty,
+                                                    float projection_scale)
 {
     /* The timer writes (1 - phase) * 2500 into a 5000-count center-aligned
      * timer; returning (1 + phase) / 2 preserves that exact relation through
