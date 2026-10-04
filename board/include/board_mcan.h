@@ -59,6 +59,10 @@ void board_mcan_build_config(uint16_t node_id, uint16_t data_rate_selector,
 bool board_mcan_init(uint16_t node_id, uint16_t data_rate_selector);
 bool board_mcan_receive(BoardMcanFrame *frame);
 bool board_mcan_send(const BoardMcanFrame *frame);
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+bool board_mcan_identification_ready(void);
+bool board_mcan_try_send_identification(uint16_t id, const uint8_t *data, uint8_t length);
+#endif
 void board_mcan_init_classic(uint16_t data_rate_selector, uint16_t node_id);
 void board_mcan_init_fd(uint16_t data_rate_selector, uint16_t node_id);
 void board_mcan_begin_irq(McanIrqContext *references);

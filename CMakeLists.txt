@@ -300,6 +300,27 @@ foreach(target IN LISTS DAMIAO_FIRMWARE_TARGETS)
         ${target}_raw_no_response)
 endforeach()
 
+# Identification is a separate capability target; existing variants stay opt-in free.
+damiao_add_profiled_firmware(dm4310_sysid
+    "${CMAKE_CURRENT_SOURCE_DIR}/config/targets/dm4310.cmake"
+    DAMIAO_FEEDBACK_VARIANT_RAW=1
+    DAMIAO_COMMAND_FEEDBACK_DISABLED=1
+    DAMIAO_SYSTEM_IDENTIFICATION=1)
+target_sources(dm4310_sysid PRIVATE
+    app/src/system_identification.c
+    app/src/identification_scan.c
+    app/src/identification_platform.c)
+list(APPEND DAMIAO_ALL_FIRMWARE_TARGETS dm4310_sysid)
+foreach(scan_profile dm4340 dm8009)
+    damiao_add_profiled_firmware(${scan_profile}_sysid
+        "${CMAKE_CURRENT_SOURCE_DIR}/config/targets/${scan_profile}.cmake"
+        DAMIAO_FEEDBACK_VARIANT_RAW=1 DAMIAO_COMMAND_FEEDBACK_DISABLED=1 DAMIAO_SYSTEM_IDENTIFICATION=1)
+    target_sources(${scan_profile}_sysid PRIVATE app/src/system_identification.c
+        app/src/identification_scan.c app/src/identification_platform.c)
+    list(APPEND DAMIAO_ALL_FIRMWARE_TARGETS ${scan_profile}_sysid)
+endforeach()
+
+
 # The V3 applications occupy a fixed 64 KiB APP partition and share the same
 # arithmetic/runtime implementation. Per-model constants and fixed SRAM
 # placement remain selected by the target profile and linker.

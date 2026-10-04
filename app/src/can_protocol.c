@@ -9,6 +9,9 @@
 #include "motor_math.h"
 
 #include "board_mcan.h"
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+#include "command_validation.h"
+#endif
 
 typedef struct
 {
@@ -71,6 +74,7 @@ static float apply_feedback_direction(float value, bool inverted)
 
 static bool is_special_command(const CanFrame *frame, uint8_t command)
 {
+    if (frame->length != 8U) return false;
     for (uint8_t i = 0U; i < 7U; ++i)
     {
         if (frame->data[i] != 0xFFU)
@@ -100,6 +104,9 @@ static CanCommandKind decode_command(const CanFrame *frame, const MotorConfig *c
     {
         return CAN_COMMAND_NONE;
     }
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+    if (!command_frame_valid(frame, node_id)) return CAN_COMMAND_NONE;
+#endif
     /* Firmware refreshes communication age immediately after address match,
      * even for rejected command families, unless a fault is latched. */
     volatile uint32_t *const status = references != NULL
@@ -180,6 +187,15 @@ static CanCommandKind decode_command(const CanFrame *frame, const MotorConfig *c
                 : motor_words;
         direction = command_motor[0x34U / 4U] == UINT32_C(0x40000000) ? -1.0f : 1.0f;
     }
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+    /* Reject overflow before any partially decoded setpoint is published. */
+    if (family != 0U) {
+        const float speed = family == 1U ? read_f32_le(frame->data + 4U)
+                            : family == 2U ? read_f32_le(frame->data)
+                            : 100.0f;
+        if (!command_scaled_velocity_valid(speed, gear_ratio)) return CAN_COMMAND_NONE;
+    }
+#endif
     if ((family == 0U) && (mode == MOTOR_MODE_MIT))
     {
         const uint32_t p = ((uint32_t)frame->data[0] << 8U) | frame->data[1];

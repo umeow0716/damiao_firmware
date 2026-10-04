@@ -14,6 +14,7 @@ source、target profile、linker 與本套手冊為準；舊報告只代表當�
 | 建置、封裝、檢查輸出 | [開發與建置](DEVELOPMENT.md) |
 | 改 target 常數或新增型號 | [安全、fault 與 target profile](book/08-safety-profiles.md) |
 | 改 CAN／UART／參數 | [通訊協定](book/06-protocols.md) |
+| 單馬達 system identification | [量測協定](SYSTEM_IDENTIFICATION_PROTOCOL.md) → [開發與驗收](SYSTEM_IDENTIFICATION_VALIDATION.md) |
 | 改控制器、FOC 或 PWM | [馬達控制](book/05-motor-control.md) |
 | 改 linker、SRAM 物件或 IRQ | [startup 與記憶體](book/02-startup-memory.md) |
 | 刷機或理解 `.enc.bin` | [更新格式](UPDATE_FORMAT.md) |

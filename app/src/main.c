@@ -10,6 +10,9 @@
 #include "hc32f448.h"
 #include "platform.h"
 #include "position_sensor.h"
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+#include "system_identification.h"
+#endif
 
 #define APP_VECTOR_TABLE_ADDRESS (0x00020000UL)
 
@@ -131,6 +134,9 @@ int main(void)
 
     for (;;)
     {
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+        identification_service();
+#endif
         service_deferred_events();
     }
 }

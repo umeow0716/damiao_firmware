@@ -7,6 +7,9 @@
 
 #include "motor_control.h"
 #include "motor_math.h"
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+#include "system_identification.h"
+#endif
 
 /* Exact conversion constants used by the position-sensor DMA interrupt. */
 #define COUNTS_PER_BIN 64U
@@ -194,7 +197,11 @@ void position_sensor_update(PositionSensorState *state, uint16_t dma_word)
 
 volatile uint32_t *position_sensor_update_dma(float wrap_minimum)
 {
-    return update_position(NULL, 0U, true, wrap_minimum);
+    volatile uint32_t *const count = update_position(NULL, 0U, true, wrap_minimum);
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+    identification_position_updated_irq();
+#endif
+    return count;
 }
 
 void position_sensor_velocity_tick(PositionSensorState *state,

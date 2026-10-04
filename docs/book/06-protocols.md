@@ -4,6 +4,10 @@
 setup console。它們最後都會碰到同一份 runtime/configuration，修改時必須避免「一條路徑更新、
 另一條仍使用舊值」。
 
+獨立 `dm4310_sysid` target 另外提供單馬達辨識 FD64 量測，不更改本章的 legacy 格式。
+其 request `0x6F0`／reply `0x6F1`／sample `0x6F2`、timestamp、濾波與狀態定義見
+[辨識協定 v1](../SYSTEM_IDENTIFICATION_PROTOCOL.md)；只在該 opt-in target 編入，目前沒有內部激振。
+
 ## Motor CAN 命令
 
 `can_protocol.c` 依 CAN ID family 與目前 control mode 解碼 setpoint；`app_commands.c` 負責命令的

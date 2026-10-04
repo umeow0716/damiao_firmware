@@ -39,6 +39,10 @@ typedef struct
     uint16_t output_sensor_raw_v;
     bool outer_loop_due;
 } AdcSample;
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+void motor_control_identification_sample(const AdcSample *sample,
+                                         const OuterLoopContext *references);
+#endif
 
 /* Fixed 19-float state shared with the SRAM current-control step.  Semantic
  * field names keep the controller maintainable without hiding its ABI. */

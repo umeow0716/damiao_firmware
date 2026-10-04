@@ -4,6 +4,9 @@
 #include "debug_console.h"
 #include "firmware_variant.h"
 #include "interrupts.h"
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+#include "system_identification.h"
+#endif
 
 #include "memory_layout.h"
 #include "parameter_protocol.h"
@@ -68,6 +71,9 @@ void adc_foc_control_irq(void)
         motor_control_fast_apply_state(&g_app.motor, &references);
         const AlphaBeta stationary_voltage = motor_control_fast_finish(current_d, &references);
         svpwm_helper(stationary_voltage.alpha, stationary_voltage.beta);
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+        motor_control_identification_sample(&sample, &references);
+#endif
     }
     platform_ack_adc_irq();
 }
@@ -86,7 +92,11 @@ void mcan1_receive_irq(void)
         const uint16_t routed_id = command_frame ? 0U : *references.received_id;
         const bool parameter_frame = !command_frame && routed_id == 0x7FFU;
         ParameterProtocolResult parameter = {0};
-        if (parameter_frame)
+        if (parameter_frame
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+            && received.length == 8U
+#endif
+        )
         {
             parameter_protocol_process_irq(&received, &parameter, &references);
         }
@@ -137,18 +147,33 @@ void mcan1_receive_irq(void)
             /* SETPOINT fully initializes this output; other kinds don't
              * consume it. No firmware read of the decoded command mirror. */
             MotorCommand command;
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+            identification_command_begin_irq();
+#endif
             const CanCommandKind kind =
                 can_protocol_decode_command_irq(&received, &command, &references);
             if (kind != CAN_COMMAND_NONE)
             {
                 app_apply_can_command_irq(kind, &command, &references);
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+                identification_command_end_irq(kind == CAN_COMMAND_SETPOINT);
+                if (kind == CAN_COMMAND_CLEAR_FAULT) identification_deadman_reset();
+#endif
 #if FIRMWARE_SENDS_COMMAND_FEEDBACK
                 CanFrame response;
                 can_protocol_encode_feedback_irq(&references, &response);
                 platform_mcan_send_prebuilt_irq((uint16_t)response.id, 8U, &references);
 #endif
             }
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+            else
+                identification_command_end_irq(false);
+#endif
         }
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+        else if (received.id == SYSID_REQUEST_ID && received.length == 8U)
+            identification_request_irq(received.data, (uint8_t)references.node_id);
+#endif
     }
     /* The platform tail performs the no-delay bit-23 callback, rereads IR
      * for bus-off, posts each firmware error and then clears IR/NVIC. Do not

@@ -10,6 +10,11 @@
 #include "board_adc.h"
 #include "position_sensor.h"
 #include "temperature_table.h"
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+#include "system_identification.h"
+static bool identification_current_limited;
+static bool identification_voltage_limited;
+#endif
 
 #define CURRENT_ADC_SCALE (0x1p-11f)
 #define CONTROL_SAMPLE_PERIOD (0.00005f)
@@ -699,6 +704,19 @@ static bool control_outer_step(MotorController *controller, const MotorConfig *c
     volatile MotorRuntimeState *const motor_state = (volatile MotorRuntimeState *)references->motor;
 
     volatile float *const position_loop = references->speed + 10;
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+    const float sign = motor_state->direction == 1.0f ? 1.0f : -1.0f;
+    float scan_velocity;
+    if (identification_scan_control_tick(sign * motor_state->output_position,
+        sign * motor_state->raw_rotor_velocity * motor_state->position_sensor_scale,
+        sign * sample_state->current_q * motor_state->output_torque_constant,
+        motor_state->filtered_motor_temperature,
+        motor_state->console_mode == 2U && sample_state->fault <= 1U &&
+        sample_state->control_mode == MOTOR_MODE_SPEED, &scan_velocity)) {
+        if (sample_state->control_mode == MOTOR_MODE_SPEED) sample_state->command_velocity = sign * scan_velocity;
+        if (identification_scan_keepalive()) references->status[0] = 0U;
+    }
+#endif
     const float command_position = sample_state->command_position;
     const float output_position = motor_state->output_position;
     float position_error;
@@ -884,6 +902,10 @@ prepare_current_controllers(MotorController *controller, const MotorConfig *conf
     (void)control_outer_step(controller, config, sample->rotor_velocity, sample->outer_loop_due,
                              references);
     const uint32_t mode = sample_state->control_mode;
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+    identification_command_applied_tick(sample->outer_loop_due, (uint8_t)mode);
+    identification_current_limited = false;
+#endif
     float requested_q;
     if (mode == MOTOR_MODE_MIT)
     {
@@ -927,8 +949,17 @@ prepare_current_controllers(MotorController *controller, const MotorConfig *conf
     sample_state->current_q_reference = requested_q;
     if ((mode >= MOTOR_MODE_MIT) && (mode <= MOTOR_MODE_HYBRID))
     {
-        const float current_limit =
+        const float hardware_current_limit =
             (mode == MOTOR_MODE_HYBRID) ? sample_state->current_limit : references->limits[3];
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+        const float current_limit = identification_scan_current_limit(hardware_current_limit,
+            motor_state->output_torque_constant);
+#else
+        const float current_limit = hardware_current_limit;
+#endif
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+        identification_current_limited = requested_q < -current_limit || requested_q > current_limit;
+#endif
         requested_q = clamp_helper(requested_q, -current_limit, current_limit);
         sample_state->current_q_reference = requested_q;
     }
@@ -1058,8 +1089,18 @@ float motor_control_fast_transform(MotorController *controller, const MotorConfi
 
 void motor_control_fast_apply_state(MotorController *controller, const OuterLoopContext *references)
 {
-    const volatile MotorRuntimeState *const motor_state =
-        (const volatile MotorRuntimeState *)references->motor;
+    volatile MotorRuntimeState *const motor_state =
+        (volatile MotorRuntimeState *)references->motor;
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+    if (identification_deadman_check(motor_state->console_mode==2U) && motor_state->console_mode==2U) {
+        volatile SampleRuntimeState *const runtime=(volatile SampleRuntimeState *)references->sample;
+        motor_state->console_mode=0U;
+        motor_control_post_state_change();
+        references->status[1]=1U;
+        if (runtime->fault<=MOTOR_STATUS_ENABLED) runtime->fault=MOTOR_FAULT_COMMUNICATION_LOST;
+        controller->feedback.fault=(MotorFault)runtime->fault;
+    }
+#endif
     const bool enabled = motor_state->console_mode == 2U;
     controller->armed = enabled;
     /* IRQ002 clears/increments communication age before selective reset,
@@ -1078,7 +1119,21 @@ AlphaBeta motor_control_fast_finish(volatile CurrentController *current_d,
     /* IRQ002 retains its 8506 pool pointer through fault monitoring/reset. */
     volatile CurrentController *const current_q = current_d + 1;
     const float limit = *(volatile const float *)MEMORY_LAYOUT_ADDRESS(0x1FFF8638UL, 0x1FFF9980UL);
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+    const float before_d = current_d->limited_output;
+    const float before_q = current_q->limited_output;
+#endif
     limit_vector_helper(limit, &current_d->limited_output, &current_q->limited_output);
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+    identification_voltage_limited = before_d != current_d->limited_output ||
+                                     before_q != current_q->limited_output ||
+                                     current_d->control_output != before_d ||
+                                     current_q->control_output != before_q ||
+                                     before_d <= current_d->output_min ||
+                                     before_d >= current_d->output_max ||
+                                     before_q <= current_q->output_min ||
+                                     before_q >= current_q->output_max;
+#endif
     volatile SampleRuntimeState *const sample_state =
         (volatile SampleRuntimeState *)references->sample;
     const float cosine = sample_state->electrical_cosine;
@@ -1097,6 +1152,47 @@ AlphaBeta motor_control_fast_finish(volatile CurrentController *current_d,
     sample_state->voltage_beta = stationary_voltage.beta;
     return stationary_voltage;
 }
+
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+void motor_control_identification_sample(const AdcSample *sample,
+                                         const OuterLoopContext *references)
+{
+    const volatile MotorRuntimeState *const motor = references->motor;
+    const volatile SampleRuntimeState *const runtime = references->sample;
+    const volatile uint32_t *const config = (volatile const uint32_t *)(uintptr_t)
+        MEMORY_LAYOUT_ADDRESS(UINT32_C(0x1fffa5c8), UINT32_C(0x1fffa558));
+    const bool inverted = motor->direction != 1.0f;
+    const float sign = inverted ? -1.0f : 1.0f;
+    /* DMA IRQ1 can preempt ADC IRQ2. Pair its position publication and marker. */
+    const uint32_t mask = identification_lock();
+    const IdentificationMeasurement measurement = {
+        .position = sign * motor->output_position,
+        .velocity = sign * motor->raw_rotor_velocity * motor->position_sensor_scale,
+        .iq = sign * runtime->current_q,
+        .torque_constant = motor->output_torque_constant,
+        .command_torque = sign * runtime->command_torque,
+        .applied_velocity_setpoint = sign * runtime->velocity_target,
+        .bus_voltage = runtime->bus_voltage,
+        .motor_temperature = motor->filtered_motor_temperature,
+        .mos_temperature = sample->mos_temperature,
+        .gear_ratio = motor->gear_ratio,
+        .direction = motor->direction,
+        .position_tick = identification_position_tick(),
+        .velocity_previous_weight = motor->velocity_filter_previous,
+        .current_limit = runtime->control_mode == MOTOR_MODE_HYBRID
+                             ? runtime->current_limit : references->limits[3],
+        .node = (uint8_t)config[8],
+        .mode = (uint8_t)runtime->control_mode,
+        .fault = (uint8_t)runtime->fault,
+        .armed = motor->console_mode == 2U,
+        .current_limited = identification_current_limited,
+        .voltage_limited = identification_voltage_limited,
+        .velocity_updated = sample->outer_loop_due,
+    };
+    identification_unlock(mask);
+    identification_sample_tick(&measurement);
+}
+#endif
 
 PhaseDuty motor_control_fast_step(MotorController *controller, const MotorConfig *config,
                                   const AdcSample *sample)

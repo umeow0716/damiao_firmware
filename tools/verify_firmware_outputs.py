@@ -177,10 +177,12 @@ def main() -> int:
     )
     parser.add_argument(
         "--expected-variant",
-        choices=("factory", "raw", "no_response", "raw_no_response"),
+        choices=("factory", "raw", "no_response", "raw_no_response", "sysid"),
         default="factory",
         help="firmware variant expected in every package manifest",
     )
+    parser.add_argument("--models", nargs="+", choices=MODELS, default=MODELS,
+                        help="models to check (default: all existing models)")
     args = parser.parse_args()
 
     try:
@@ -188,7 +190,7 @@ def main() -> int:
     except (OSError, ValueError) as error:
         raise SystemExit(f"invalid update profile {args.profile}: {error}") from error
 
-    for model in MODELS:
+    for model in args.models:
         check_model(args.dist, args.build_dir, args.package_root, model,
                     key, counter, args.build_suffix, args.expected_variant)
 

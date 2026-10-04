@@ -73,6 +73,8 @@ Thumbs.db
 !/docs/DM4310_BYTE_EXACT_PROGRESS.md
 !/docs/README.md
 !/docs/SOURCE_MAP.md
+!/docs/SYSTEM_IDENTIFICATION_PROTOCOL.md
+!/docs/SYSTEM_IDENTIFICATION_VALIDATION.md
 !/docs/DEVELOPMENT.md
 !/docs/PORTING_CHECKLIST.md
 !/docs/UPDATE_FORMAT.md
@@ -131,3 +133,4 @@ Thumbs.db
 /tools/verify_app_strings.py
 /bootloader/
 /linker/hc32f448_boot.ld
+!/docs/OFFSET_SCAN_PROTOCOL.md

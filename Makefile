@@ -38,8 +38,22 @@ endef
 .PHONY: help all configure build firmwares $(FIRMWARE_MODELS)
 .PHONY: verify-firmware-outputs clean send send-raw send-no-response
 .PHONY: send-raw-no-response provision-calibration
+SYSID_MODELS := dm4310 dm4340 dm8009
+SYSID_TARGETS := $(addsuffix -sysid,$(SYSID_MODELS))
+.PHONY: $(SYSID_TARGETS)
+
+$(SYSID_TARGETS): configure
+	mkdir -p $(DIST_DEV)/sysid $(PACK_ROOT)/sysid/$(patsubst %-sysid,%,$@)
+	$(CMAKE) --build $(BUILD_DIR) --target $(patsubst %-sysid,%,$@)_sysid -j
+	$(PYTHON) tools/pack_update.py --app $(BUILD_DIR)/$(patsubst %-sysid,%,$@)_sysid.app.bin \
+		--profile config/update_profile.json --output-dir $(PACK_ROOT)/sysid/$(patsubst %-sysid,%,$@) \
+		--purpose development --firmware-variant sysid \
+		--plain-name $(patsubst %-sysid,%,$@)_plain.bin --encrypted-name $(patsubst %-sysid,%,$@)_enc.bin
+	cp $(PACK_ROOT)/sysid/$(patsubst %-sysid,%,$@)/$(patsubst %-sysid,%,$@)_plain.bin $(DIST_DEV)/sysid/
+	cp $(PACK_ROOT)/sysid/$(patsubst %-sysid,%,$@)/$(patsubst %-sysid,%,$@)_enc.bin $(DIST_DEV)/sysid/
 
 help:
+	@echo "  make dm4310-sysid / dm4340-sysid / dm8009-sysid  Build and package guarded sysid"
 	@echo "DM firmware source-build targets:"
 	@echo "  make                  Build all four behavior variants for every model"
 	@echo "  make firmwares        Same as make"

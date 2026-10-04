@@ -85,6 +85,8 @@ wrapper 與語意 handler 在 `app/src/interrupts.c`；周邊 acknowledge、DMA�
 | `app_commands.c` | FC／FD／FE／FB 與 motor state change 的產品語意 |
 | `safety.c` | CAN timeout、過流、欠壓、過壓、MOS／motor 過溫 debounce 與 fault latch |
 | `can_protocol.c` | motor command 解碼與 8-byte feedback 編碼 |
+| `system_identification.c`／`.h` | opt-in DM4310 辨識量測 v1：時基、來源、抗混疊、queue、管理協定 |
+| `identification_platform.c` | 辨識專用 critical section 與非阻塞 FD64 board adapter |
 | `parameter_protocol.c` | standard ID `0x7FF` 的 read/write/live/store protocol |
 | `interrupts.c` | 五個 IRQ 的跨模組編排與必要執行順序 |
 | `platform.c` | APP 與 board 的協調層；startup、持久化、感測、PWM、MCAN、UART |
@@ -144,6 +146,7 @@ wrapper 與語意 handler 在 `app/src/interrupts.c`；周邊 acknowledge、DMA�
 | 新增 target | `config/targets/` | `app_profile.h`、CMake、Makefile、layout verifier |
 | 控制模式或 gain | `motor_control.c` | `motor_types.h`、`app_config.c`、`parameter_protocol.c` |
 | CAN 命令／feedback | `can_protocol.c` | `interrupts.c`、`app_commands.c` |
+| 單馬達辨識量測（獨立 target） | `system_identification.c` | `motor_control.c`、`position_sensor.c`、`identification_platform.c`、`board_mcan_hc32f448.c`；[完整協定](SYSTEM_IDENTIFICATION_PROTOCOL.md) |
 | measurement／command response 版本 | `firmware_variant.h`、CMake | `can_protocol.c`、`interrupts.c`、Makefile |
 | 0x7FF 參數 | `parameter_protocol.c` | `app_config.c`、`platform.c` |
 | fault 門檻／debounce | `safety.c` | `motor_types.h`、`app_config.c`、`app_commands.c` |

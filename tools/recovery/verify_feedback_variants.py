@@ -16,7 +16,7 @@ from io import BytesIO
 from pathlib import Path
 
 from elftools.elf.elffile import ELFFile
-from unicorn import Uc, UC_ARCH_ARM, UC_MODE_THUMB
+from unicorn import Uc, UC_ARCH_ARM, UC_MODE_THUMB, UC_MODE_MCLASS
 import unicorn.arm_const as arm
 
 
@@ -53,8 +53,8 @@ def symbol_addresses(elf: ELFFile) -> dict[str, int]:
     }
 
 
-def make_machine(elf: ELFFile) -> Uc:
-    machine = Uc(UC_ARCH_ARM, UC_MODE_THUMB)
+def make_machine(elf: ELFFile, *, mclass: bool = False) -> Uc:
+    machine = Uc(UC_ARCH_ARM, UC_MODE_THUMB | (UC_MODE_MCLASS if mclass else 0))
     machine.mem_map(FLASH_BASE, FLASH_SIZE)
     machine.mem_map(SRAM_BASE, SRAM_SIZE)
     machine.mem_map(HIGH_SRAM_BASE, HIGH_SRAM_SIZE)

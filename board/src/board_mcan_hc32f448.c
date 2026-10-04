@@ -1,6 +1,9 @@
 #include "board_mcan.h"
 
 #include "memory_layout.h"
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+#include "command_validation.h"
+#endif
 
 #include <stddef.h>
 #include <string.h>
@@ -156,6 +159,10 @@ static void apply_register_image(const BoardMcanRegisterImage *config)
     CM_MCAN1->RXESC = config->rxesc;
     CM_MCAN1->TXESC = config->txesc;
     CM_MCAN1->SIDFC = config->sidfc;
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+    /* A third exact standard-ID filter fits before XIDFC at message RAM +0x40. */
+    CM_MCAN1->SIDFC = (config->sidfc & ~MCAN_SIDFC_LSS) | (3UL << MCAN_SIDFC_LSS_POS);
+#endif
     CM_MCAN1->XIDFC = config->xidfc;
     CM_MCAN1->RXF0C = config->rxf0c;
     CM_MCAN1->RXF1C = config->rxf1c;
@@ -171,6 +178,9 @@ static void apply_register_image(const BoardMcanRegisterImage *config)
     CM_MCAN1->GFC = (CM_MCAN1->GFC & ~UINT32_C(0x3F)) | config->gfc;
     message_ram[0] = config->standard_filter[0];
     message_ram[1] = config->standard_filter[1];
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+    message_ram[2] = 0x880007FFUL | (0x6F0UL << 16U);
+#endif
 
     CM_MCAN1->IE = config->ie;
     CM_MCAN1->ILS = config->ils;
@@ -268,6 +278,9 @@ bool board_mcan_receive_payload(uint32_t *id, uint8_t *length, uint8_t *data,
     references->motor = (volatile void *)(uintptr_t)*(
         volatile const uint32_t *)MEMORY_LAYOUT_ADDRESS(UINT32_C(0x1fff8b50), UINT32_C(0x1fff8510));
     *length = 8U;
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+    *length = command_receive_length(received_header_0, dispatch->received_header_1);
+#endif
     memcpy(data, &received_data_0, sizeof(received_data_0));
     memcpy(data + sizeof(received_data_0), &received_data_1, sizeof(received_data_1));
     return true;
@@ -456,6 +469,51 @@ bool board_mcan_send(const BoardMcanFrame *frame)
     return mcan_dispatch.send(mcan_dispatch.transmit_and_protocol, (uint16_t)frame->id,
                               frame->length) != 0U;
 }
+
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+bool board_mcan_identification_ready(void)
+{
+    return (CM_MCAN1->CCCR & (MCAN_CCCR_FDOE | MCAN_CCCR_BRSE | MCAN_CCCR_INIT)) ==
+               (MCAN_CCCR_FDOE | MCAN_CCCR_BRSE) &&
+           (CM_MCAN1->PSR & MCAN_PSR_BO) == 0U;
+}
+
+bool board_mcan_try_send_identification(uint16_t id, const uint8_t *data, uint8_t length)
+{
+    if (data == NULL || (length != 8U && length != 64U) || id > 0x7FFU)
+        return false;
+    const uint32_t mask = __get_PRIMASK();
+    __disable_irq();
+    if ((CM_MCAN1->CCCR & MCAN_CCCR_INIT) != 0U ||
+        (CM_MCAN1->PSR & MCAN_PSR_BO) != 0U ||
+        (CM_MCAN1->TXFQS & MCAN_TXFQS_TFQF) != 0U ||
+        (length == 64U && !board_mcan_identification_ready()))
+    {
+        __set_PRIMASK(mask);
+        return false;
+    }
+    const uint32_t index = (CM_MCAN1->TXFQS >> 16U) & 0x1FU;
+    if (index >= 3U)
+    {
+        __set_PRIMASK(mask);
+        return false;
+    }
+    volatile uint32_t *const element =
+        (volatile uint32_t *)(MCAN_MSG_RAM_BASE_ADDR + 0x328U + index * 72U);
+    element[0] = (uint32_t)id << 18U;
+    element[1] = length == 64U ? 0x003F0000UL : 0x00080000UL;
+    for (unsigned int offset = 0U; offset < length; offset += 4U)
+    {
+        uint32_t word;
+        memcpy(&word, data + offset, 4U);
+        element[2U + offset / 4U] = word;
+    }
+    __DMB();
+    CM_MCAN1->TXBAR = 1UL << index;
+    __set_PRIMASK(mask);
+    return true;
+}
+#endif
 
 void board_mcan_update_node_filter(uint16_t node_id)
 {

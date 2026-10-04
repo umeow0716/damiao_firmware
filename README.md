@@ -48,6 +48,11 @@ UART 狀態 banner 可辨識四版：原版無後綴，其餘依序為 `(with ra
 
 請勿把 `_enc.bin` 直接寫進 APP Flash，也不要把某一型號的映像刷到另一型號。
 
+單馬達辨識量測為獨立 opt-in target：`make dm4310-sysid`，產物在
+`dist/development/sysid/`，不改既有四版或預設 `make`。目前提供第一階段 FD64 被動量測，
+不提供內部正弦激振。請先讀 [辨識協定](docs/SYSTEM_IDENTIFICATION_PROTOCOL.md) 與
+[限制及驗收](docs/SYSTEM_IDENTIFICATION_VALIDATION.md)，尤其 CAN FD 設定、watchdog 與訊號資料年齡。
+
 ## 文件
 
 - [文件總覽](docs/README.md)：依「第一次閱讀、修改功能、上板驗收、追查復原證據」分流。

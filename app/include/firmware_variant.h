@@ -3,7 +3,9 @@
 
 /* Both recovered behaviors remain enabled by default.  Product targets may
  * independently select raw measurements and suppress command-frame replies. */
-#if defined(DAMIAO_FEEDBACK_VARIANT_RAW) && defined(DAMIAO_COMMAND_FEEDBACK_DISABLED)
+#if defined(DAMIAO_SYSTEM_IDENTIFICATION)
+#define FIRMWARE_STATUS_BANNER "DMBOT Motor Driver(system identification v1)"
+#elif defined(DAMIAO_FEEDBACK_VARIANT_RAW) && defined(DAMIAO_COMMAND_FEEDBACK_DISABLED)
 #define FIRMWARE_STATUS_BANNER "DMBOT Motor Driver(with raw result and no response)"
 #elif defined(DAMIAO_FEEDBACK_VARIANT_RAW)
 #define FIRMWARE_STATUS_BANNER "DMBOT Motor Driver(with raw result)"

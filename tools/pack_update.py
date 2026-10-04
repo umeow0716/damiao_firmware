@@ -254,7 +254,7 @@ def write_package(app_path: Path, output_dir: Path, purpose: str = "development"
                   plain_name: str = "app_plain.bin",
                   encrypted_name: str = "app_update.enc.bin",
                   firmware_variant: str = "factory") -> None:
-    if firmware_variant not in ("factory", "raw", "no_response", "raw_no_response"):
+    if firmware_variant not in ("factory", "raw", "no_response", "raw_no_response", "sysid"):
         raise ValueError(f"unsupported firmware variant: {firmware_variant}")
     plaintext = app_path.read_bytes()
     stack, reset = validate_plain_app(plaintext)
@@ -358,7 +358,7 @@ def main() -> None:
     parser.add_argument("--purpose", choices=("development", "historical-reference"),
                         default="development")
     parser.add_argument("--firmware-variant",
-                        choices=("factory", "raw", "no_response", "raw_no_response"),
+                        choices=("factory", "raw", "no_response", "raw_no_response", "sysid"),
                         default="factory",
                         help="runtime behavior variant recorded in the manifest")
     parser.add_argument("--plain-name", default="app_plain.bin",
